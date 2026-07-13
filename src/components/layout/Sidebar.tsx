@@ -40,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "register",
-    label: "Registrar apuesta",
+    label: "Nuevo registro",
     href: "/bets/new",
     icon: PlusCircle,
     group: "principal",
@@ -149,7 +149,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         aria-label="Navegación principal"
       >
         {/* ── Logo / Brand ── */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border flex-shrink-0">
+        <Link
+          href="/dashboard"
+          onClick={onClose}
+          className="flex cursor-pointer items-center gap-3 px-5 py-5 border-b border-sidebar-border flex-shrink-0 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary/60"
+          aria-label="Ir al dashboard"
+        >
           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-cyan-500/25 flex-shrink-0">
             <Sliders size={18} strokeWidth={2.5} />
           </div>
@@ -161,7 +166,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               Autocontrol
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* ── Navigation groups ── */}
         <nav className="flex-1 py-4 overflow-y-auto" aria-label="Menú de navegación">

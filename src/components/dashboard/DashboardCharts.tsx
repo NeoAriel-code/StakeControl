@@ -22,7 +22,7 @@ type DashboardChartsProps = {
 
 function EmptyChartState({ message }: { message: string }) {
   return (
-    <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
+    <div className="flex h-[260px] items-center justify-center rounded-2xl border border-dashed border-border bg-background/60 px-6 text-center text-sm text-muted-foreground">
       {message}
     </div>
   );
@@ -46,7 +46,7 @@ export function DashboardCharts({
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm xl:col-span-3">
+      <section className="surface-panel p-6 xl:col-span-3">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-foreground">Evolución mensual de Profit/Loss</h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -58,7 +58,7 @@ export function DashboardCharts({
           <EmptyChartState message="No hay suficientes datos históricos para mostrar evolución mensual." />
         ) : (
           <div className="grid min-h-[300px] grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="flex h-[300px] items-end gap-3 rounded-2xl bg-background p-4">
+            <div className="flex h-[300px] items-end gap-3 rounded-2xl border border-border bg-background p-4">
               {monthlyProfitLoss.map((entry) => {
                 const heightPct =
                   monthlyMax === 0
@@ -73,7 +73,7 @@ export function DashboardCharts({
                     </span>
                     <div className="flex h-[220px] w-full items-end rounded-xl bg-card/70 px-2 py-2">
                       <div
-                        className={`w-full rounded-lg ${isPositive ? "bg-emerald-500" : "bg-rose-500"}`}
+                        className={`w-full rounded-lg ${isPositive ? "bg-success/70" : "bg-danger/70"}`}
                         style={{ height: `${heightPct}%` }}
                         title={`${formatMonth(entry.month)}: ${formatMoney(entry.profitLoss, currency)}`}
                       />
@@ -96,7 +96,7 @@ export function DashboardCharts({
                     <p className="text-xs font-semibold text-text-secondary">{formatMonth(entry.month)}</p>
                     <p
                       className={`mt-1 text-sm font-semibold ${
-                        entry.profitLoss >= 0 ? "text-emerald-500" : "text-rose-500"
+                        entry.profitLoss >= 0 ? "text-success" : "text-danger"
                       }`}
                     >
                       {formatMoney(entry.profitLoss, currency)}
@@ -109,7 +109,7 @@ export function DashboardCharts({
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <section className="surface-section p-6">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-foreground">Exposición por deporte</h2>
           <p className="mt-1 text-xs text-muted-foreground">Participación del stake total por categoría.</p>
@@ -119,7 +119,7 @@ export function DashboardCharts({
         ) : (
           <div className="space-y-3">
             {topSportExposure.map((entry) => (
-              <div key={entry.name} className="rounded-2xl bg-background p-4">
+              <div key={entry.name} className="rounded-2xl border border-border bg-background p-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-foreground">{entry.name}</span>
                   <span className="text-xs font-medium text-muted-foreground">
@@ -128,7 +128,7 @@ export function DashboardCharts({
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-card">
                   <div
-                    className="h-full rounded-full bg-cyan-500"
+                    className="h-full rounded-full bg-secondary"
                     style={{ width: `${Math.max(entry.exposurePct, 4)}%` }}
                   />
                 </div>
@@ -141,7 +141,7 @@ export function DashboardCharts({
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm xl:col-span-2">
+      <section className="surface-section p-6 xl:col-span-2">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-foreground">Exposición por mercado</h2>
           <p className="mt-1 text-xs text-muted-foreground">Participación del stake total por mercado.</p>
@@ -151,7 +151,7 @@ export function DashboardCharts({
         ) : (
           <div className="space-y-3">
             {topMarketExposure.map((entry) => (
-              <div key={entry.name} className="rounded-2xl bg-background p-4">
+              <div key={entry.name} className="rounded-2xl border border-border bg-background p-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-foreground">{entry.name}</span>
                   <span className="text-xs font-medium text-muted-foreground">

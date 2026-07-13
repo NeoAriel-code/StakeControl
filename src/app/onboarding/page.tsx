@@ -22,7 +22,11 @@ export default async function OnboardingPage() {
           </p>
         </div>
 
-        <OnboardingForm email={user.email} />
+        <OnboardingForm
+          email={user.email}
+          ageConfirmed={user.ageConfirmed}
+          termsAccepted={Boolean(user.termsAcceptedAt)}
+        />
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Ticket, Upload, PauseCircle, ScanSearch } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getFeatureAccess, getPlanLabel } from "@/lib/plans";
@@ -71,10 +73,13 @@ export default async function TicketsPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="surface-panel p-6">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Tickets OCR usados este mes</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">Tickets OCR usados este mes</p>
+                    {!ocrAccess.allowed && <StatusBadge kind="premium" />}
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {ocrAccess.used ?? 0} de {ocrAccess.limit ?? "∞"} disponibles.
                   </p>
@@ -95,7 +100,7 @@ export default async function TicketsPage() {
               )}
             </div>
 
-            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="surface-section p-6">
               <div className="flex items-start gap-3">
                 <Upload size={18} className="mt-0.5 text-primary" />
                 <div>
@@ -120,7 +125,7 @@ export default async function TicketsPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="surface-panel p-6">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold text-foreground">Tickets recientes</h2>
                 <p className="text-sm text-muted-foreground">
@@ -129,16 +134,27 @@ export default async function TicketsPage() {
               </div>
 
               {recentTickets.length === 0 ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Aún no has subido tickets para revisión.
-                </p>
+                <div className="mt-6">
+                  <EmptyState
+                    title="Sin tickets en revisión"
+                    description="Cuando subas un ticket, quedará en revisión antes de crear cualquier registro."
+                    action={
+                      <Link
+                        href={ocrAccess.allowed ? "/tickets/upload" : "/upgrade"}
+                        className="inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                      >
+                        {ocrAccess.allowed ? "Subir ticket" : "Ver Premium"}
+                      </Link>
+                    }
+                  />
+                </div>
               ) : (
                 <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {recentTickets.map((ticket) => (
                     <Link
                       key={ticket.id}
                       href={`/tickets/${ticket.id}/review`}
-                      className="rounded-2xl border border-border bg-background p-4 transition hover:bg-accent/40"
+                      className="rounded-2xl border border-border bg-background p-4 transition hover:border-primary/25 hover:bg-accent/40"
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-primary">
@@ -148,9 +164,13 @@ export default async function TicketsPage() {
                           <p className="truncate text-sm font-semibold text-foreground">
                             {ticket.fileName || "Ticket sin nombre"}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {ticket.mimeType || "Archivo"} · {ticket.aiExtraction?.status || "pending_review"}
-                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <StatusBadge
+                              kind={ticket.aiExtraction?.status === "reviewed_and_confirmed" ? "reviewed" : "review-required"}
+                              label={ticket.aiExtraction?.status === "reviewed_and_confirmed" ? "Revisado" : "Revisión requerida"}
+                            />
+                            <span className="text-xs text-muted-foreground">{ticket.mimeType || "Archivo"}</span>
+                          </div>
                           <p className="mt-2 text-xs text-soft">
                             {new Intl.DateTimeFormat("es-CL", {
                               dateStyle: "short",

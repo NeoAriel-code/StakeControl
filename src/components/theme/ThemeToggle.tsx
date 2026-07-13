@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   applyTheme,
   emitThemeChange,
@@ -14,7 +15,7 @@ import {
   type Theme,
 } from "@/lib/theme";
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const theme = useSyncExternalStore(
     subscribeToTheme,
     getThemeFromDocument,
@@ -57,7 +58,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={handleToggleTheme}
-      className="theme-toggle"
+      className={cn("theme-toggle", className)}
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       title={isDark ? "Modo claro" : "Modo oscuro"}
     >

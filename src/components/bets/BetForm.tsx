@@ -92,9 +92,12 @@ export function BetForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      <p className="rounded-2xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-foreground">
-        Este registro es solo para control personal.
-      </p>
+      <div className="rounded-2xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-foreground">
+        <p className="font-semibold">Registro preventivo</p>
+        <p className="mt-1">
+          Este formulario guarda datos históricos para autocontrol. No se recomienda aumentar el stake automáticamente.
+        </p>
+      </div>
 
       {state.error && (
         <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
@@ -207,6 +210,9 @@ export function BetForm({
         <div className="space-y-3 rounded-2xl border border-danger-border bg-danger-soft px-4 py-4">
           <p className="text-sm font-semibold text-danger">
             Advertencia fuerte: el stake supera tu máximo por apuesta configurado ({maxSingleStake}).
+          </p>
+          <p className="text-sm text-danger">
+            Considera revisar tus límites o pausar temporalmente antes de guardar este registro.
           </p>
           <label className="flex items-start gap-3 text-sm text-danger">
             <input

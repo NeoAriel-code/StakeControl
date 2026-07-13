@@ -75,7 +75,7 @@ export function MetricCard({
         aria-busy="true"
         aria-label={`Cargando ${title}`}
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <div className="h-3 w-24 rounded bg-muted animate-pulse" />
           <div className="h-9 w-9 rounded-xl bg-muted animate-pulse" />
         </div>
@@ -92,17 +92,13 @@ export function MetricCard({
       role="region"
       aria-label={title}
     >
-      {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className="relative z-10 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
         </p>
         {Icon && (
           <span
-            className={cn(
-              "flex items-center justify-center w-9 h-9 rounded-xl",
-              variantIconBg[variant]
-            )}
+            className={cn("flex h-10 w-10 items-center justify-center rounded-2xl", variantIconBg[variant])}
             aria-hidden="true"
           >
             <Icon size={16} strokeWidth={2} />
@@ -110,13 +106,11 @@ export function MetricCard({
         )}
       </div>
 
-      {/* Value */}
-      <p className="mt-1 text-2xl font-bold leading-none text-foreground">
+      <p className="relative z-10 mt-2 text-3xl font-black leading-none tracking-tight text-foreground">
         {value}
       </p>
 
-      {/* Subtitle / trend */}
-      <div className="flex items-center gap-2 mt-0.5 min-h-[1.25rem]">
+      <div className="relative z-10 mt-1 flex min-h-[1.25rem] items-center gap-2">
         {subtitle && (
           <span className="text-xs text-muted-foreground">{subtitle}</span>
         )}

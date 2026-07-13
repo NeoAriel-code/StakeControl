@@ -3,6 +3,7 @@ import { DeleteAccountForm } from "@/components/auth/DeleteAccountForm";
 import { logoutAction } from "@/lib/auth-actions";
 import { requireUser } from "@/lib/auth";
 import { getMonthlyOcrTicketUsage, getPlanLabel, getUserPlan } from "@/lib/plans";
+import { getCountryName } from "@/lib/countries";
 import Link from "next/link";
 
 export default async function ProfilePage() {
@@ -43,6 +44,18 @@ export default async function ProfilePage() {
                 Email
               </dt>
               <dd className="mt-1 text-sm text-foreground">{user.email}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                País
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">{getCountryName(user.country)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Moneda principal
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">{user.currency}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">

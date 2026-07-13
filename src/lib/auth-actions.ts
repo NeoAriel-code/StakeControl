@@ -12,6 +12,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { PlanType } from "@prisma/client";
+import { COUNTRY_CODES, getCountryRegistrationDefaults } from "@/lib/countries";
 import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
 import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
 
@@ -28,8 +29,17 @@ const registerSchema = z
   .object({
     email: z.string().trim().toLowerCase().email("Ingresa un email válido."),
     name: z.string().trim().max(100, "El nombre es demasiado largo.").optional(),
+    country: z.enum(COUNTRY_CODES, {
+      error: "Selecciona un país válido.",
+    }),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string(),
+    ageConfirmed: z.literal(true, {
+      error: "Debes confirmar que eres mayor de edad.",
+    }),
+    termsAccepted: z.literal(true, {
+      error: "Debes aceptar los términos y la política de privacidad.",
+    }),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Las contraseñas no coinciden.",
@@ -84,8 +94,11 @@ export async function registerAction(
   const parsed = registerSchema.safeParse({
     email: getString(formData, "email"),
     name: getString(formData, "name") || undefined,
+    country: getString(formData, "country"),
     password: getString(formData, "password"),
     confirmPassword: getString(formData, "confirmPassword"),
+    ageConfirmed: formData.get("ageConfirmed") === "on",
+    termsAccepted: formData.get("termsAccepted") === "on",
   });
 
   if (!parsed.success) {
@@ -93,6 +106,7 @@ export async function registerAction(
   }
 
   const { email, name, password } = parsed.data;
+  const registrationDefaults = getCountryRegistrationDefaults(parsed.data.country);
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -102,11 +116,17 @@ export async function registerAction(
   }
 
   const passwordHash = hashPassword(password);
+  const now = new Date();
 
   const user = await prisma.user.create({
     data: {
       email,
       name: name || null,
+      country: registrationDefaults.countryCode,
+      currency: registrationDefaults.currency,
+      timezone: registrationDefaults.timezone,
+      ageConfirmed: true,
+      termsAcceptedAt: now,
       passwordHash,
       subscriptions: {
         create: {
@@ -130,10 +150,10 @@ export async function completeOnboardingAction(
 ): Promise<AuthActionState> {
   const user = await requireUser({ allowIncompleteOnboarding: true });
 
-  const ageConfirmed = formData.get("ageConfirmed") === "on";
+  const ageConfirmed = user.ageConfirmed || formData.get("ageConfirmed") === "on";
   const platformDisclaimerAccepted = formData.get("platformDisclaimerAccepted") === "on";
   const performanceDisclaimerAccepted = formData.get("performanceDisclaimerAccepted") === "on";
-  const termsAccepted = formData.get("termsAccepted") === "on";
+  const termsAccepted = Boolean(user.termsAcceptedAt) || formData.get("termsAccepted") === "on";
 
   if (!ageConfirmed || !platformDisclaimerAccepted || !performanceDisclaimerAccepted || !termsAccepted) {
     return { error: "Debes aceptar todas las confirmaciones para continuar." };
@@ -146,7 +166,7 @@ export async function completeOnboardingAction(
     data: {
       ageConfirmed: true,
       responsibleGamingAcceptedAt: now,
-      termsAcceptedAt: now,
+      termsAcceptedAt: user.termsAcceptedAt ?? now,
       onboardingCompletedAt: now,
     },
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { CURRENCY_OPTIONS } from "@/lib/currencies";
 import { updateProfilePreferencesAction, type SettingsActionState } from "@/lib/settings-actions";
 
@@ -9,6 +10,7 @@ const initialState: SettingsActionState = {};
 type ProfilePreferencesFormProps = {
   defaultValues: {
     name: string;
+    country: string;
     currency: string;
     timezone: string;
     oddsFormat: "DECIMAL" | "AMERICAN";
@@ -35,6 +37,19 @@ export function ProfilePreferencesForm({ defaultValues }: ProfilePreferencesForm
             className={inputClassName}
             autoComplete="name"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="country" className="text-sm font-medium text-foreground">
+            País de residencia
+          </label>
+          <select id="country" name="country" defaultValue={defaultValues.country} className={inputClassName}>
+            {COUNTRY_OPTIONS.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">

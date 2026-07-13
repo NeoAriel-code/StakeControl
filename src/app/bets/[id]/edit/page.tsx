@@ -51,7 +51,7 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
       plan={plan}
     >
       <section className="mx-auto max-w-4xl space-y-6">
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-panel p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
             Edición
           </p>
@@ -61,7 +61,7 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="form-panel p-6">
           <BetForm
             action={updateBetAction.bind(null, bet.id)}
             submitIdleLabel="Guardar cambios"

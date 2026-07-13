@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Gauge, ShieldAlert, ShieldCheck, ShieldX, PauseCircle } from "lucide-react";
+import { Gauge } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { LimitsForm } from "@/components/limits/LimitsForm";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge, type StatusBadgeKind } from "@/components/ui/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import { formatMoney } from "@/lib/currency-format";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
@@ -20,44 +22,17 @@ export const metadata: Metadata = {
   description: "Configura límites personales, pausas voluntarias y revisa alertas de juego responsable.",
 };
 
-function statusConfig(status: LimitStatus) {
+function statusKind(status: LimitStatus): StatusBadgeKind {
   switch (status) {
     case "PAUSE_ACTIVE":
-      return {
-        label: "Pausa activa",
-        className: "bg-warning-soft text-warning border border-warning/30",
-        Icon: PauseCircle,
-      };
+      return "pause-active";
     case "LIMIT_EXCEEDED":
-      return {
-        label: "Límite superado",
-        className: "bg-danger-soft text-danger border border-danger-border",
-        Icon: ShieldX,
-      };
+      return "limit-exceeded";
     case "NEAR_LIMIT":
-      return {
-        label: "Cerca del límite",
-        className: "bg-warning-soft text-warning border border-warning/30",
-        Icon: ShieldAlert,
-      };
+      return "near-limit";
     default:
-      return {
-        label: "Dentro del límite",
-        className: "bg-success-soft text-success border border-success/30",
-        Icon: ShieldCheck,
-      };
+      return "controlled";
   }
-}
-
-function StatusBadge({ status }: { status: LimitStatus }) {
-  const { label, className, Icon } = statusConfig(status);
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
-      <Icon size={12} />
-      {label}
-    </span>
-  );
 }
 
 type LimitSummaryItem = {
@@ -164,7 +139,7 @@ export default async function LimitsPage() {
           description="Define topes personales, activa pausas voluntarias y sigue el estado actual de tu presupuesto."
           icon={Gauge}
           breadcrumb="StakeControl"
-          actions={<StatusBadge status={overallStatus} />}
+          actions={<StatusBadge kind={statusKind(overallStatus)} />}
         />
 
         {isPauseActive(limits?.pauseUntil) && (
@@ -175,7 +150,7 @@ export default async function LimitsPage() {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
           <div className="space-y-6">
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <section className="form-panel p-6">
               <h2 className="text-lg font-semibold text-foreground">Configuración personal</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Los límites se guardan por usuario y se aplican al registrar apuestas y tickets.
@@ -197,17 +172,17 @@ export default async function LimitsPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <section className="surface-panel p-6">
               <h2 className="text-lg font-semibold text-foreground">Estado actual</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {limitItems.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-border bg-background p-4">
+                  <article key={item.id} className="rounded-2xl border border-border bg-background p-4 transition hover:border-primary/20">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-foreground">{item.label}</p>
                         <p className="mt-1 text-sm text-muted-foreground">{item.summaryText}</p>
                       </div>
-                      <StatusBadge status={item.status} />
+                      <StatusBadge kind={statusKind(item.status)} />
                     </div>
                     {item.helperMessage && (
                       <p className="mt-3 text-sm text-muted-foreground">{item.helperMessage}</p>
@@ -219,7 +194,7 @@ export default async function LimitsPage() {
           </div>
 
           <aside className="space-y-6">
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <section className="surface-section p-6">
               <h2 className="text-lg font-semibold text-foreground">Resumen rápido</h2>
               <dl className="mt-4 space-y-4">
                 <div>
@@ -243,19 +218,25 @@ export default async function LimitsPage() {
               </dl>
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <section className="surface-section p-6">
               <h2 className="text-lg font-semibold text-foreground">Alertas recientes</h2>
               {recentAlerts.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Aún no se generaron alertas de juego responsable.
-                </p>
+                <div className="mt-4">
+                  <EmptyState
+                    title="Sin alertas recientes"
+                    description="Cuando un límite se acerque o se active una señal preventiva, aparecerá aquí."
+                  />
+                </div>
               ) : (
                 <div className="mt-4 space-y-3">
                   {recentAlerts.map((alert) => (
                     <article key={alert.id} className="rounded-2xl border border-border bg-background p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-foreground">{alert.title}</p>
-                        <span className="text-xs font-semibold text-muted-foreground">{alert.severity}</span>
+                        <StatusBadge
+                          kind={alert.acknowledgedAt ? "reviewed" : "review-required"}
+                          label={alert.acknowledgedAt ? "Revisada" : "Revisión requerida"}
+                        />
                       </div>
                       <p className="mt-2 text-sm text-muted-foreground">{alert.message}</p>
                     </article>

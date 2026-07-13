@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Bell, Clock3, ShieldPlus, SlidersHorizontal } from "lucide-react";
-import type { AlertSeverity, AlertType } from "@prisma/client";
+import { Bell, Clock3, ShieldPlus, SlidersHorizontal } from "lucide-react";
+import type { AlertType } from "@prisma/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { acknowledgeAlertAction } from "@/lib/alert-actions";
 import { requireUser } from "@/lib/auth";
 import { getFeatureAccess, getPlanLabel } from "@/lib/plans";
@@ -22,12 +23,6 @@ const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   LOSS_STREAK: "Racha de pérdidas",
   HIGH_FREQUENCY: "Frecuencia alta",
   PAUSE_RECOMMENDED: "Pausa sugerida",
-};
-
-const SEVERITY_STYLES: Record<AlertSeverity, string> = {
-  LOW: "bg-muted text-muted-foreground border border-border",
-  MEDIUM: "bg-warning-soft text-warning border border-warning/30",
-  HIGH: "bg-danger-soft text-danger border border-danger-border",
 };
 
 export default async function AlertsPage() {
@@ -62,17 +57,17 @@ export default async function AlertsPage() {
           icon={Bell}
           breadcrumb="StakeControl"
           actions={
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
-              <AlertTriangle size={12} />
-              {unresolvedAlerts} pendientes
-            </span>
+            <StatusBadge
+              kind={unresolvedAlerts > 0 ? "review-required" : "controlled"}
+              label={`${unresolvedAlerts} pendiente${unresolvedAlerts === 1 ? "" : "s"}`}
+            />
           }
         />
 
         <section className="grid gap-4 md:grid-cols-3">
           <Link
             href="/limits"
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:bg-background"
+            className="surface-section p-4 transition hover:border-primary/25 hover:bg-background"
           >
             <div className="flex items-center gap-3">
               <SlidersHorizontal size={18} className="text-primary" />
@@ -87,7 +82,7 @@ export default async function AlertsPage() {
 
           <Link
             href="/limits"
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:bg-background"
+            className="surface-section p-4 transition hover:border-primary/25 hover:bg-background"
           >
             <div className="flex items-center gap-3">
               <Clock3 size={18} className="text-warning" />
@@ -102,7 +97,7 @@ export default async function AlertsPage() {
 
           <a
             href="#help-resources"
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:bg-background"
+            className="surface-section p-4 transition hover:border-primary/25 hover:bg-background"
           >
             <div className="flex items-center gap-3">
               <ShieldPlus size={18} className="text-secondary" />
@@ -117,7 +112,7 @@ export default async function AlertsPage() {
         </section>
 
         {!intelligentAlertsAccess.allowed && (
-          <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <section className="surface-panel p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Alertas inteligentes Premium</h2>
@@ -140,7 +135,7 @@ export default async function AlertsPage() {
           </section>
         )}
 
-        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <section className="surface-panel p-6">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-foreground">Historial de alertas</h2>
             <p className="text-sm text-muted-foreground">
@@ -165,16 +160,21 @@ export default async function AlertsPage() {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${SEVERITY_STYLES[alert.severity]}`}>
-                          {alert.severity}
-                        </span>
+                        <StatusBadge
+                          kind={
+                            alert.severity === "HIGH"
+                              ? "limit-exceeded"
+                              : alert.severity === "MEDIUM"
+                                ? "near-limit"
+                                : "controlled"
+                          }
+                          label={alert.severity}
+                        />
                         <span className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
                           {ALERT_TYPE_LABELS[alert.type]}
                         </span>
                         {alert.acknowledgedAt && (
-                          <span className="inline-flex rounded-full border border-success/30 bg-success-soft px-3 py-1 text-xs font-semibold text-success">
-                            Revisada
-                          </span>
+                          <StatusBadge kind="reviewed" />
                         )}
                       </div>
 
@@ -210,7 +210,7 @@ export default async function AlertsPage() {
           )}
         </section>
 
-        <section id="help-resources" className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <section id="help-resources" className="surface-panel p-6">
           <h2 className="text-lg font-semibold text-foreground">Recursos de autocontrol</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl bg-background p-4">

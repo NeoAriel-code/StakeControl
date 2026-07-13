@@ -16,19 +16,19 @@ export default async function NewBetPage() {
 
   return (
     <AppLayout
-      pageTitle="Registrar apuesta"
+      pageTitle="Nuevo registro"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
       plan={plan}
     >
       <section className="mx-auto max-w-4xl space-y-6">
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-panel p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
             Registro manual
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-foreground">Nueva apuesta</h1>
+          <h1 className="mt-2 text-3xl font-bold text-foreground">Nuevo registro</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Guarda la información de una apuesta de forma manual para seguimiento personal.
+            Guarda información histórica de forma manual para seguimiento personal.
           </p>
         </div>
 
@@ -39,11 +39,11 @@ export default async function NewBetPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div className="form-panel p-6">
             <BetForm
               action={createBetAction}
-              submitIdleLabel="Guardar apuesta"
-              submitPendingLabel="Guardando apuesta..."
+              submitIdleLabel="Guardar registro"
+              submitPendingLabel="Guardando registro..."
               maxSingleStake={limits?.maxStakePerBet?.toString() ?? null}
               defaultValues={{
                 currency: user.currency,

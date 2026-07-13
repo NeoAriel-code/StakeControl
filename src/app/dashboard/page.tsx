@@ -12,12 +12,16 @@ import {
   ArrowRight,
   Activity,
   CircleDollarSign,
+  ShieldCheck,
+  ShieldAlert,
+  PauseCircle,
 } from "lucide-react";
 
 import { MetricCard } from "@/components/ui/MetricCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ResponsibleDisclaimer } from "@/components/ui/ResponsibleDisclaimer";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -147,29 +151,87 @@ export default async function DashboardPage() {
   const bestSport = metrics.sportExposure[0];
   const bestMarket = metrics.marketExposure[0];
   const pauseIsActive = isPauseActive(limits?.pauseUntil);
+  const isNearLimit = Boolean(
+    limits?.monthlyStakeLimit &&
+      Number(limits.monthlyStakeLimit) > 0 &&
+      metrics.stakeTotal >= Number(limits.monthlyStakeLimit) * 0.8
+  );
+  const isLimitExceeded = Boolean(
+    limits?.monthlyStakeLimit &&
+      Number(limits.monthlyStakeLimit) > 0 &&
+      metrics.stakeTotal > Number(limits.monthlyStakeLimit)
+  );
+  const dashboardStatus = pauseIsActive
+    ? "pause-active"
+    : isLimitExceeded
+      ? "limit-exceeded"
+      : isNearLimit
+        ? "near-limit"
+        : "controlled";
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto space-y-8">
-      <PageHeader
-        title="Dashboard"
-        description="Métricas históricas, exposición y evolución de tu actividad registrada."
-        icon={LayoutDashboard}
-        breadcrumb="StakeControl"
-        actions={
+    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="surface-panel overflow-hidden p-6 sm:p-7">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <StatusBadge kind={dashboardStatus} />
+              <span className="rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
+                Vista histórica
+              </span>
+            </div>
+            <PageHeader
+              title="Dashboard"
+              description="Resumen de actividad, exposición y límites personales. Úsalo como panel de autocontrol, no como predictor de resultados."
+              icon={LayoutDashboard}
+              breadcrumb="StakeControl"
+              className="mb-0 border-0 pb-0"
+            />
+          </div>
           <Link
             id="cta-register-bet"
             href={pauseIsActive ? "/limits" : "/bets/new"}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${
+            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold transition-colors shadow-sm ${
               pauseIsActive
                 ? "bg-warning-soft text-warning-foreground hover:bg-warning-soft"
                 : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-primary/20"
             }`}
           >
-            <PlusCircle size={15} />
-            {pauseIsActive ? "Pausa activa" : "Registrar apuesta"}
+            {pauseIsActive ? <PauseCircle size={15} /> : <PlusCircle size={15} />}
+            {pauseIsActive ? "Revisar pausa" : "Registrar control"}
           </Link>
-        }
-      />
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <ShieldCheck size={16} className="text-success" />
+              Lectura segura
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              El rendimiento pasado puede estar influido por muestra pequeña o varianza.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <ShieldAlert size={16} className="text-warning" />
+              Límites primero
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              No se recomienda aumentar el stake automáticamente. Considera revisar tus límites.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Activity size={16} className="text-primary" />
+              Exposición
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Si una categoría concentra demasiada actividad, podrías reducir exposición o pausar temporalmente.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <ResponsibleDisclaimer message="El rendimiento pasado no garantiza resultados futuros." />
 
@@ -177,7 +239,7 @@ export default async function DashboardPage() {
         <h2 id="metrics-heading" className="sr-only">
           Métricas principales del dashboard
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 stagger-children">
           {metricCards.map((metric) => (
             <MetricCard
               key={metric.id}
@@ -192,17 +254,17 @@ export default async function DashboardPage() {
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <section className="surface-section p-6">
           <h2 className="text-sm font-semibold text-foreground">Categorías con mayor exposición histórica</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-background p-4">
+            <div className="rounded-2xl border border-border bg-background p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Por deporte</p>
               <p className="mt-2 text-lg font-semibold text-foreground">{bestSport?.name ?? "Sin datos"}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {bestSport ? `${bestSport.exposurePct.toFixed(2)}% del stake total` : "No hay exposición registrada."}
               </p>
             </div>
-            <div className="rounded-2xl bg-background p-4">
+            <div className="rounded-2xl border border-border bg-background p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Por mercado</p>
               <p className="mt-2 text-lg font-semibold text-foreground">{bestMarket?.name ?? "Sin datos"}</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -212,7 +274,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <section className="surface-section p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Apuestas recientes</h2>
             <Link
@@ -226,15 +288,15 @@ export default async function DashboardPage() {
           {bets.length === 0 ? (
             <div className="mt-6">
               <EmptyState
-                title="Sin apuestas registradas"
-                description="Registra tu primera apuesta para empezar a construir métricas históricas."
+                title="Sin registros todavía"
+                description="Crea tu primer registro para empezar a construir un historial privado de control."
                 action={
                   <Link
                     href="/bets/new"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
                   >
                     <PlusCircle size={14} />
-                    Registrar primera apuesta
+                  Registrar control
                   </Link>
                 }
               />
@@ -245,7 +307,7 @@ export default async function DashboardPage() {
                 <Link
                   key={bet.id}
                   href={`/bets/${bet.id}`}
-                  className="block rounded-2xl border border-border p-4 transition hover:bg-background"
+                  className="block rounded-2xl border border-border bg-background/40 p-4 transition hover:border-primary/30 hover:bg-background"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -257,7 +319,10 @@ export default async function DashboardPage() {
                         }).format(bet.placedAt)}
                       </p>
                     </div>
-                    <span className="text-sm font-medium text-text-secondary">{bet.result}</span>
+                    <StatusBadge
+                      kind={bet.result === "PENDING" ? "review-required" : "reviewed"}
+                      label={bet.result}
+                    />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     <span>{bet.sportsbook || "Sin sportsbook"}</span>

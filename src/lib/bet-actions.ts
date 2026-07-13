@@ -1,8 +1,9 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { BetResult, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { betFormSchema, type BetFormValues } from "@/lib/bet-schemas";
@@ -16,6 +17,13 @@ export type BetActionState = {
   error?: string;
   fieldErrors?: Partial<Record<keyof BetFormValues, string>>;
 };
+
+const quickBetResultSchema = z.object({
+  betId: z.string().trim().min(1, "Falta el identificador del registro."),
+  result: z.nativeEnum(BetResult, {
+    error: "Selecciona un resultado válido.",
+  }),
+});
 
 function mapZodErrors(error: unknown): BetActionState {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) && !(error instanceof Error)) {
@@ -228,6 +236,40 @@ export async function updateBetAction(
   revalidatePath(`/bets/${betId}/edit`);
   revalidatePath(`/bets/${betId}`);
   redirect("/bets");
+}
+
+export async function updateBetResultAction(formData: FormData) {
+  const user = await requireUser();
+  const parsed = quickBetResultSchema.safeParse({
+    betId: formData.get("betId"),
+    result: formData.get("result"),
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "No se pudo actualizar el resultado.");
+  }
+
+  const bet = await ensureUserOwnsBet(user.id, parsed.data.betId);
+  const settledPayout =
+    parsed.data.result === "WON" && bet.potentialPayout
+      ? bet.potentialPayout
+      : parsed.data.result === "VOID"
+        ? bet.stake
+        : null;
+
+  await prisma.bet.update({
+    where: { id: bet.id },
+    data: {
+      result: parsed.data.result,
+      settledPayout,
+    },
+  });
+  await evaluateResponsibleGamingAlerts(user.id);
+
+  revalidatePath("/dashboard");
+  revalidatePath("/bets");
+  revalidatePath(`/bets/${bet.id}`);
+  revalidatePath(`/bets/${bet.id}/edit`);
 }
 
 export async function deleteBetAction(formData: FormData) {

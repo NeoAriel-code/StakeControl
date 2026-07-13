@@ -46,6 +46,7 @@ export default async function SettingsPage() {
             <ProfilePreferencesForm
               defaultValues={{
                 name: user.name ?? "",
+                country: user.country ?? "OTHER",
                 currency: user.currency,
                 timezone: user.timezone,
                 oddsFormat: user.oddsFormat,

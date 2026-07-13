@@ -9,6 +9,8 @@ const initialState: AuthActionState = {};
 
 type OnboardingFormProps = {
   email: string;
+  ageConfirmed: boolean;
+  termsAccepted: boolean;
 };
 
 function OnboardingCheckbox({
@@ -36,7 +38,7 @@ function OnboardingCheckbox({
   );
 }
 
-export function OnboardingForm({ email }: OnboardingFormProps) {
+export function OnboardingForm({ email, ageConfirmed, termsAccepted }: OnboardingFormProps) {
   const [state, action] = useActionState(completeOnboardingAction, initialState);
 
   return (
@@ -45,9 +47,11 @@ export function OnboardingForm({ email }: OnboardingFormProps) {
         Estás ingresando como <span className="font-semibold">{email}</span>. Antes de usar StakeControl debes completar estas confirmaciones.
       </div>
 
-      <OnboardingCheckbox id="ageConfirmed" name="ageConfirmed">
-        Confirmo que soy mayor de 18 años.
-      </OnboardingCheckbox>
+      {!ageConfirmed && (
+        <OnboardingCheckbox id="ageConfirmed" name="ageConfirmed">
+          Confirmo que soy mayor de 18 años.
+        </OnboardingCheckbox>
+      )}
 
       <OnboardingCheckbox
         id="platformDisclaimerAccepted"
@@ -63,17 +67,19 @@ export function OnboardingForm({ email }: OnboardingFormProps) {
         Entiendo que el rendimiento pasado no garantiza resultados futuros.
       </OnboardingCheckbox>
 
-      <OnboardingCheckbox id="termsAccepted" name="termsAccepted">
-        Acepto los{" "}
-        <Link href="/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
-          términos
-        </Link>{" "}
-        y la{" "}
-        <Link href="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
-          política de privacidad
-        </Link>
-        .
-      </OnboardingCheckbox>
+      {!termsAccepted && (
+        <OnboardingCheckbox id="termsAccepted" name="termsAccepted">
+          Acepto los{" "}
+          <Link href="/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
+            términos
+          </Link>{" "}
+          y la{" "}
+          <Link href="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
+            política de privacidad
+          </Link>
+          .
+        </OnboardingCheckbox>
+      )}
 
       {state.error && (
         <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">

@@ -4,6 +4,7 @@ import { OddsFormat } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { hashPassword, requireUser, verifyPassword } from "@/lib/auth";
+import { COUNTRY_CODES } from "@/lib/countries";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import prisma from "@/lib/prisma";
 
@@ -14,6 +15,9 @@ export type SettingsActionState = {
 
 const profilePreferencesSchema = z.object({
   name: z.string().trim().max(100, "El nombre es demasiado largo.").optional(),
+  country: z.enum(COUNTRY_CODES, {
+    error: "Selecciona un país válido.",
+  }),
   currency: z.enum(CURRENCY_CODES, {
     error: "Selecciona una moneda válida.",
   }),
@@ -48,6 +52,7 @@ export async function updateProfilePreferencesAction(
   const user = await requireUser();
   const parsed = profilePreferencesSchema.safeParse({
     name: getString(formData, "name") || undefined,
+    country: getString(formData, "country"),
     currency: getString(formData, "currency"),
     timezone: getString(formData, "timezone"),
     oddsFormat: getString(formData, "oddsFormat"),
@@ -61,6 +66,7 @@ export async function updateProfilePreferencesAction(
     where: { id: user.id },
     data: {
       name: parsed.data.name ?? null,
+      country: parsed.data.country,
       currency: parsed.data.currency,
       timezone: parsed.data.timezone,
       oddsFormat: parsed.data.oddsFormat,

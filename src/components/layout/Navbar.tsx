@@ -157,7 +157,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
           className={cn(
             "lg:hidden flex items-center justify-center w-9 h-9 rounded-xl",
             "text-muted-foreground hover:text-primary hover:bg-accent",
-            "transition-colors flex-shrink-0"
+            "cursor-pointer transition-colors flex-shrink-0"
           )}
         >
           <Menu size={20} />
@@ -211,7 +211,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
             className={cn(
               "relative flex items-center justify-center w-9 h-9 rounded-xl",
               "text-muted-foreground hover:text-primary hover:bg-accent",
-              "transition-colors"
+              "cursor-pointer transition-colors"
             )}
           >
             <Bell size={18} />
@@ -242,7 +242,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
                   <button
                     type="button"
                     onClick={markUnreadAlertsAsRead}
-                    className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background"
+                    className="cursor-pointer rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background"
                   >
                     Marcar leídas
                   </button>
@@ -285,7 +285,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
               <Link
                 href="/alerts"
                 onClick={() => setAlertsOpen(false)}
-                className="mt-3 flex items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                className="mt-3 flex cursor-pointer items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
               >
                 Ver historial completo
               </Link>
@@ -308,7 +308,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
             className={cn(
               "flex items-center gap-2 px-2 py-1.5 rounded-xl",
               "text-muted-foreground hover:text-primary hover:bg-accent",
-              "transition-colors"
+              "cursor-pointer transition-colors"
             )}
           >
             <div
@@ -340,7 +340,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
                   href="/profile"
                   role="menuitem"
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
                 >
                   <UserCircle size={16} />
                   Perfil
@@ -349,7 +349,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
                   href={plan === "PREMIUM" ? "/upgrade" : "/upgrade"}
                   role="menuitem"
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
                 >
                   <Crown size={16} />
                   {plan === "PREMIUM" ? "Plan" : "Upgrade"}
@@ -358,7 +358,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
                   href="/settings"
                   role="menuitem"
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
                 >
                   <Settings size={16} />
                   Configuración
@@ -369,7 +369,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
                 <button
                   type="submit"
                   role="menuitem"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-danger transition hover:bg-danger-soft"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-danger transition hover:bg-danger-soft"
                 >
                   <LogOut size={16} />
                   Cerrar sesión

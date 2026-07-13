@@ -3,6 +3,9 @@ import { BetResult } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DeleteBetButton } from "@/components/bets/DeleteBetButton";
+import { QuickBetResultSelect } from "@/components/bets/QuickBetResultSelect";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
@@ -166,19 +169,22 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
       plan={historyAccess.plan}
     >
       <section className="mx-auto max-w-7xl space-y-6">
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="surface-panel p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
                 Historial
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-foreground">Apuestas</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold text-foreground">Historial de control</h1>
+                {!historyAccess.allowed && <StatusBadge kind="premium" label="Historial completo Premium" />}
+              </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Historial personal de apuestas registradas, con filtros y acceso a detalle.
+                Registros privados con filtros, detalle y exportación. La información es histórica y preventiva.
               </p>
               {!historyAccess.allowed && (
                 <p className="mt-3 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-foreground">
-                  En Free, el historial se limita a los últimos 90 días. Mejora a Premium para ver todo tu histórico.
+                  En Free, el historial se limita a los últimos 90 días. Premium permite revisar todo el histórico.
                 </p>
               )}
             </div>
@@ -198,7 +204,8 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                     : "bg-accent text-accent-foreground"
                 }`}
               >
-                {advancedExportAccess.allowed ? "Exportación avanzada" : "Exportación avanzada Premium"}
+                {advancedExportAccess.allowed ? "Exportación avanzada" : "Exportación avanzada"}
+                {!advancedExportAccess.allowed && <span className="ml-2"><StatusBadge kind="premium" /></span>}
               </Link>
               <Link
                 href={pauseIsActive ? "/limits" : "/bets/new"}
@@ -208,13 +215,19 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                     : "bg-primary text-white hover:bg-primary-hover"
                 }`}
               >
-                {pauseIsActive ? "Pausa activa" : "Nueva apuesta"}
+                {pauseIsActive ? "Pausa activa" : "Nuevo registro"}
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="form-panel p-6">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-foreground">Filtrar historial</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ajusta fechas y campos para revisar patrones concretos sin mezclar períodos.
+            </p>
+          </div>
           <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
               <label htmlFor="from" className="text-sm font-medium text-foreground">
@@ -370,27 +383,27 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
           </form>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card shadow-sm">
+        <div className="surface-panel overflow-hidden">
           {bets.length === 0 ? (
-            <div className="space-y-3 p-8">
-              <h2 className="text-lg font-semibold text-foreground">Sin resultados</h2>
-              <p className="text-sm text-muted-foreground">
-                No hay apuestas registradas con los filtros actuales.
-              </p>
-              <div>
+            <div className="p-6">
+              <EmptyState
+                title="Sin registros con estos filtros"
+                description="Prueba ampliar el rango de fechas o limpiar filtros para revisar tu historial completo disponible."
+                action={
                 <Link
                   href="/bets/new"
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
                 >
-                  Registrar apuesta
+                  Crear registro manual
                 </Link>
-              </div>
+                }
+              />
             </div>
           ) : (
             <>
               <div className="hidden overflow-x-auto lg:block">
-                <table className="min-w-full divide-y divide-border text-sm">
-                  <thead className="bg-background">
+                <table className="data-table">
+                  <thead>
                     <tr className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3">Evento</th>
@@ -418,7 +431,9 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                           {bet.currency} {bet.stake.toString()}
                         </td>
                         <td className="px-4 py-3 text-text-secondary">{formatOdds(Number(bet.odds), user.oddsFormat)}</td>
-                        <td className="px-4 py-3 text-text-secondary">{bet.result}</td>
+                        <td className="px-4 py-3 text-text-secondary">
+                          <QuickBetResultSelect betId={bet.id} result={bet.result} />
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-2">
                             <Link
@@ -446,12 +461,12 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                 {bets.map((bet) => (
                   <article
                     key={bet.id}
-                    className="rounded-2xl border border-border p-4"
+                    className="rounded-2xl border border-border bg-background/50 p-4"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <h2 className="text-sm font-semibold text-foreground">{bet.title}</h2>
-                        <span className="text-xs text-muted-foreground">{bet.result}</span>
+                        <QuickBetResultSelect betId={bet.id} result={bet.result} compact />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {new Intl.DateTimeFormat("es-CL", {
