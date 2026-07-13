@@ -1,0 +1,271 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
+import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
+import { getStorageService } from "@/lib/storage";
+import { createOcrService } from "@/lib/ocr-service";
+import { createAiExtractionService } from "@/lib/ai-extraction-service";
+import { reviewedTicketBetSchema } from "@/lib/ticket-extraction";
+import { Prisma } from "@prisma/client";
+import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
+import { getFeatureAccess } from "@/lib/plans";
+
+const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf"]);
+
+export type TicketUploadActionState = {
+  error?: string;
+};
+
+export type TicketReviewActionState = {
+  error?: string;
+};
+
+function sanitizeJsonRecord(value: Record<string, unknown>): Prisma.InputJsonObject {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
+  ) as Prisma.InputJsonObject;
+}
+
+function getFileExtension(fileName: string) {
+  const index = fileName.lastIndexOf(".");
+  return index >= 0 ? fileName.slice(index).toLowerCase() : "";
+}
+
+function validateTicketFile(file: File) {
+  if (!file || file.size === 0) {
+    throw new Error("Selecciona un archivo JPG, PNG, WEBP o PDF antes de continuar.");
+  }
+
+  if (file.size > MAX_TICKET_UPLOAD_BYTES) {
+    throw new Error("El archivo supera el tamaño máximo permitido de 10 MB.");
+  }
+
+  const extension = getFileExtension(file.name);
+  if (!ALLOWED_MIME_TYPES.has(file.type) || !ALLOWED_EXTENSIONS.has(extension)) {
+    throw new Error("Formato no permitido. Solo se aceptan archivos JPG, PNG, WEBP o PDF.");
+  }
+}
+
+export async function uploadTicketAction(
+  _prevState: TicketUploadActionState,
+  formData: FormData
+): Promise<TicketUploadActionState> {
+  const user = await requireUser();
+  const limits = await prisma.userLimits.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (isPauseActive(limits?.pauseUntil)) {
+    return {
+      error: formatPauseMessage(limits!.pauseUntil!),
+    };
+  }
+
+  const ocrAccess = await getFeatureAccess(user.id, "ocr_tickets");
+  if (!ocrAccess.allowed) {
+    return {
+      error:
+        ocrAccess.upgradeMessage ??
+        "Tu plan actual no permite subir más tickets OCR este mes.",
+    };
+  }
+
+  const fileEntry = formData.get("ticketFile");
+
+  if (!(fileEntry instanceof File)) {
+    return {
+      error: "No se recibió ningún archivo válido.",
+    };
+  }
+
+  let ticketImageId = "";
+
+  try {
+    validateTicketFile(fileEntry);
+
+    const buffer = Buffer.from(await fileEntry.arrayBuffer());
+    const storage = getStorageService();
+    const ocrService = createOcrService();
+    const aiExtractionService = createAiExtractionService();
+    const storedObject = await storage.savePrivateObject({
+      userId: user.id,
+      namespace: "tickets",
+      fileName: fileEntry.name,
+      mimeType: fileEntry.type,
+      buffer,
+    });
+
+    const ticketImage = await prisma.betTicketImage.create({
+      data: {
+        userId: user.id,
+        imageUrl: storedObject.reference,
+        fileName: fileEntry.name,
+        mimeType: fileEntry.type,
+        fileSizeBytes: storedObject.byteLength,
+      },
+    });
+
+    const rawText = await ocrService.extractText(storedObject.reference);
+    const structuredBet = await aiExtractionService.structureBetTicket(rawText);
+    const requiresReview = structuredBet.confidenceScore < 0.85;
+
+    await prisma.aIExtraction.create({
+      data: {
+        betTicketImageId: ticketImage.id,
+        provider: "mock-ocr+mock-ai",
+        model: "mock-v1",
+        status: requiresReview ? "requires_review" : "ready_for_review",
+        confidence: new Prisma.Decimal(structuredBet.confidenceScore.toString()),
+        rawText,
+        extractedData: sanitizeJsonRecord({
+          ...structuredBet,
+          requiresReview,
+        }),
+      },
+    });
+
+    ticketImageId = ticketImage.id;
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "No se pudo subir el ticket.",
+    };
+  }
+
+  revalidatePath("/tickets");
+  revalidatePath("/tickets/upload");
+  redirect(`/tickets/${ticketImageId}/review`);
+}
+
+function toDecimal(value: number) {
+  return new Prisma.Decimal(value.toString());
+}
+
+export async function finalizeTicketReviewAction(
+  ticketId: string,
+  _prevState: TicketReviewActionState,
+  formData: FormData
+): Promise<TicketReviewActionState> {
+  const user = await requireUser();
+
+  const ticketImage = await prisma.betTicketImage.findFirst({
+    where: {
+      id: ticketId,
+      userId: user.id,
+    },
+    include: {
+      aiExtraction: true,
+    },
+  });
+
+  if (!ticketImage || !ticketImage.aiExtraction) {
+    return {
+      error: "No se encontró la extracción asociada al ticket.",
+    };
+  }
+
+  const limits = await prisma.userLimits.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (isPauseActive(limits?.pauseUntil)) {
+    return {
+      error: formatPauseMessage(limits!.pauseUntil!),
+    };
+  }
+
+  try {
+    const parsed = reviewedTicketBetSchema.parse({
+      sportsbook: formData.get("sportsbook"),
+      event: formData.get("event"),
+      placedAt: formData.get("placedAt"),
+      sport: formData.get("sport"),
+      league: formData.get("league"),
+      market: formData.get("market"),
+      selection: formData.get("selection"),
+      betType: formData.get("betType"),
+      stake: formData.get("stake"),
+      odds: formData.get("odds"),
+      currency: formData.get("currency"),
+      potentialPayout:
+        formData.get("potentialPayout") === "" ? undefined : formData.get("potentialPayout"),
+      result: formData.get("result"),
+      netProfit: formData.get("netProfit"),
+      ticketCode: formData.get("ticketCode"),
+      notes: formData.get("notes"),
+      confidenceScore: formData.get("confidenceScore"),
+      doubtfulFields: formData
+        .getAll("doubtfulFields")
+        .filter((field): field is string => typeof field === "string"),
+    });
+
+    const createdBet = await prisma.bet.create({
+      data: {
+        userId: user.id,
+        title: parsed.event,
+        sportsbook: parsed.sportsbook,
+        ticketCode: parsed.ticketCode,
+        sport: parsed.sport,
+        league: parsed.league,
+        market: parsed.market,
+        selection: parsed.selection,
+        betType: parsed.betType,
+        currency: parsed.currency,
+        result: parsed.result,
+        stake: toDecimal(parsed.stake),
+        odds: toDecimal(parsed.odds),
+        potentialPayout:
+          parsed.potentialPayout !== undefined ? toDecimal(parsed.potentialPayout) : null,
+        profitLoss: toDecimal(parsed.netProfit),
+        settledPayout:
+          parsed.potentialPayout !== undefined && parsed.result === "WON"
+            ? toDecimal(parsed.potentialPayout)
+            : parsed.result === "VOID"
+              ? toDecimal(parsed.stake)
+              : null,
+        placedAt: new Date(parsed.placedAt),
+        notes: parsed.notes,
+      },
+    });
+
+    await prisma.betTicketImage.update({
+      where: { id: ticketImage.id },
+      data: {
+        betId: createdBet.id,
+      },
+    });
+
+    await prisma.aIExtraction.update({
+      where: { betTicketImageId: ticketImage.id },
+      data: {
+        status: "reviewed_and_confirmed",
+        confidence: toDecimal(parsed.confidenceScore),
+        extractedData: sanitizeJsonRecord({
+          ...parsed,
+          requiresReview: parsed.confidenceScore < 0.85,
+        }),
+      },
+    });
+
+    await evaluateResponsibleGamingAlerts(user.id);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "No se pudo guardar la apuesta final.",
+    };
+  }
+
+  revalidatePath("/tickets");
+  revalidatePath(`/tickets/${ticketId}/review`);
+  revalidatePath("/bets");
+  revalidatePath("/dashboard");
+  redirect("/bets");
+}
