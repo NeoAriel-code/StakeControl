@@ -125,6 +125,20 @@ Eso permite integrar credenciales y SDKs más adelante sin cambiar las pantallas
 
 ## 🧪 Verificación de Calidad
 
+Para ejecutar la suite automatizada:
+```bash
+npm test
+```
+
+La suite usa `node --test` con `tsx` y cubre:
+- métricas críticas: ROI, win rate, profit/loss, stake promedio y rachas
+- reglas de alertas: racha de pérdidas, aumento de stake, límites y pausa activa
+- validaciones Zod de apuestas manuales y revisión OCR
+- helpers de permisos por `userId`
+- OCR mockeado y parser de tickets
+- bloqueo premium/free para funciones avanzadas
+- filtro de lenguaje responsable en análisis IA
+
 Para validar el tipado de TypeScript y asegurar que no existen errores antes de hacer un commit:
 ```bash
 npm run build

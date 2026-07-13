@@ -2,6 +2,7 @@ import "server-only";
 
 import { PlanType } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { canUseFeatureForPlan } from "@/lib/plan-rules";
 
 export type UserPlan = "FREE" | "PREMIUM";
 
@@ -81,7 +82,7 @@ export async function getFeatureAccess(userId: string, feature: PlanFeature): Pr
     case "monthly_report":
     case "ai_responsible_analysis":
       return {
-        allowed: plan === "PREMIUM",
+        allowed: canUseFeatureForPlan(plan, feature),
         plan,
         upgradeMessage: "Disponible en StakeControl Premium.",
       };

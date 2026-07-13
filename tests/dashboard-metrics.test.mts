@@ -1,6 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateDashboardMetrics } from "../src/lib/dashboard-metrics";
+import {
+  calculateAverageStake,
+  calculateDashboardMetrics,
+  calculateProfitLoss,
+  calculateROI,
+  calculateWinRate,
+} from "../src/lib/dashboard-metrics";
+
+test("critical metric helpers compute ROI, win rate, profit/loss and average stake", () => {
+  assert.equal(calculateROI(25, 100), 25);
+  assert.equal(calculateROI(-10, 50), -20);
+  assert.equal(calculateROI(10, 0), 0);
+  assert.equal(calculateWinRate([{ result: "WON" }, { result: "LOST" }, { result: "PENDING" }]), 50);
+  assert.equal(calculateProfitLoss([{ profitLoss: 12.5 }, { profitLoss: -2.5 }, { profitLoss: null }]), 10);
+  assert.equal(calculateAverageStake([{ stake: 10 }, { stake: 20 }, { stake: 30 }]), 20);
+});
 
 test("calculateDashboardMetrics computes historical formulas correctly", () => {
   const metrics = calculateDashboardMetrics([

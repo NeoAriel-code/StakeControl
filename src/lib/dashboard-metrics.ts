@@ -54,6 +54,28 @@ function safeDivide(numerator: number, denominator: number) {
   return numerator / denominator;
 }
 
+export function calculateProfitLoss(bets: Array<Pick<MetricBet, "profitLoss">>) {
+  return round(bets.reduce((sum, bet) => sum + (bet.profitLoss ?? 0), 0));
+}
+
+export function calculateROI(profitLoss: number, stakeTotal: number) {
+  return round(safeDivide(profitLoss, stakeTotal) * 100);
+}
+
+export function calculateWinRate(results: Array<Pick<MetricBet, "result">>) {
+  const resolvedBets = results.filter((bet) => isResolvedResult(bet.result));
+  const winningBets = resolvedBets.filter((bet) => bet.result === "WON");
+
+  return round(safeDivide(winningBets.length, resolvedBets.length) * 100);
+}
+
+export function calculateAverageStake(bets: Array<Pick<MetricBet, "stake">>) {
+  return round(safeDivide(
+    bets.reduce((sum, bet) => sum + bet.stake, 0),
+    bets.length
+  ));
+}
+
 function isResolvedResult(result: string) {
   return result !== "PENDING" && result !== "UNKNOWN";
 }
@@ -116,9 +138,9 @@ function buildCurrentStreak(bets: MetricBet[], targetResult: "WON" | "LOST") {
 
 export function calculateDashboardMetrics(bets: MetricBet[]): DashboardMetrics {
   const betCount = bets.length;
-  const profitLossTotal = round(bets.reduce((sum, bet) => sum + (bet.profitLoss ?? 0), 0));
+  const profitLossTotal = calculateProfitLoss(bets);
   const stakeTotal = round(bets.reduce((sum, bet) => sum + bet.stake, 0));
-  const averageStake = round(safeDivide(stakeTotal, betCount));
+  const averageStake = calculateAverageStake(bets);
   const averageOdds = round(
     safeDivide(
       bets.reduce((sum, bet) => sum + bet.odds, 0),
@@ -132,8 +154,8 @@ export function calculateDashboardMetrics(bets: MetricBet[]): DashboardMetrics {
   return {
     profitLossTotal,
     stakeTotal,
-    roiHistorical: round(safeDivide(profitLossTotal, stakeTotal) * 100),
-    winRate: round(safeDivide(winningBets.length, resolvedBets.length) * 100),
+    roiHistorical: calculateROI(profitLossTotal, stakeTotal),
+    winRate: calculateWinRate(bets),
     averageStake,
     averageOdds,
     betCount,

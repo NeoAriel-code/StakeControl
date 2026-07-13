@@ -1,10 +1,17 @@
 import "server-only";
 
-import { AlertSeverity, AlertType, BetResult, Prisma } from "@prisma/client";
+import { AlertSeverity, AlertType, Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { canUseFeature } from "@/lib/plans";
+import {
+  detectLossStreak,
+  detectStakeIncrease,
+  evaluateLimits,
+  isPauseActiveAt,
+  type LimitStatus,
+} from "@/lib/responsible-gaming-rules";
 
-export type LimitStatus = "WITHIN_LIMIT" | "NEAR_LIMIT" | "LIMIT_EXCEEDED" | "PAUSE_ACTIVE";
+export type { LimitStatus } from "@/lib/responsible-gaming-rules";
 
 export type LimitTotals = {
   dailyStake: number;
@@ -17,7 +24,7 @@ function decimalToNumber(value: Prisma.Decimal | null | undefined) {
 }
 
 export function isPauseActive(pauseUntil: Date | null | undefined) {
-  return Boolean(pauseUntil && pauseUntil > new Date());
+  return isPauseActiveAt(pauseUntil);
 }
 
 export function formatPauseMessage(pauseUntil: Date) {
@@ -52,25 +59,7 @@ export function getLimitStatus({
   limitValue?: number | null;
   pauseUntil?: Date | null;
 }): LimitStatus {
-  if (isPauseActive(pauseUntil)) {
-    return "PAUSE_ACTIVE";
-  }
-
-  if (!limitValue || limitValue <= 0) {
-    return "WITHIN_LIMIT";
-  }
-
-  const ratio = currentValue / limitValue;
-
-  if (ratio >= 1) {
-    return "LIMIT_EXCEEDED";
-  }
-
-  if (ratio >= 0.8) {
-    return "NEAR_LIMIT";
-  }
-
-  return "WITHIN_LIMIT";
+  return evaluateLimits({ currentValue, limitValue, pauseUntil });
 }
 
 export async function getCurrentStakeTotals(userId: string, referenceDate = new Date()): Promise<LimitTotals> {
@@ -196,26 +185,6 @@ async function ensureAlertForWindow({
   });
 }
 
-function average(values: number[]) {
-  if (values.length === 0) return 0;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function getRecentLossStreakCount(results: BetResult[]) {
-  let streak = 0;
-
-  for (const result of results) {
-    if (result === BetResult.LOST) {
-      streak += 1;
-      continue;
-    }
-
-    break;
-  }
-
-  return streak;
-}
-
 async function ensureLimitAlert({
   userId,
   period,
@@ -335,13 +304,9 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
   }
 
   const stakeValues = bets.map((bet) => Number(bet.stake));
-  const recentFiveStakes = stakeValues.slice(0, 5);
-  const historicalAverageStake = average(stakeValues);
-  const recentAverageStake = average(recentFiveStakes);
-  const stakeIncreaseTriggered =
-    recentFiveStakes.length >= 5 &&
-    historicalAverageStake > 0 &&
-    recentAverageStake > historicalAverageStake * 1.4;
+  const stakeIncrease = detectStakeIncrease(stakeValues);
+  const { recentAverageStake, historicalAverageStake } = stakeIncrease;
+  const stakeIncreaseTriggered = stakeIncrease.triggered;
 
   if (stakeIncreaseTriggered) {
     await ensureAlertForWindow({
@@ -354,15 +319,16 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       metadata: {
         recentAverageStake,
         historicalAverageStake,
-        recentBetsConsidered: recentFiveStakes.length,
+        recentBetsConsidered: stakeIncrease.recentBetsConsidered,
       },
       createdAfter: new Date(now.getTime() - 24 * 60 * 60 * 1000),
       dedupeKey: "stake-increase-24h",
     });
   }
 
-  const lossStreakCount = getRecentLossStreakCount(bets.map((bet) => bet.result));
-  const lossStreakTriggered = lossStreakCount >= 4;
+  const lossStreak = detectLossStreak(bets.map((bet) => bet.result));
+  const lossStreakCount = lossStreak.count;
+  const lossStreakTriggered = lossStreak.triggered;
 
   if (lossStreakTriggered) {
     await ensureAlertForWindow({

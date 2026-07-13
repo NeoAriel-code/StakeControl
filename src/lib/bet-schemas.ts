@@ -1,5 +1,6 @@
 import { BetResult, BetType } from "@prisma/client";
 import { z } from "zod";
+import { CURRENCY_CODES } from "@/lib/currencies";
 
 const optionalTrimmedString = z
   .string()
@@ -34,7 +35,9 @@ export const betFormSchema = z.object({
   odds: decimalField("La cuota").refine((value) => value > 1, {
     message: "La cuota debe ser mayor a 1.",
   }),
-  currency: z.string().trim().min(1, "La moneda es obligatoria."),
+  currency: z.enum(CURRENCY_CODES, {
+    error: "Selecciona una moneda válida.",
+  }),
   potentialPayout: z.preprocess(
     (value) => (value === "" || value == null ? undefined : value),
     decimalField("El posible retorno").optional()
