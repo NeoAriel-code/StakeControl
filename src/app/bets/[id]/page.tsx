@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import { isPrivateStorageReference } from "@/lib/storage";
+import { formatOdds } from "@/lib/odds-format";
 
 type BetDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -44,6 +45,7 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
       pageTitle="Detalle de apuesta"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
+      plan={plan}
     >
       <section className="mx-auto max-w-5xl space-y-6">
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -122,7 +124,7 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Cuota</dt>
-                <dd className="mt-1 text-sm text-foreground">{bet.odds.toString()}</dd>
+                <dd className="mt-1 text-sm text-foreground">{formatOdds(Number(bet.odds), user.oddsFormat)}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Posible retorno</dt>

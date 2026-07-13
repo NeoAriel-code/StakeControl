@@ -22,7 +22,9 @@ import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { calculateDashboardMetrics } from "@/lib/dashboard-metrics";
+import { formatMoney } from "@/lib/currency-format";
 import { isPauseActive } from "@/lib/responsible-gaming";
+import { formatOdds } from "@/lib/odds-format";
 
 export const metadata: Metadata = {
   title: "Dashboard | StakeControl",
@@ -30,20 +32,8 @@ export const metadata: Metadata = {
     "Panel de control personal: resumen histórico, exposición y métricas de apuestas registradas.",
 };
 
-function formatCurrency(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
-}
-
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
-}
-
-function formatDecimal(value: number) {
-  return value.toFixed(2);
 }
 
 export default async function DashboardPage() {
@@ -83,7 +73,7 @@ export default async function DashboardPage() {
     {
       id: "profit-loss-total",
       title: "Profit/Loss total",
-      value: formatCurrency(metrics.profitLossTotal, preferredCurrency),
+      value: formatMoney(metrics.profitLossTotal, preferredCurrency),
       subtitle: "Histórico acumulado",
       icon: TrendingUp,
       variant: metrics.profitLossTotal >= 0 ? ("success" as const) : ("risk" as const),
@@ -91,7 +81,7 @@ export default async function DashboardPage() {
     {
       id: "stake-total",
       title: "Stake total apostado",
-      value: formatCurrency(metrics.stakeTotal, preferredCurrency),
+      value: formatMoney(metrics.stakeTotal, preferredCurrency),
       subtitle: "Suma del stake registrado",
       icon: Wallet,
       variant: "default" as const,
@@ -115,7 +105,7 @@ export default async function DashboardPage() {
     {
       id: "average-stake",
       title: "Stake promedio",
-      value: formatCurrency(metrics.averageStake, preferredCurrency),
+      value: formatMoney(metrics.averageStake, preferredCurrency),
       subtitle: "Stake total / cantidad",
       icon: CircleDollarSign,
       variant: "default" as const,
@@ -123,8 +113,8 @@ export default async function DashboardPage() {
     {
       id: "average-odds",
       title: "Cuota promedio",
-      value: formatDecimal(metrics.averageOdds),
-      subtitle: "Promedio de cuotas registradas",
+      value: formatOdds(metrics.averageOdds, user.oddsFormat),
+      subtitle: user.oddsFormat === "AMERICAN" ? "Formato americano" : "Formato decimal",
       icon: Target,
       variant: "default" as const,
     },
@@ -274,7 +264,7 @@ export default async function DashboardPage() {
                     <span>
                       {bet.currency} {bet.stake.toString()}
                     </span>
-                    <span>Cuota {bet.odds.toString()}</span>
+                    <span>Cuota {formatOdds(Number(bet.odds), user.oddsFormat)}</span>
                   </div>
                 </Link>
               ))}

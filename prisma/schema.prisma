@@ -46,6 +46,11 @@ enum PlanType {
   PREMIUM_ANNUAL
 }
 
+enum OddsFormat {
+  DECIMAL
+  AMERICAN
+}
+
 model User {
   id                     String                   @id @default(cuid())
   email                  String                   @unique
@@ -58,6 +63,7 @@ model User {
   bankroll               Decimal?
   currency               String                   @default("USD")
   timezone               String                   @default("America/Santiago")
+  oddsFormat             OddsFormat               @default(DECIMAL)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   bets                   Bet[]

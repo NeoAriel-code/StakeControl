@@ -12,6 +12,7 @@ interface AppLayoutProps {
   pageTitle?: string;
   userName?: string;
   planLabel?: string;
+  plan?: "FREE" | "PREMIUM";
   /** Extra class names for the main content area */
   contentClassName?: string;
 }
@@ -25,6 +26,7 @@ export function AppLayout({
   pageTitle,
   userName,
   planLabel,
+  plan,
   contentClassName,
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +42,7 @@ export function AppLayout({
         pageTitle={pageTitle}
         userName={userName}
         planLabel={planLabel}
+        plan={plan}
       />
 
       {/* Main content area — offset below navbar and beside sidebar */}

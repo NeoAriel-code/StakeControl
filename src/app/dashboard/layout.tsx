@@ -12,6 +12,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       pageTitle="Dashboard"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
+      plan={plan}
     >
       {children}
     </AppLayout>

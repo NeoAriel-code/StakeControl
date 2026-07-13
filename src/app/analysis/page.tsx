@@ -24,6 +24,7 @@ import {
   AiResponsibleAnalysisService,
   type AnalysisCategory,
 } from "@/lib/ai-responsible-analysis-service";
+import { formatMoney } from "@/lib/currency-format";
 import { getFeatureAccess, getPlanLabel } from "@/lib/plans";
 
 export const metadata: Metadata = {
@@ -31,14 +32,6 @@ export const metadata: Metadata = {
   description:
     "Análisis premium preventivo basado en datos históricos, con reglas estrictas de juego responsable.",
 };
-
-function formatCurrency(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
-}
 
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
@@ -82,7 +75,7 @@ function CategoryList({
             <div>
               <h3 className="text-sm font-semibold text-foreground">{category.name}</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                {category.betCount} apuestas · {formatCurrency(category.stake, currency)} expuestos ·{" "}
+                {category.betCount} apuestas · {formatMoney(category.stake, currency)} expuestos ·{" "}
                 {formatPercent(category.exposurePct)} del stake
               </p>
             </div>
@@ -91,7 +84,7 @@ function CategoryList({
             </span>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Resultado histórico: {formatCurrency(category.profitLoss, currency)}.
+            Resultado histórico: {formatMoney(category.profitLoss, currency)}.
           </p>
         </article>
       ))}
@@ -142,21 +135,47 @@ export default async function AnalysisPage() {
 
   if (!access.allowed) {
     return (
-      <AppLayout pageTitle="Análisis IA" userName={user.name || user.email} planLabel={planLabel}>
+      <AppLayout pageTitle="Análisis IA" userName={user.name || user.email} planLabel={planLabel} plan={access.plan}>
         <UpgradeGate planLabel={planLabel} />
       </AppLayout>
     );
   }
 
   const service = new AiResponsibleAnalysisService();
-  const report = await service.generateMonthlyReport(user.id);
+  const reportResult = await service
+    .generateMonthlyReport(user.id)
+    .then((report) => ({ report, error: null }))
+    .catch((error: unknown) => ({
+      report: null,
+      error: error instanceof Error ? error.message : "No se pudo generar el análisis en este momento.",
+    }));
   const currency = user.currency;
+
+  if (!reportResult.report) {
+    return (
+      <AppLayout pageTitle="Análisis IA" userName={user.name || user.email} planLabel={planLabel} plan={access.plan}>
+        <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <PageHeader
+            title="Análisis IA responsable"
+            description="Lectura premium preventiva basada en tus datos históricos."
+            icon={BrainCircuit}
+            breadcrumb="StakeControl"
+          />
+          <section className="rounded-3xl border border-warning/30 bg-warning-soft p-6 text-warning-foreground shadow-sm">
+            {reportResult.error}
+          </section>
+        </section>
+      </AppLayout>
+    );
+  }
+
+  const report = reportResult.report;
 
   const metricCards = [
     {
       id: "total-stake",
       title: "Gasto total",
-      value: formatCurrency(report.totalStake, currency),
+      value: formatMoney(report.totalStake, currency),
       subtitle: report.periodLabel,
       icon: Wallet,
       variant: "default" as const,
@@ -204,7 +223,7 @@ export default async function AnalysisPage() {
   ];
 
   return (
-    <AppLayout pageTitle="Análisis IA" userName={user.name || user.email} planLabel={planLabel}>
+    <AppLayout pageTitle="Análisis IA" userName={user.name || user.email} planLabel={planLabel} plan={access.plan}>
       <section className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="Análisis IA responsable"

@@ -11,6 +11,7 @@ import {
   getPlanLabel,
 } from "@/lib/plans";
 import { isPauseActive } from "@/lib/responsible-gaming";
+import { formatOdds } from "@/lib/odds-format";
 
 const PAGE_SIZE = 10;
 
@@ -162,6 +163,7 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
       pageTitle="Apuestas"
       userName={user.name || user.email}
       planLabel={getPlanLabel(historyAccess.plan)}
+      plan={historyAccess.plan}
     >
       <section className="mx-auto max-w-7xl space-y-6">
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -415,7 +417,7 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                         <td className="px-4 py-3 text-text-secondary">
                           {bet.currency} {bet.stake.toString()}
                         </td>
-                        <td className="px-4 py-3 text-text-secondary">{bet.odds.toString()}</td>
+                        <td className="px-4 py-3 text-text-secondary">{formatOdds(Number(bet.odds), user.oddsFormat)}</td>
                         <td className="px-4 py-3 text-text-secondary">{bet.result}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-2">
@@ -474,7 +476,7 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                         </div>
                         <div>
                           <dt className="text-xs uppercase tracking-wider text-soft">Cuota</dt>
-                          <dd>{bet.odds.toString()}</dd>
+                          <dd>{formatOdds(Number(bet.odds), user.oddsFormat)}</dd>
                         </div>
                       </dl>
                     </div>

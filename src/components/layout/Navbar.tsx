@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell, Search, ChevronDown, User } from "lucide-react";
+import { Bell, ChevronDown, Crown, LogOut, Menu, Search, Settings, User, UserCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { logoutAction } from "@/lib/auth-actions";
 
 type UnreadAlert = {
   id: string;
@@ -20,14 +21,17 @@ interface NavbarProps {
   pageTitle?: string;
   userName?: string;
   planLabel?: string;
+  plan?: "FREE" | "PREMIUM";
 }
 
-export function Navbar({ onMenuToggle, pageTitle, userName, planLabel }: NavbarProps) {
+export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: NavbarProps) {
   const [pendingAlertCount, setPendingAlertCount] = useState(0);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [unreadAlerts, setUnreadAlerts] = useState<UnreadAlert[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const alertsMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   async function loadUnreadAlerts() {
     setAlertsLoading(true);
@@ -112,11 +116,16 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel }: NavbarP
       if (!alertsMenuRef.current?.contains(event.target as Node)) {
         setAlertsOpen(false);
       }
+
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setAlertsOpen(false);
+        setUserMenuOpen(false);
       }
     }
 
@@ -288,30 +297,87 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel }: NavbarP
         <div className="w-px h-5 bg-border mx-1" aria-hidden="true" />
 
         {/* User profile */}
-        <button
-          type="button"
-          id="user-profile-btn"
-          aria-label="Menú de usuario"
-          aria-haspopup="menu"
-          className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-xl",
-            "text-muted-foreground hover:text-primary hover:bg-accent",
-            "transition-colors"
-          )}
-        >
-          {/* Avatar placeholder */}
-          <div
-            className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0"
-            aria-hidden="true"
+        <div ref={userMenuRef} className="relative">
+          <button
+            type="button"
+            id="user-profile-btn"
+            aria-label="Menú de usuario"
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+            onClick={() => setUserMenuOpen((open) => !open)}
+            className={cn(
+              "flex items-center gap-2 px-2 py-1.5 rounded-xl",
+              "text-muted-foreground hover:text-primary hover:bg-accent",
+              "transition-colors"
+            )}
           >
-            <User size={14} strokeWidth={2} />
-          </div>
-          <div className="hidden sm:flex flex-col items-start leading-none">
-            <span className="text-xs font-semibold text-foreground">{userName ?? "StakeControl"}</span>
-            <span className="text-[10px] text-soft">{planLabel ?? "Plan Free"}</span>
-          </div>
-          <ChevronDown size={13} className="hidden sm:block text-soft" aria-hidden="true" />
-        </button>
+            <div
+              className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0"
+              aria-hidden="true"
+            >
+              <User size={14} strokeWidth={2} />
+            </div>
+            <div className="hidden sm:flex flex-col items-start leading-none">
+              <span className="text-xs font-semibold text-foreground">{userName ?? "StakeControl"}</span>
+              <span className="text-[10px] text-soft">{planLabel ?? "Plan Free"}</span>
+            </div>
+            <ChevronDown size={13} className="hidden sm:block text-soft" aria-hidden="true" />
+          </button>
+
+          {userMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Menú de usuario"
+              className="absolute right-0 top-11 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-xl"
+            >
+              <div className="border-b border-border px-3 py-3">
+                <p className="truncate text-sm font-semibold text-foreground">{userName ?? "StakeControl"}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{planLabel ?? "Plan Free"}</p>
+              </div>
+
+              <div className="py-2">
+                <Link
+                  href="/profile"
+                  role="menuitem"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                >
+                  <UserCircle size={16} />
+                  Perfil
+                </Link>
+                <Link
+                  href={plan === "PREMIUM" ? "/upgrade" : "/upgrade"}
+                  role="menuitem"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                >
+                  <Crown size={16} />
+                  {plan === "PREMIUM" ? "Plan" : "Upgrade"}
+                </Link>
+                <Link
+                  href="/settings"
+                  role="menuitem"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-foreground transition hover:bg-background"
+                >
+                  <Settings size={16} />
+                  Configuración
+                </Link>
+              </div>
+
+              <form action={logoutAction} className="border-t border-border pt-2">
+                <button
+                  type="submit"
+                  role="menuitem"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-danger transition hover:bg-danger-soft"
+                >
+                  <LogOut size={16} />
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ export default async function ExportReportsPage() {
   const defaultRange = getDefaultMonthRange();
 
   return (
-    <AppLayout pageTitle="Exportar CSV" userName={user.name || user.email} planLabel={planLabel}>
+    <AppLayout pageTitle="Exportar CSV" userName={user.name || user.email} planLabel={planLabel} plan={basicExportAccess.plan}>
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="Exportar CSV"

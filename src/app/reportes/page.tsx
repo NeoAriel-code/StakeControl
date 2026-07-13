@@ -36,6 +36,7 @@ export default async function ReportsPage() {
       pageTitle="Reportes"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
+      plan={plan}
     >
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader

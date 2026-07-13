@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { LimitsForm } from "@/components/limits/LimitsForm";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { requireUser } from "@/lib/auth";
+import { formatMoney } from "@/lib/currency-format";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import {
@@ -18,14 +19,6 @@ export const metadata: Metadata = {
   title: "Límites | StakeControl",
   description: "Configura límites personales, pausas voluntarias y revisa alertas de juego responsable.",
 };
-
-function formatCurrency(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
-}
 
 function statusConfig(status: LimitStatus) {
   switch (status) {
@@ -123,7 +116,7 @@ export default async function LimitsPage() {
       id: "daily",
       label: "Límite diario",
       summaryText: dailyLimit
-        ? `${formatCurrency(totals.dailyStake, user.currency)} de ${formatCurrency(dailyLimit, user.currency)}`
+        ? `${formatMoney(totals.dailyStake, user.currency)} de ${formatMoney(dailyLimit, user.currency)}`
         : "Sin límite configurado",
       status: dailyStatus,
     },
@@ -131,7 +124,7 @@ export default async function LimitsPage() {
       id: "weekly",
       label: "Límite semanal",
       summaryText: weeklyLimit
-        ? `${formatCurrency(totals.weeklyStake, user.currency)} de ${formatCurrency(weeklyLimit, user.currency)}`
+        ? `${formatMoney(totals.weeklyStake, user.currency)} de ${formatMoney(weeklyLimit, user.currency)}`
         : "Sin límite configurado",
       status: weeklyStatus,
     },
@@ -139,7 +132,7 @@ export default async function LimitsPage() {
       id: "monthly",
       label: "Límite mensual",
       summaryText: monthlyLimit
-        ? `${formatCurrency(totals.monthlyStake, user.currency)} de ${formatCurrency(monthlyLimit, user.currency)}`
+        ? `${formatMoney(totals.monthlyStake, user.currency)} de ${formatMoney(monthlyLimit, user.currency)}`
         : "Sin límite configurado",
       status: monthlyStatus,
       helperMessage:
@@ -151,11 +144,11 @@ export default async function LimitsPage() {
       id: "single",
       label: "Stake máximo por apuesta",
       summaryText: maxSingleStake
-        ? `Configurado en ${formatCurrency(maxSingleStake, user.currency)}`
+        ? `Configurado en ${formatMoney(maxSingleStake, user.currency)}`
         : "Sin límite configurado",
       status: maxSingleStake ? "WITHIN_LIMIT" : "WITHIN_LIMIT",
       helperMessage: maxSingleStake
-        ? `Se mostrará una advertencia fuerte si intentas guardar una apuesta sobre ${formatCurrency(
+        ? `Se mostrará una advertencia fuerte si intentas guardar una apuesta sobre ${formatMoney(
             maxSingleStake,
             user.currency
           )}.`
@@ -164,7 +157,7 @@ export default async function LimitsPage() {
   ];
 
   return (
-    <AppLayout pageTitle="Límites" userName={user.name || user.email} planLabel={getPlanLabel(plan)}>
+    <AppLayout pageTitle="Límites" userName={user.name || user.email} planLabel={getPlanLabel(plan)} plan={plan}>
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="Límites y juego responsable"
@@ -233,19 +226,19 @@ export default async function LimitsPage() {
                   <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Stake del día
                   </dt>
-                  <dd className="mt-1 text-sm text-foreground">{formatCurrency(totals.dailyStake, user.currency)}</dd>
+                  <dd className="mt-1 text-sm text-foreground">{formatMoney(totals.dailyStake, user.currency)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Stake de la semana
                   </dt>
-                  <dd className="mt-1 text-sm text-foreground">{formatCurrency(totals.weeklyStake, user.currency)}</dd>
+                  <dd className="mt-1 text-sm text-foreground">{formatMoney(totals.weeklyStake, user.currency)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Stake del mes
                   </dt>
-                  <dd className="mt-1 text-sm text-foreground">{formatCurrency(totals.monthlyStake, user.currency)}</dd>
+                  <dd className="mt-1 text-sm text-foreground">{formatMoney(totals.monthlyStake, user.currency)}</dd>
                 </div>
               </dl>
             </section>

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "oddsFormat" TEXT NOT NULL DEFAULT 'DECIMAL';
