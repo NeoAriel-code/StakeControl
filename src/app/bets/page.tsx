@@ -183,13 +183,13 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
 
             <div className="flex flex-wrap gap-3">
               <a
-                href="/api/bets/export.csv"
+                href="/reports/export"
                 className="inline-flex items-center justify-center rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
               >
                 Exportar CSV
               </a>
               <Link
-                href={advancedExportAccess.allowed ? "/reportes" : "/upgrade"}
+                href={advancedExportAccess.allowed ? "/reports/export" : "/upgrade"}
                 className={`inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition ${
                   advancedExportAccess.allowed
                     ? "border border-border-strong text-foreground hover:bg-background"

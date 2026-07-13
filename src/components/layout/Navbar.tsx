@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import { Menu, Bell, Search, ChevronDown, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+
+type UnreadAlert = {
+  id: string;
+  title: string;
+  message: string;
+  severity: "LOW" | "MEDIUM" | "HIGH";
+  createdAt: string;
+};
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -14,6 +23,117 @@ interface NavbarProps {
 }
 
 export function Navbar({ onMenuToggle, pageTitle, userName, planLabel }: NavbarProps) {
+  const [pendingAlertCount, setPendingAlertCount] = useState(0);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [unreadAlerts, setUnreadAlerts] = useState<UnreadAlert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const alertsMenuRef = useRef<HTMLDivElement>(null);
+
+  async function loadUnreadAlerts() {
+    setAlertsLoading(true);
+
+    try {
+      const response = await fetch("/api/alerts/unread", {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json()) as {
+        alerts?: UnreadAlert[];
+        count?: number;
+      };
+
+      setUnreadAlerts(data.alerts ?? []);
+      setPendingAlertCount(data.count ?? 0);
+    } finally {
+      setAlertsLoading(false);
+    }
+  }
+
+  async function markUnreadAlertsAsRead() {
+    const response = await fetch("/api/alerts/unread", {
+      method: "PATCH",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    setUnreadAlerts([]);
+    setPendingAlertCount(0);
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPendingAlertCount() {
+      try {
+        const response = await fetch("/api/alerts/unread-count", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { count?: number };
+
+        if (isMounted) {
+          setPendingAlertCount(data.count ?? 0);
+        }
+      } catch {
+        if (isMounted) {
+          setPendingAlertCount(0);
+        }
+      }
+    }
+
+    loadPendingAlertCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!alertsOpen) {
+      return;
+    }
+
+    loadUnreadAlerts();
+  }, [alertsOpen]);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!alertsMenuRef.current?.contains(event.target as Node)) {
+        setAlertsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAlertsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const notificationLabel =
+    pendingAlertCount > 0
+      ? `Ver alertas de juego responsable, ${pendingAlertCount} pendiente${pendingAlertCount === 1 ? "" : "s"}`
+      : "Ver alertas de juego responsable";
+
   return (
     <div className="app-navbar-bar" role="banner">
       {/* Left: hamburger (mobile) + optional page title */}
@@ -71,22 +191,98 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel }: NavbarP
         <ThemeToggle />
 
         {/* Notifications */}
-        <Link
-          href="/alerts"
-          id="notifications-btn"
-          aria-label="Ver alertas de juego responsable"
-          className={cn(
-            "relative flex items-center justify-center w-9 h-9 rounded-xl",
-            "text-muted-foreground hover:text-primary hover:bg-accent",
-            "transition-colors"
+        <div ref={alertsMenuRef} className="relative">
+          <button
+            type="button"
+            id="notifications-btn"
+            aria-label={notificationLabel}
+            aria-expanded={alertsOpen}
+            aria-haspopup="dialog"
+            onClick={() => setAlertsOpen((open) => !open)}
+            className={cn(
+              "relative flex items-center justify-center w-9 h-9 rounded-xl",
+              "text-muted-foreground hover:text-primary hover:bg-accent",
+              "transition-colors"
+            )}
+          >
+            <Bell size={18} />
+            {pendingAlertCount > 0 && (
+              <span
+                className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-destructive px-1 text-[10px] font-bold leading-none text-white"
+                aria-hidden="true"
+              >
+                {pendingAlertCount > 99 ? "99+" : pendingAlertCount}
+              </span>
+            )}
+          </button>
+
+          {alertsOpen && (
+            <div
+              role="dialog"
+              aria-label="Alertas no leídas"
+              className="absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-border bg-card p-3 shadow-xl"
+            >
+              <div className="flex items-start justify-between gap-3 px-1 pb-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Alertas no leídas</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {pendingAlertCount} pendiente{pendingAlertCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+                {pendingAlertCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={markUnreadAlertsAsRead}
+                    className="rounded-lg border border-border-strong px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background"
+                  >
+                    Marcar leídas
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-80 space-y-2 overflow-y-auto">
+                {alertsLoading ? (
+                  <div className="rounded-xl bg-background p-3 text-sm text-muted-foreground">
+                    Cargando alertas...
+                  </div>
+                ) : unreadAlerts.length === 0 ? (
+                  <div className="rounded-xl bg-background p-3 text-sm text-muted-foreground">
+                    No tienes alertas no leídas.
+                  </div>
+                ) : (
+                  unreadAlerts.map((alert) => (
+                    <article key={alert.id} className="rounded-xl border border-border bg-background p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-foreground">{alert.title}</h3>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                            alert.severity === "HIGH" && "bg-danger-soft text-danger",
+                            alert.severity === "MEDIUM" && "bg-warning-soft text-warning",
+                            alert.severity === "LOW" && "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {alert.severity}
+                        </span>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        {alert.message}
+                      </p>
+                    </article>
+                  ))
+                )}
+              </div>
+
+              <Link
+                href="/alerts"
+                onClick={() => setAlertsOpen(false)}
+                className="mt-3 flex items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+              >
+                Ver historial completo
+              </Link>
+            </div>
           )}
-        >
-          <Bell size={18} />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-card"
-            aria-hidden="true"
-          />
-        </Link>
+        </div>
 
         {/* Divider */}
         <div className="w-px h-5 bg-border mx-1" aria-hidden="true" />

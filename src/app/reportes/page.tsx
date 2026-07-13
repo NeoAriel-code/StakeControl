@@ -47,15 +47,23 @@ export default async function ReportsPage() {
 
         {hasPremiumAccess ? (
           <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <Crown size={20} className="mt-0.5 text-primary" />
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Espacio Premium habilitado</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Tu plan ya tiene acceso a reportes avanzados. Esta página queda lista como base para las próximas
-                  iteraciones de segmentación, exportación extendida e informe mensual.
-                </p>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-3">
+                <Crown size={20} className="mt-0.5 text-primary" />
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Espacio Premium habilitado</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Tu plan ya tiene acceso a reportes avanzados. Esta página queda lista como base para las próximas
+                    iteraciones de segmentación, exportación extendida e informe mensual.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/reports/export"
+                className="inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+              >
+                Exportar CSV
+              </Link>
             </div>
           </section>
         ) : (
@@ -72,12 +80,20 @@ export default async function ReportsPage() {
                   quedan reservados para Premium. El MVP puede seguir operando con Free sin tocar este flujo.
                 </p>
               </div>
-              <Link
-                href="/upgrade"
-                className="inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
-              >
-                Ver comparación de planes
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/reports/export"
+                  className="inline-flex rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
+                >
+                  Exportar CSV básico
+                </Link>
+                <Link
+                  href="/upgrade"
+                  className="inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                >
+                  Ver comparación de planes
+                </Link>
+              </div>
             </div>
           </section>
         )}
