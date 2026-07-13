@@ -1,4 +1,5 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import Link from "next/link";
 import { redirectAuthenticatedUser } from "@/lib/auth";
 
 export default async function RegisterPage() {
@@ -19,6 +20,14 @@ export default async function RegisterPage() {
 
         <RegisterForm />
       </div>
+      <footer className="mx-auto mt-6 flex max-w-md justify-center gap-4 text-xs text-muted-foreground">
+        <Link href="/terms" className="hover:text-primary">
+          Términos
+        </Link>
+        <Link href="/privacy" className="hover:text-primary">
+          Privacidad
+        </Link>
+      </footer>
     </div>
   );
 }

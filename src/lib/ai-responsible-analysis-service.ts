@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { assertResponsibleAnalysisOutput } from "@/lib/ai-responsible-output-filter";
+import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 
 export const AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION = "responsible-analysis-v1";
 
@@ -221,6 +222,16 @@ function buildPreventiveMessages(report: Pick<AiResponsibleAnalysisReport, "stak
 
 export class AiResponsibleAnalysisService {
   async generateMonthlyReport(userId: string, referenceDate = new Date()) {
+    const rateLimit = checkRateLimit({
+      key: `ai-analysis:${userId}`,
+      limit: 20,
+      windowMs: 60 * 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      throw new Error(formatRateLimitMessage(rateLimit.resetAt));
+    }
+
     const { start, end, previousStart } = getMonthBounds(referenceDate);
 
     const [monthBetsRaw, previousMonthBetsRaw, historicalBetsRaw] = await Promise.all([

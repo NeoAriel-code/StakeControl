@@ -1,7 +1,9 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { DeleteAccountForm } from "@/components/auth/DeleteAccountForm";
 import { logoutAction } from "@/lib/auth-actions";
 import { requireUser } from "@/lib/auth";
 import { getMonthlyOcrTicketUsage, getPlanLabel, getUserPlan } from "@/lib/plans";
+import Link from "next/link";
 
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -15,6 +17,7 @@ export default async function ProfilePage() {
       pageTitle="Perfil"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
+      plan={plan}
     >
       <section className="mx-auto max-w-3xl space-y-6">
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -83,6 +86,39 @@ export default async function ProfilePage() {
               Cerrar sesión
             </button>
           </form>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-foreground">Documentos legales</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Consulta los términos de uso y la política de privacidad del MVP.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/terms"
+              className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
+            >
+              Términos
+            </Link>
+            <Link
+              href="/privacy"
+              className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
+            >
+              Privacidad
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-danger-border bg-card p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-danger">
+            Zona de riesgo
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-foreground">Eliminar cuenta</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Esta acción elimina tu usuario, apuestas, tickets, reportes, alertas y archivos privados asociados.
+            No se puede deshacer.
+          </p>
+          <DeleteAccountForm />
         </div>
       </section>
     </AppLayout>

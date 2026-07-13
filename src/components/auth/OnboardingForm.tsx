@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { completeOnboardingAction, type AuthActionState } from "@/lib/auth-actions";
 import { SubmitButton } from "@/components/auth/SubmitButton";
@@ -63,7 +64,15 @@ export function OnboardingForm({ email }: OnboardingFormProps) {
       </OnboardingCheckbox>
 
       <OnboardingCheckbox id="termsAccepted" name="termsAccepted">
-        Acepto términos y política de privacidad.
+        Acepto los{" "}
+        <Link href="/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
+          términos
+        </Link>{" "}
+        y la{" "}
+        <Link href="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
+          política de privacidad
+        </Link>
+        .
       </OnboardingCheckbox>
 
       {state.error && (

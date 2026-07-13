@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
+import { getStorageService, isPrivateStorageReference, sanitizeUploadedFileName } from "@/lib/storage";
+import { buildUserScopedWhere } from "@/lib/security-scopes";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -16,10 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   const ticketImage = await prisma.betTicketImage.findFirst({
-    where: {
-      id,
-      userId: user.id,
-    },
+    where: buildUserScopedWhere(user.id, id),
   });
 
   if (!ticketImage) {
@@ -37,7 +35,7 @@ export async function GET(_request: Request, context: RouteContext) {
     status: 200,
     headers: {
       "Content-Type": ticketImage.mimeType || storedObject.mimeType,
-      "Content-Disposition": `inline; filename="${ticketImage.fileName || storedObject.fileName}"`,
+      "Content-Disposition": `inline; filename="${sanitizeUploadedFileName(ticketImage.fileName || storedObject.fileName)}"`,
       "Cache-Control": "private, no-store, max-age=0",
       "X-Robots-Tag": "noindex, nofollow",
     },

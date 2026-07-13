@@ -5,13 +5,15 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
-import { getStorageService } from "@/lib/storage";
+import { getStorageService, sanitizeUploadedFileName } from "@/lib/storage";
 import { createOcrService } from "@/lib/ocr-service";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
 import { reviewedTicketBetSchema } from "@/lib/ticket-extraction";
 import { Prisma } from "@prisma/client";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
+import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
+import { buildUserScopedWhere } from "@/lib/security-scopes";
 
 const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -56,11 +58,35 @@ function validateTicketFile(file: File) {
   }
 }
 
+function validateFileSignature(buffer: Buffer, mimeType: string) {
+  const signatures: Record<string, (buffer: Buffer) => boolean> = {
+    "image/jpeg": (value) => value[0] === 0xff && value[1] === 0xd8 && value[2] === 0xff,
+    "image/png": (value) => value.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+    "image/webp": (value) =>
+      value.subarray(0, 4).toString("ascii") === "RIFF" && value.subarray(8, 12).toString("ascii") === "WEBP",
+    "application/pdf": (value) => value.subarray(0, 5).toString("ascii") === "%PDF-",
+  };
+
+  if (!signatures[mimeType]?.(buffer)) {
+    throw new Error("El contenido del archivo no coincide con el formato declarado.");
+  }
+}
+
 export async function uploadTicketAction(
   _prevState: TicketUploadActionState,
   formData: FormData
 ): Promise<TicketUploadActionState> {
   const user = await requireUser();
+  const rateLimit = checkRateLimit({
+    key: `upload:${user.id}`,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: formatRateLimitMessage(rateLimit.resetAt) };
+  }
+
   const limits = await prisma.userLimits.findUnique({
     where: { userId: user.id },
   });
@@ -94,13 +120,16 @@ export async function uploadTicketAction(
     validateTicketFile(fileEntry);
 
     const buffer = Buffer.from(await fileEntry.arrayBuffer());
+    validateFileSignature(buffer, fileEntry.type);
+
+    const safeFileName = sanitizeUploadedFileName(fileEntry.name);
     const storage = getStorageService();
     const ocrService = createOcrService();
     const aiExtractionService = createAiExtractionService();
     const storedObject = await storage.savePrivateObject({
       userId: user.id,
       namespace: "tickets",
-      fileName: fileEntry.name,
+      fileName: safeFileName,
       mimeType: fileEntry.type,
       buffer,
     });
@@ -109,7 +138,7 @@ export async function uploadTicketAction(
       data: {
         userId: user.id,
         imageUrl: storedObject.reference,
-        fileName: fileEntry.name,
+        fileName: safeFileName,
         mimeType: fileEntry.type,
         fileSizeBytes: storedObject.byteLength,
       },
@@ -158,10 +187,7 @@ export async function finalizeTicketReviewAction(
   const user = await requireUser();
 
   const ticketImage = await prisma.betTicketImage.findFirst({
-    where: {
-      id: ticketId,
-      userId: user.id,
-    },
+    where: buildUserScopedWhere(user.id, ticketId),
     include: {
       aiExtraction: true,
     },

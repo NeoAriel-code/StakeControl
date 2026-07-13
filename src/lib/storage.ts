@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -30,10 +30,12 @@ type RetrievedObject = {
 export interface StorageService {
   savePrivateObject(input: SavePrivateObjectInput): Promise<StoredObject>;
   getPrivateObject(reference: string): Promise<RetrievedObject>;
+  deletePrivateObject(reference: string): Promise<void>;
 }
 
-function sanitizeFileName(fileName: string) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
+export function sanitizeUploadedFileName(fileName: string) {
+  const baseName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, "-");
+  return baseName.slice(0, 120) || "ticket";
 }
 
 function getFileExtension(fileName: string) {
@@ -43,7 +45,7 @@ function getFileExtension(fileName: string) {
 
 class LocalStorageService implements StorageService {
   async savePrivateObject(input: SavePrivateObjectInput): Promise<StoredObject> {
-    const sanitizedFileName = sanitizeFileName(input.fileName);
+    const sanitizedFileName = sanitizeUploadedFileName(input.fileName);
     const extension = getFileExtension(sanitizedFileName);
     const objectName = `${randomUUID()}${extension}`;
     const relativeDirectory = path.join(input.namespace, input.userId);
@@ -67,6 +69,10 @@ class LocalStorageService implements StorageService {
     }
 
     const relativePath = reference.slice(LOCAL_REFERENCE_PREFIX.length);
+    if (path.isAbsolute(relativePath) || relativePath.includes("..")) {
+      throw new Error("Invalid storage reference.");
+    }
+
     const absolutePath = path.join(LOCAL_STORAGE_ROOT, relativePath);
     const buffer = await readFile(absolutePath);
 
@@ -75,6 +81,27 @@ class LocalStorageService implements StorageService {
       mimeType: inferMimeTypeFromExtension(path.extname(relativePath).toLowerCase()),
       fileName: path.basename(relativePath),
     };
+  }
+
+  async deletePrivateObject(reference: string): Promise<void> {
+    if (!reference.startsWith(LOCAL_REFERENCE_PREFIX)) {
+      return;
+    }
+
+    const relativePath = reference.slice(LOCAL_REFERENCE_PREFIX.length);
+    if (path.isAbsolute(relativePath) || relativePath.includes("..")) {
+      throw new Error("Invalid storage reference.");
+    }
+
+    const absolutePath = path.join(LOCAL_STORAGE_ROOT, relativePath);
+
+    try {
+      await unlink(absolutePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
   }
 }
 

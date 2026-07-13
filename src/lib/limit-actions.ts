@@ -2,6 +2,7 @@
 
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
@@ -11,17 +12,22 @@ export type LimitsActionState = {
   success?: string;
 };
 
-function parseOptionalNumber(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || value.trim() === "") {
-    return null;
-  }
+const optionalLimitSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? Number(value) : null))
+  .pipe(z.number().min(0, "Los límites deben ser números mayores o iguales a 0.").nullable());
 
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error("Los límites deben ser números mayores o iguales a 0.");
-  }
+const limitsSchema = z.object({
+  dailyStakeLimit: optionalLimitSchema,
+  weeklyStakeLimit: optionalLimitSchema,
+  monthlyStakeLimit: optionalLimitSchema,
+  maxStakePerBet: optionalLimitSchema,
+});
 
-  return new Prisma.Decimal(parsed.toString());
+function toDecimalOrNull(value: number | null) {
+  return value === null ? null : new Prisma.Decimal(value.toString());
 }
 
 function resolvePauseUntil(formData: FormData, currentPauseUntil: Date | null | undefined) {
@@ -78,10 +84,16 @@ export async function updateLimitsAction(
     const existingLimits = await prisma.userLimits.findUnique({
       where: { userId: user.id },
     });
-    const dailyStakeLimit = parseOptionalNumber(formData.get("dailyStakeLimit"));
-    const weeklyStakeLimit = parseOptionalNumber(formData.get("weeklyStakeLimit"));
-    const monthlyStakeLimit = parseOptionalNumber(formData.get("monthlyStakeLimit"));
-    const maxStakePerBet = parseOptionalNumber(formData.get("maxStakePerBet"));
+    const parsedLimits = limitsSchema.parse({
+      dailyStakeLimit: formData.get("dailyStakeLimit")?.toString(),
+      weeklyStakeLimit: formData.get("weeklyStakeLimit")?.toString(),
+      monthlyStakeLimit: formData.get("monthlyStakeLimit")?.toString(),
+      maxStakePerBet: formData.get("maxStakePerBet")?.toString(),
+    });
+    const dailyStakeLimit = toDecimalOrNull(parsedLimits.dailyStakeLimit);
+    const weeklyStakeLimit = toDecimalOrNull(parsedLimits.weeklyStakeLimit);
+    const monthlyStakeLimit = toDecimalOrNull(parsedLimits.monthlyStakeLimit);
+    const maxStakePerBet = toDecimalOrNull(parsedLimits.maxStakePerBet);
     const pauseUntil = resolvePauseUntil(formData, existingLimits?.pauseUntil);
 
     await prisma.userLimits.upsert({

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import {
   clearSession,
@@ -11,14 +12,29 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { PlanType } from "@prisma/client";
+import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
+import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
 
 export type AuthActionState = {
   error?: string;
 };
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
+const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Ingresa un email válido."),
+  password: z.string().min(1, "Ingresa tu contraseña."),
+});
+
+const registerSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email("Ingresa un email válido."),
+    name: z.string().trim().max(100, "El nombre es demasiado largo.").optional(),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+    confirmPassword: z.string(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
+  });
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -29,11 +45,24 @@ export async function loginAction(
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
-  const email = normalizeEmail(getString(formData, "email"));
-  const password = getString(formData, "password");
+  const parsed = loginSchema.safeParse({
+    email: getString(formData, "email"),
+    password: getString(formData, "password"),
+  });
 
-  if (!email || !password) {
-    return { error: "Ingresa tu email y contraseña." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa tus credenciales." };
+  }
+
+  const { email, password } = parsed.data;
+  const rateLimit = checkRateLimit({
+    key: `login:${email}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: formatRateLimitMessage(rateLimit.resetAt) };
   }
 
   const user = await prisma.user.findUnique({
@@ -52,23 +81,18 @@ export async function registerAction(
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
-  const email = normalizeEmail(getString(formData, "email"));
-  const name = getString(formData, "name");
-  const password = getString(formData, "password");
-  const confirmPassword = getString(formData, "confirmPassword");
+  const parsed = registerSchema.safeParse({
+    email: getString(formData, "email"),
+    name: getString(formData, "name") || undefined,
+    password: getString(formData, "password"),
+    confirmPassword: getString(formData, "confirmPassword"),
+  });
 
-  if (!email.includes("@")) {
-    return { error: "Ingresa un email válido." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos de registro." };
   }
 
-  if (password.length < 8) {
-    return { error: "La contraseña debe tener al menos 8 caracteres." };
-  }
-
-  if (password !== confirmPassword) {
-    return { error: "Las contraseñas no coinciden." };
-  }
-
+  const { email, name, password } = parsed.data;
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -131,6 +155,37 @@ export async function completeOnboardingAction(
 }
 
 export async function logoutAction() {
+  await clearSession();
+  redirect("/login");
+}
+
+export async function deleteAccountAction(
+  _prevState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const user = await requireUser();
+  const confirmation = getString(formData, "confirmation");
+
+  if (confirmation !== "ELIMINAR") {
+    return { error: "Debes escribir ELIMINAR para confirmar la eliminación de cuenta." };
+  }
+
+  const ticketImages = await prisma.betTicketImage.findMany({
+    where: { userId: user.id },
+    select: { imageUrl: true },
+  });
+  const storage = getStorageService();
+
+  for (const ticketImage of ticketImages) {
+    if (isPrivateStorageReference(ticketImage.imageUrl)) {
+      await storage.deletePrivateObject(ticketImage.imageUrl);
+    }
+  }
+
+  await prisma.user.delete({
+    where: { id: user.id },
+  });
+
   await clearSession();
   redirect("/login");
 }
