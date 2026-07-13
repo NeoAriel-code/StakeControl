@@ -57,6 +57,7 @@ model User {
   passwordHash           String                   @default("")
   name                   String?
   country                String?
+  preferredSports        String?
   ageConfirmed           Boolean                  @default(false)
   termsAcceptedAt        DateTime?
   responsibleGamingAcceptedAt DateTime?

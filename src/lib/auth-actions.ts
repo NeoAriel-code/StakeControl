@@ -11,7 +11,7 @@ import {
   requireUser,
   verifyPassword,
 } from "@/lib/auth";
-import { PlanType } from "@prisma/client";
+import { PlanType, Prisma } from "@prisma/client";
 import { COUNTRY_CODES, getCountryRegistrationDefaults } from "@/lib/countries";
 import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
 import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
@@ -46,9 +46,35 @@ const registerSchema = z
     path: ["confirmPassword"],
   });
 
+const optionalOnboardingLimitSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? Number(value) : null))
+  .pipe(z.number().min(0, "Los límites deben ser mayores o iguales a 0.").nullable());
+
+const onboardingSchema = z.object({
+  ageConfirmed: z.boolean(),
+  platformDisclaimerAccepted: z.literal(true, {
+    error: "Debes confirmar que StakeControl no recomienda apuestas.",
+  }),
+  performanceDisclaimerAccepted: z.literal(true, {
+    error: "Debes confirmar que el rendimiento pasado no garantiza resultados futuros.",
+  }),
+  termsAccepted: z.boolean(),
+  preferredSports: z.array(z.string().trim().min(1)).max(6).default([]),
+  weeklyStakeLimit: optionalOnboardingLimitSchema,
+  monthlyStakeLimit: optionalOnboardingLimitSchema,
+  maxStakePerBet: optionalOnboardingLimitSchema,
+});
+
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function toDecimalOrNull(value: number | null) {
+  return value === null ? null : new Prisma.Decimal(value.toString());
 }
 
 export async function loginAction(
@@ -150,28 +176,57 @@ export async function completeOnboardingAction(
 ): Promise<AuthActionState> {
   const user = await requireUser({ allowIncompleteOnboarding: true });
 
-  const ageConfirmed = user.ageConfirmed || formData.get("ageConfirmed") === "on";
-  const platformDisclaimerAccepted = formData.get("platformDisclaimerAccepted") === "on";
-  const performanceDisclaimerAccepted = formData.get("performanceDisclaimerAccepted") === "on";
-  const termsAccepted = Boolean(user.termsAcceptedAt) || formData.get("termsAccepted") === "on";
+  const parsed = onboardingSchema.safeParse({
+    ageConfirmed: user.ageConfirmed || formData.get("ageConfirmed") === "on",
+    platformDisclaimerAccepted: formData.get("platformDisclaimerAccepted") === "on",
+    performanceDisclaimerAccepted: formData.get("performanceDisclaimerAccepted") === "on",
+    termsAccepted: Boolean(user.termsAcceptedAt) || formData.get("termsAccepted") === "on",
+    preferredSports: formData.getAll("preferredSports").map((value) => String(value)),
+    weeklyStakeLimit: getString(formData, "weeklyStakeLimit"),
+    monthlyStakeLimit: getString(formData, "monthlyStakeLimit"),
+    maxStakePerBet: getString(formData, "maxStakePerBet"),
+  });
 
-  if (!ageConfirmed || !platformDisclaimerAccepted || !performanceDisclaimerAccepted || !termsAccepted) {
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Debes completar el onboarding para continuar." };
+  }
+
+  if (!parsed.data.ageConfirmed || !parsed.data.termsAccepted) {
     return { error: "Debes aceptar todas las confirmaciones para continuar." };
   }
 
   const now = new Date();
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      ageConfirmed: true,
-      responsibleGamingAcceptedAt: now,
-      termsAcceptedAt: user.termsAcceptedAt ?? now,
-      onboardingCompletedAt: now,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        ageConfirmed: true,
+        responsibleGamingAcceptedAt: now,
+        termsAcceptedAt: user.termsAcceptedAt ?? now,
+        onboardingCompletedAt: now,
+        preferredSports:
+          parsed.data.preferredSports.length > 0 ? parsed.data.preferredSports.join(",") : null,
+      },
+    });
+
+    await tx.userLimits.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        weeklyStakeLimit: toDecimalOrNull(parsed.data.weeklyStakeLimit),
+        monthlyStakeLimit: toDecimalOrNull(parsed.data.monthlyStakeLimit),
+        maxStakePerBet: toDecimalOrNull(parsed.data.maxStakePerBet),
+      },
+      update: {
+        weeklyStakeLimit: toDecimalOrNull(parsed.data.weeklyStakeLimit),
+        monthlyStakeLimit: toDecimalOrNull(parsed.data.monthlyStakeLimit),
+        maxStakePerBet: toDecimalOrNull(parsed.data.maxStakePerBet),
+      },
+    });
   });
 
-  redirect("/dashboard");
+  redirect("/health");
 }
 
 export async function logoutAction() {

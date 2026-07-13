@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   PauseCircle,
+  HeartPulse,
+  DatabaseZap,
 } from "lucide-react";
 
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -29,6 +31,7 @@ import { calculateDashboardMetrics } from "@/lib/dashboard-metrics";
 import { formatMoney } from "@/lib/currency-format";
 import { isPauseActive } from "@/lib/responsible-gaming";
 import { formatOdds } from "@/lib/odds-format";
+import { createDemoDataAction } from "@/lib/demo-actions";
 
 export const metadata: Metadata = {
   title: "Dashboard | StakeControl",
@@ -202,6 +205,27 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/health"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-strong bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
+          >
+            <HeartPulse size={16} />
+            Ver salud de juego
+          </Link>
+          {allBets.length === 0 && (
+            <form action={createDemoDataAction}>
+              <button
+                type="submit"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary-hover"
+              >
+                <DatabaseZap size={16} />
+                Cargar datos demo
+              </button>
+            </form>
+          )}
+        </div>
+
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-border bg-background/70 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -291,13 +315,24 @@ export default async function DashboardPage() {
                 title="Sin registros todavía"
                 description="Crea tu primer registro para empezar a construir un historial privado de control."
                 action={
-                  <Link
-                    href="/bets/new"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
-                  >
-                    <PlusCircle size={14} />
-                  Registrar control
-                  </Link>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Link
+                      href="/bets/new"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+                    >
+                      <PlusCircle size={14} />
+                      Registrar control
+                    </Link>
+                    <form action={createDemoDataAction}>
+                      <button
+                        type="submit"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border-strong bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-background"
+                      >
+                        <DatabaseZap size={14} />
+                        Cargar demo
+                      </button>
+                    </form>
+                  </div>
                 }
               />
             </div>

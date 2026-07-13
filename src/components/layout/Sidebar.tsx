@@ -12,6 +12,7 @@ import {
   Bell,
   BrainCircuit,
   BarChart3,
+  HeartPulse,
   User,
   Sliders,
   ChevronRight,
@@ -64,6 +65,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Límites",
     href: "/limits",
     icon: Gauge,
+    group: "control",
+  },
+  {
+    id: "health",
+    label: "Salud de juego",
+    href: "/health",
+    icon: HeartPulse,
     group: "control",
   },
   {

@@ -4,6 +4,7 @@ import { logoutAction } from "@/lib/auth-actions";
 import { requireUser } from "@/lib/auth";
 import { getMonthlyOcrTicketUsage, getPlanLabel, getUserPlan } from "@/lib/plans";
 import { getCountryName } from "@/lib/countries";
+import { parsePreferredSports } from "@/lib/sports";
 import Link from "next/link";
 
 export default async function ProfilePage() {
@@ -12,6 +13,7 @@ export default async function ProfilePage() {
     getUserPlan(user.id),
     getMonthlyOcrTicketUsage(user.id),
   ]);
+  const preferredSports = parsePreferredSports(user.preferredSports);
 
   return (
     <AppLayout
@@ -56,6 +58,25 @@ export default async function ProfilePage() {
                 Moneda principal
               </dt>
               <dd className="mt-1 text-sm text-foreground">{user.currency}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Deportes principales
+              </dt>
+              <dd className="mt-2 flex flex-wrap gap-2">
+                {preferredSports.length > 0 ? (
+                  preferredSports.map((sport) => (
+                    <span
+                      key={sport}
+                      className="rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-foreground"
+                    >
+                      {sport}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-foreground">No definidos</span>
+                )}
+              </dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">

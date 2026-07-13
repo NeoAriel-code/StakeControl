@@ -7,6 +7,7 @@ import { hashPassword, requireUser, verifyPassword } from "@/lib/auth";
 import { COUNTRY_CODES } from "@/lib/countries";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import prisma from "@/lib/prisma";
+import { SPORT_OPTIONS } from "@/lib/sports";
 
 export type SettingsActionState = {
   error?: string;
@@ -27,6 +28,7 @@ const profilePreferencesSchema = z.object({
   oddsFormat: z.nativeEnum(OddsFormat, {
     error: "Selecciona un formato de cuota válido.",
   }),
+  preferredSports: z.array(z.enum(SPORT_OPTIONS)).max(6, "Selecciona hasta 6 deportes principales."),
 });
 
 const passwordSchema = z
@@ -56,6 +58,7 @@ export async function updateProfilePreferencesAction(
     currency: getString(formData, "currency"),
     timezone: getString(formData, "timezone"),
     oddsFormat: getString(formData, "oddsFormat"),
+    preferredSports: formData.getAll("preferredSports").map((value) => String(value)),
   });
 
   if (!parsed.success) {
@@ -70,6 +73,8 @@ export async function updateProfilePreferencesAction(
       currency: parsed.data.currency,
       timezone: parsed.data.timezone,
       oddsFormat: parsed.data.oddsFormat,
+      preferredSports:
+        parsed.data.preferredSports.length > 0 ? parsed.data.preferredSports.join(",") : null,
     },
   });
 

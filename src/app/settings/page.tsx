@@ -7,6 +7,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ProfilePreferencesForm } from "@/components/settings/ProfilePreferencesForm";
 import { requireUser } from "@/lib/auth";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
+import { parsePreferredSports } from "@/lib/sports";
 
 export const metadata: Metadata = {
   title: "Configuración | StakeControl",
@@ -50,6 +51,7 @@ export default async function SettingsPage() {
                 currency: user.currency,
                 timezone: user.timezone,
                 oddsFormat: user.oddsFormat,
+                preferredSports: parsePreferredSports(user.preferredSports),
               }}
             />
           </div>

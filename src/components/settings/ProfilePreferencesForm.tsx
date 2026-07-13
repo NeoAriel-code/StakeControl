@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { CURRENCY_OPTIONS } from "@/lib/currencies";
 import { updateProfilePreferencesAction, type SettingsActionState } from "@/lib/settings-actions";
+import { SPORT_OPTIONS } from "@/lib/sports";
 
 const initialState: SettingsActionState = {};
 
@@ -14,6 +15,7 @@ type ProfilePreferencesFormProps = {
     currency: string;
     timezone: string;
     oddsFormat: "DECIMAL" | "AMERICAN";
+    preferredSports: string[];
   };
 };
 
@@ -87,6 +89,34 @@ export function ProfilePreferencesForm({ defaultValues }: ProfilePreferencesForm
             <option value="DECIMAL">Decimal (1.85)</option>
             <option value="AMERICAN">Americana (-118 / +150)</option>
           </select>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-background p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Deportes principales</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sirven para personalizar lenguaje y vistas. No se usan para recomendar apuestas.
+          </p>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {SPORT_OPTIONS.map((sport) => (
+            <label
+              key={sport}
+              htmlFor={`settings-sport-${sport}`}
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-accent/50"
+            >
+              <input
+                id={`settings-sport-${sport}`}
+                name="preferredSports"
+                type="checkbox"
+                value={sport}
+                defaultChecked={defaultValues.preferredSports.includes(sport)}
+                className="h-4 w-4 rounded border-border-strong text-primary focus:ring-primary"
+              />
+              {sport}
+            </label>
+          ))}
         </div>
       </div>
 
