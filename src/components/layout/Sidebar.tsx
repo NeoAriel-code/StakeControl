@@ -10,6 +10,7 @@ import {
   Ticket,
   Gauge,
   Bell,
+  BrainCircuit,
   BarChart3,
   User,
   Sliders,
@@ -70,6 +71,14 @@ const NAV_ITEMS: NavItem[] = [
     label: "Alertas",
     href: "/alerts",
     icon: Bell,
+    group: "control",
+  },
+  {
+    id: "analysis",
+    label: "Análisis IA",
+    href: "/analysis",
+    icon: BrainCircuit,
+    badge: "PRO",
     group: "control",
   },
   {

@@ -14,7 +14,8 @@ export type PlanFeature =
   | "csv_export_basic"
   | "export_advanced"
   | "advanced_segmentation"
-  | "monthly_report";
+  | "monthly_report"
+  | "ai_responsible_analysis";
 
 export type FeatureAccess = {
   allowed: boolean;
@@ -78,6 +79,7 @@ export async function getFeatureAccess(userId: string, feature: PlanFeature): Pr
     case "export_advanced":
     case "advanced_segmentation":
     case "monthly_report":
+    case "ai_responsible_analysis":
       return {
         allowed: plan === "PREMIUM",
         plan,

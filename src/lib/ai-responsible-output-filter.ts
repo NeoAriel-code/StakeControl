@@ -1,0 +1,24 @@
+const FORBIDDEN_OUTPUT_PHRASES = [
+  "apuesta en este mercado",
+  "este mercado es seguro",
+  "aquí ganarás más",
+  "aqui ganaras mas",
+  "sube tu stake",
+  "recupera pérdidas",
+  "recupera perdidas",
+];
+
+function normalizeText(value: string) {
+  return value.toLocaleLowerCase("es-CL");
+}
+
+export function assertResponsibleAnalysisOutput(value: unknown) {
+  const serialized = normalizeText(JSON.stringify(value));
+  const blockedPhrase = FORBIDDEN_OUTPUT_PHRASES.find((phrase) =>
+    serialized.includes(normalizeText(phrase))
+  );
+
+  if (blockedPhrase) {
+    throw new Error(`El análisis IA contiene lenguaje prohibido: ${blockedPhrase}`);
+  }
+}

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx --test tests/dashboard-metrics.test.mts",
+    "test": "node --import tsx --test tests/*.test.mts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "node prisma/seed.mjs",

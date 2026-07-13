@@ -195,6 +195,9 @@ model MonthlyReport {
   roi            Decimal   @default(0)
   hitRate        Decimal?
   netUnits       Decimal?
+  analysisData   Json?
+  safePromptVersion String?
+  analysisGeneratedAt DateTime?
   generatedAt    DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
