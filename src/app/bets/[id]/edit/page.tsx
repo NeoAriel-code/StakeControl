@@ -48,6 +48,7 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
       pageTitle="Editar apuesta"
       userName={user.name || user.email}
       planLabel={getPlanLabel(plan)}
+      plan={plan}
     >
       <section className="mx-auto max-w-4xl space-y-6">
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">

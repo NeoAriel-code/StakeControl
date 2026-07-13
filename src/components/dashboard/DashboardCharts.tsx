@@ -1,5 +1,7 @@
 "use client";
 
+import { formatMoney } from "@/lib/currency-format";
+
 type MonthlyProfitLossDatum = {
   month: string;
   profitLoss: number;
@@ -30,14 +32,6 @@ function formatMonth(month: string) {
   const [year, numericMonth] = month.split("-");
   const date = new Date(Number(year), Number(numericMonth) - 1, 1);
   return new Intl.DateTimeFormat("es-CL", { month: "short", year: "2-digit" }).format(date);
-}
-
-function formatCurrency(value: number, currency: string) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
 }
 
 export function DashboardCharts({
@@ -75,13 +69,13 @@ export function DashboardCharts({
                 return (
                   <div key={entry.month} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
                     <span className="text-[11px] font-medium text-muted-foreground">
-                      {formatCurrency(entry.profitLoss, currency)}
+                      {formatMoney(entry.profitLoss, currency)}
                     </span>
                     <div className="flex h-[220px] w-full items-end rounded-xl bg-card/70 px-2 py-2">
                       <div
                         className={`w-full rounded-lg ${isPositive ? "bg-emerald-500" : "bg-rose-500"}`}
                         style={{ height: `${heightPct}%` }}
-                        title={`${formatMonth(entry.month)}: ${formatCurrency(entry.profitLoss, currency)}`}
+                        title={`${formatMonth(entry.month)}: ${formatMoney(entry.profitLoss, currency)}`}
                       />
                     </div>
                     <span className="text-xs font-semibold text-text-secondary">
@@ -105,7 +99,7 @@ export function DashboardCharts({
                         entry.profitLoss >= 0 ? "text-emerald-500" : "text-rose-500"
                       }`}
                     >
-                      {formatCurrency(entry.profitLoss, currency)}
+                      {formatMoney(entry.profitLoss, currency)}
                     </p>
                   </div>
                 ))}
@@ -139,7 +133,7 @@ export function DashboardCharts({
                   />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {formatCurrency(entry.stake, currency)} del stake total
+                  {formatMoney(entry.stake, currency)} del stake total
                 </p>
               </div>
             ))}
@@ -161,7 +155,7 @@ export function DashboardCharts({
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-foreground">{entry.name}</span>
                   <span className="text-xs font-medium text-muted-foreground">
-                    {formatCurrency(entry.stake, currency)} · {entry.exposurePct.toFixed(2)}%
+                    {formatMoney(entry.stake, currency)} · {entry.exposurePct.toFixed(2)}%
                   </span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-card">

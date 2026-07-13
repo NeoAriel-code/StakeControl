@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import type { BetResult, BetType } from "@prisma/client";
 import type { BetActionState } from "@/lib/bet-actions";
 import { betResultOptions, betTypeOptions } from "@/lib/bet-schemas";
+import { CURRENCY_OPTIONS, isSupportedCurrency } from "@/lib/currencies";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 
 const initialState: BetActionState = {};
@@ -78,6 +79,7 @@ export function BetForm({
   const values = defaultValues ?? {};
   const [stakeValue, setStakeValue] = useState(values.stake ?? "");
   const [confirmLargeStake, setConfirmLargeStake] = useState(false);
+  const selectedCurrency = isSupportedCurrency(values.currency ?? "") ? values.currency : "USD";
   const maxSingleStakeValue = maxSingleStake ? Number(maxSingleStake) : null;
   const exceedsMaxSingleStake = useMemo(() => {
     if (!maxSingleStakeValue || stakeValue.trim() === "") {
@@ -163,7 +165,13 @@ export function BetForm({
         </Field>
 
         <Field label="Moneda" htmlFor="currency" error={state.fieldErrors?.currency}>
-          <input id="currency" name="currency" defaultValue={values.currency ?? "USD"} required className={inputClassName(state.fieldErrors?.currency)} />
+          <select id="currency" name="currency" defaultValue={selectedCurrency} required className={inputClassName(state.fieldErrors?.currency)}>
+            {CURRENCY_OPTIONS.map((currency) => (
+              <option key={currency.value} value={currency.value}>
+                {currency.label}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Posible retorno" htmlFor="potentialPayout" error={state.fieldErrors?.potentialPayout}>

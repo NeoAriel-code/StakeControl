@@ -7,6 +7,7 @@ import {
   finalizeTicketReviewAction,
   type TicketReviewActionState,
 } from "@/lib/ticket-actions";
+import { CURRENCY_OPTIONS, isSupportedCurrency } from "@/lib/currencies";
 import type { ExtractedBetTicket } from "@/lib/ticket-extraction";
 
 const initialState: TicketReviewActionState = {};
@@ -46,6 +47,7 @@ export function TicketReviewForm({
   }
 
   const fieldHelp = "Campo detectado automáticamente. Revísalo antes de confirmar.";
+  const selectedCurrency = isSupportedCurrency(extractedBet.currency) ? extractedBet.currency : "USD";
 
   return (
     <form action={action} className="space-y-6">
@@ -137,7 +139,13 @@ export function TicketReviewForm({
 
         <div className="space-y-2">
           <label htmlFor="currency" className="text-sm font-medium text-foreground">Moneda</label>
-          <input id="currency" name="currency" defaultValue={extractedBet.currency} className={inputClassName(isDoubtful("currency"))} />
+          <select id="currency" name="currency" defaultValue={selectedCurrency} className={inputClassName(isDoubtful("currency"))}>
+            {CURRENCY_OPTIONS.map((currency) => (
+              <option key={currency.value} value={currency.value}>
+                {currency.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
