@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import type { BetResult, BetType } from "@prisma/client";
+import type { BetResultValue, BetTypeValue } from "@/lib/bet-enums";
 import type { BetActionState } from "@/lib/bet-actions";
 import { betResultOptions, betTypeOptions } from "@/lib/bet-schemas";
 import { CURRENCY_OPTIONS, isSupportedCurrency } from "@/lib/currencies";
@@ -22,12 +22,12 @@ type BetFormProps = {
     league?: string | null;
     market?: string | null;
     selection?: string | null;
-    betType?: BetType;
+    betType?: BetTypeValue;
     stake?: string;
     odds?: string;
     currency?: string;
     potentialPayout?: string;
-    result?: BetResult;
+    result?: BetResultValue;
     netProfit?: string;
     ticketCode?: string | null;
     notes?: string | null;

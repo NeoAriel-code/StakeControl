@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { BetResult, BetType } from "@prisma/client";
+import { BET_RESULTS, BET_TYPES } from "@/lib/bet-enums";
 import {
   finalizeTicketReviewAction,
   type TicketReviewActionState,
@@ -112,7 +112,7 @@ export function TicketReviewForm({
         <div className="space-y-2">
           <label htmlFor="betType" className="text-sm font-medium text-foreground">Tipo de apuesta</label>
           <select id="betType" name="betType" defaultValue={extractedBet.betType} className={inputClassName(isDoubtful("betType"))}>
-            {Object.values(BetType).map((betType) => (
+            {BET_TYPES.map((betType) => (
               <option key={betType} value={betType}>{betType}</option>
             ))}
           </select>
@@ -121,7 +121,7 @@ export function TicketReviewForm({
         <div className="space-y-2">
           <label htmlFor="result" className="text-sm font-medium text-foreground">Resultado</label>
           <select id="result" name="result" defaultValue={extractedBet.result} className={inputClassName(isDoubtful("result"))}>
-            {Object.values(BetResult).map((result) => (
+            {BET_RESULTS.map((result) => (
               <option key={result} value={result}>{result}</option>
             ))}
           </select>

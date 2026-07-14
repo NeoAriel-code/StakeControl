@@ -1,6 +1,6 @@
 "use client";
 
-import { BetResult } from "@prisma/client";
+import { BET_RESULTS, type BetResultValue } from "@/lib/bet-enums";
 import {
   CheckCircle2,
   ChevronDown,
@@ -17,11 +17,11 @@ import { cn } from "@/lib/utils";
 
 type QuickBetResultSelectProps = {
   betId: string;
-  result: BetResult;
+  result: BetResultValue;
   compact?: boolean;
 };
 
-const RESULT_LABELS: Record<BetResult, string> = {
+const RESULT_LABELS: Record<BetResultValue, string> = {
   PENDING: "Pendiente",
   WON: "Ganada",
   LOST: "Perdida",
@@ -30,7 +30,7 @@ const RESULT_LABELS: Record<BetResult, string> = {
   UNKNOWN: "Sin definir",
 };
 
-const RESULT_STYLES: Record<BetResult, string> = {
+const RESULT_STYLES: Record<BetResultValue, string> = {
   PENDING: "status-badge--review-required",
   WON: "status-badge--reviewed",
   LOST: "status-badge--limit-exceeded",
@@ -46,9 +46,9 @@ const RESULT_ICONS = {
   VOID: MinusCircle,
   CASHOUT: WalletCards,
   UNKNOWN: CircleHelp,
-} satisfies Record<BetResult, ComponentType<{ size?: number; strokeWidth?: number; className?: string }>>;
+} satisfies Record<BetResultValue, ComponentType<{ size?: number; strokeWidth?: number; className?: string }>>;
 
-const RESULT_ICON_COLORS: Record<BetResult, string> = {
+const RESULT_ICON_COLORS: Record<BetResultValue, string> = {
   PENDING: "text-warning",
   WON: "text-success",
   LOST: "text-danger",
@@ -90,7 +90,7 @@ export function QuickBetResultSelect({ betId, result, compact = false }: QuickBe
     };
   }, []);
 
-  function updateResult(nextResult: BetResult) {
+  function updateResult(nextResult: BetResultValue) {
     setSelectedResult(nextResult);
     setOpen(false);
 
@@ -138,7 +138,7 @@ export function QuickBetResultSelect({ betId, result, compact = false }: QuickBe
           aria-label="Opciones de resultado"
           className="absolute left-0 top-11 z-50 w-56 overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl"
         >
-          {Object.values(BetResult).map((option) => {
+          {BET_RESULTS.map((option) => {
             const OptionIcon = RESULT_ICONS[option];
             const selected = option === selectedResult;
 
@@ -169,4 +169,3 @@ export function QuickBetResultSelect({ betId, result, compact = false }: QuickBe
     </div>
   );
 }
-
