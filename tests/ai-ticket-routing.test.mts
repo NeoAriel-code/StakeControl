@@ -80,6 +80,34 @@ test("ticket routing applies the user's locale preferences to ambiguous ticket v
   assert.match(result.ticket.placedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
 });
 
+test("ticket routing keeps future events pending when a cash out offer is visible", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      const extracted = extraction(0.9);
+      const data = {
+        ...extracted,
+        result: BetResult.CASHOUT,
+        legs: extracted.legs.map((leg) => ({ ...leg, result: BetResult.CASHOUT })),
+      };
+      return { data: data as T, model: input.model, estimatedTokens: 9 };
+    },
+  };
+
+  const result = await parseTicketWithRouting(
+    "Bet Builder\n15/07/26\n15:00\nCASH OUT $121.286,70",
+    provider,
+    {
+      preferredCurrency: "CLP",
+      timezone: "America/Santiago",
+      referenceDate: new Date("2026-07-14T12:00:00.000Z"),
+    }
+  );
+
+  assert.equal(result.ticket.result, BetResult.PENDING);
+  assert.equal(result.ticket.legs[0]?.result, BetResult.PENDING);
+  assert.ok(result.ticket.doubtfulFields.includes("result"));
+});
+
 test("mock AI does not invent ticket fields from real OCR text", async () => {
   const result = await parseTicketWithRouting("Betano\nSimple $50.000,00\nNoruega\nInglaterra");
 

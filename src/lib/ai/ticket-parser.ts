@@ -9,12 +9,13 @@ import { extractedBetTicketSchema, type ExtractedBetTicket } from "@/lib/ticket-
 import { structureMockBetTicket } from "@/lib/mock-ticket-parser";
 
 const MIN_CONFIDENCE = 0.85;
-const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha, usa null en placedAt, baja confidenceScore y agrega placedAt en doubtfulFields. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
+const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha, usa null en placedAt, baja confidenceScore y agrega placedAt en doubtfulFields. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Un botón u oferta que diga CASH OUT no prueba que se haya realizado un cashout: usa CASHOUT solo cuando el OCR confirma una operación completada. Si el evento programado aún no comienza, el resultado debe ser PENDING. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
 
 export type TicketRoutingResult = { ticket: ExtractedBetTicket; model: string; estimatedTokens: number; fallbackUsed: boolean };
 export type TicketExtractionContext = {
   preferredCurrency?: string;
   timezone?: string;
+  referenceDate?: Date;
 };
 
 function getProvider(): AiProvider {
@@ -41,7 +42,7 @@ function preferredCurrencyFromContext(context: TicketExtractionContext) {
   return isSupportedCurrency(context.preferredCurrency ?? "") ? context.preferredCurrency : undefined;
 }
 
-function formatCurrentDateTime(timezone?: string) {
+function getDateTimeParts(timezone?: string, referenceDate = new Date()) {
   try {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: timezone,
@@ -51,12 +52,49 @@ function formatCurrentDateTime(timezone?: string) {
       hour: "2-digit",
       minute: "2-digit",
       hourCycle: "h23",
-    }).formatToParts(new Date());
+    }).formatToParts(referenceDate);
     const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value;
-    return `${getPart("year")}-${getPart("month")}-${getPart("day")}T${getPart("hour")}:${getPart("minute")}`;
+    return {
+      year: Number(getPart("year")),
+      month: Number(getPart("month")),
+      day: Number(getPart("day")),
+      hour: Number(getPart("hour")),
+      minute: Number(getPart("minute")),
+    };
   } catch {
-    return new Date().toISOString().slice(0, 16);
+    const fallback = new Date(referenceDate);
+    return {
+      year: fallback.getUTCFullYear(),
+      month: fallback.getUTCMonth() + 1,
+      day: fallback.getUTCDate(),
+      hour: fallback.getUTCHours(),
+      minute: fallback.getUTCMinutes(),
+    };
   }
+}
+
+function formatCurrentDateTime(timezone?: string, referenceDate = new Date()) {
+  const { year, month, day, hour, minute } = getDateTimeParts(timezone, referenceDate);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function isFutureScheduledEvent(rawText: string, context: TicketExtractionContext) {
+  const match = rawText.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\s+(\d{1,2}):(\d{2})\b/);
+  if (!match) return false;
+
+  const [, day, month, rawYear, hour, minute] = match;
+  const year = rawYear!.length === 2 ? 2000 + Number(rawYear) : Number(rawYear);
+  const event = [year, Number(month), Number(day), Number(hour), Number(minute)];
+  const now = getDateTimeParts(context.timezone, context.referenceDate);
+  const current = [now.year, now.month, now.day, now.hour, now.minute];
+
+  for (let index = 0; index < event.length; index += 1) {
+    if (event[index] !== current[index]) {
+      return event[index]! > current[index]!;
+    }
+  }
+
+  return false;
 }
 
 function inferSportFromTicket(rawText: string) {
@@ -72,16 +110,21 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
   const preferredCurrency = preferredCurrencyFromContext(context);
   const currencyWasAssumed = Boolean(preferredCurrency && !hasExplicitCurrency(rawText));
   const inferredSport = inferSportFromTicket(rawText);
+  const resultWasCorrected = isFutureScheduledEvent(rawText, context) && parsed.result !== BetResult.PENDING;
   return extractedBetTicketSchema.parse({
     ...parsed,
-    placedAt: placedAtWasMissing ? formatCurrentDateTime(context.timezone) : parsed.placedAt ?? formatCurrentDateTime(context.timezone),
+    placedAt: placedAtWasMissing
+      ? formatCurrentDateTime(context.timezone, context.referenceDate)
+      : parsed.placedAt ?? formatCurrentDateTime(context.timezone, context.referenceDate),
     currency: currencyWasAssumed ? preferredCurrency : parsed.currency,
     sport: parsed.sport ?? inferredSport,
+    result: resultWasCorrected ? BetResult.PENDING : parsed.result,
     doubtfulFields: [
       ...new Set([
         ...parsed.doubtfulFields,
         ...(placedAtWasMissing ? ["placedAt"] : []),
         ...(currencyWasAssumed ? ["currency"] : []),
+        ...(resultWasCorrected ? ["result"] : []),
       ]),
     ],
     sportsbook: parsed.sportsbook ?? undefined,
@@ -94,6 +137,7 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
     legs: parsed.legs.map((leg) => ({
       ...leg,
       sport: leg.sport ?? inferredSport,
+      result: resultWasCorrected ? BetResult.PENDING : leg.result,
       league: leg.league ?? undefined,
       market: leg.market ?? undefined,
       selection: leg.selection ?? undefined,
@@ -106,7 +150,7 @@ function buildManualReviewTicket(note?: string, context: TicketExtractionContext
   const preferredCurrency = preferredCurrencyFromContext(context) ?? "CLP";
   return extractedBetTicketSchema.parse({
     event: "Evento por confirmar",
-    placedAt: formatCurrentDateTime(context.timezone),
+    placedAt: formatCurrentDateTime(context.timezone, context.referenceDate),
     betType: BetType.SINGLE,
     stake: 0,
     odds: 1.01,
@@ -161,6 +205,7 @@ export async function parseTicketWithRouting(
   const contextPrompt = [
     context.timezone ? `Zona horaria del usuario: ${context.timezone}.` : null,
     preferredCurrencyFromContext(context) ? `Moneda principal del usuario: ${preferredCurrencyFromContext(context)}. Úsala si el ticket solo muestra un símbolo monetario ambiguo o no declara moneda.` : null,
+    `Fecha actual del usuario: ${formatCurrentDateTime(context.timezone, context.referenceDate).slice(0, 10)}.`,
     "Para placedAt entrega una fecha y hora local sin sufijo UTC solo si aparece en el OCR; nunca uses la hora actual.",
   ].filter(Boolean).join("\n");
   const request = (model: string) => provider.generateStructured({ task: "ticket_extraction", model, system: TICKET_SYSTEM_PROMPT, prompt: `${contextPrompt}\n\nTexto OCR (sin datos personales):\n${cleanedText}`, schemaName: "ticket_extraction", jsonSchema: aiTicketExtractionJsonSchema });
