@@ -46,13 +46,8 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
   const isPdf = ticketImage.mimeType === "application/pdf";
   const extractedBet = extractedBetTicketSchema.parse(ticketImage.aiExtraction.extractedData);
   const requiresReview = extractedBet.confidenceScore < 0.85;
-  const ocrProvider = ticketImage.aiExtraction.provider?.split("+")[0];
   const processingDescription =
-    ocrProvider === "google_vision"
-      ? "Google Vision extrajo el texto del ticket. Revisa los campos antes de crear la apuesta final."
-      : ocrProvider === "tesseract"
-        ? "Tesseract extrajo el texto del ticket. Revisa los campos antes de crear la apuesta final."
-        : "El ticket fue procesado para su revisión. Revisa los campos antes de crear la apuesta final.";
+    "El texto del ticket fue extraído automáticamente. Revisa los campos antes de crear la apuesta final.";
 
   return (
     <AppLayout
