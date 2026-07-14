@@ -130,7 +130,7 @@ export async function createDemoDataAction() {
           market: seed.market,
           selection: seed.selection,
           currency,
-          betType: index % 6 === 0 ? BetType.LIVE : BetType.PREMATCH,
+          betType: index % 6 === 0 ? BetType.COMBO : BetType.SINGLE,
           result: seed.result,
           stake: decimal(seed.stake),
           odds: decimal(seed.odds),

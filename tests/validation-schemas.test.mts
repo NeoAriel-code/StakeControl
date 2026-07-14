@@ -44,6 +44,26 @@ test("betFormSchema rejects invalid odds and negative stake", () => {
   assert.equal(parsed.success, false);
 });
 
+test("betFormSchema only accepts meaningful ticket types and results", () => {
+  const baseBet = {
+    placedAt: "2026-07-13T10:00",
+    event: "Evento",
+    stake: "1000",
+    odds: "1.8",
+    currency: "CLP",
+    result: BetResult.PENDING,
+    netProfit: "0",
+  };
+
+  assert.equal(betFormSchema.safeParse({ ...baseBet, betType: BetType.COMBO }).success, true);
+  assert.equal(betFormSchema.safeParse({ ...baseBet, betType: BetType.LIVE }).success, false);
+  assert.equal(betFormSchema.safeParse({ ...baseBet, betType: BetType.UNKNOWN }).success, false);
+  assert.equal(
+    betFormSchema.safeParse({ ...baseBet, betType: BetType.SINGLE, result: BetResult.UNKNOWN }).success,
+    false
+  );
+});
+
 test("betFormSchema accepts supported crypto currencies and rejects unknown currencies", () => {
   const validCryptoBet = {
     placedAt: "2026-07-13T10:00",

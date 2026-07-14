@@ -1,6 +1,6 @@
-import { BetResult, BetType } from "@prisma/client";
 import { z } from "zod";
 import { CURRENCY_CODES } from "@/lib/currencies";
+import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 
 const optionalTrimmedString = z
   .string()
@@ -26,7 +26,7 @@ export const betFormSchema = z.object({
   league: optionalTrimmedString,
   market: optionalTrimmedString,
   selection: optionalTrimmedString,
-  betType: z.nativeEnum(BetType, {
+  betType: z.enum(BET_TYPES, {
     error: "El tipo de apuesta es obligatorio.",
   }),
   stake: decimalField("El stake").refine((value) => value >= 0, {
@@ -42,7 +42,7 @@ export const betFormSchema = z.object({
     (value) => (value === "" || value == null ? undefined : value),
     decimalField("El posible retorno").optional()
   ),
-  result: z.nativeEnum(BetResult, {
+  result: z.enum(BET_RESULT_OPTIONS, {
     error: "El resultado es obligatorio.",
   }),
   netProfit: decimalField("La ganancia o pérdida neta"),
@@ -52,5 +52,5 @@ export const betFormSchema = z.object({
 
 export type BetFormValues = z.infer<typeof betFormSchema>;
 
-export const betTypeOptions = Object.values(BetType);
-export const betResultOptions = Object.values(BetResult);
+export const betTypeOptions = BET_TYPES;
+export const betResultOptions = BET_RESULT_OPTIONS;

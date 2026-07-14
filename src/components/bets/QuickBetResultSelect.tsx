@@ -1,6 +1,6 @@
 "use client";
 
-import { BET_RESULTS, type BetResultValue } from "@/lib/bet-enums";
+import { BET_RESULT_OPTIONS, type BetResultValue } from "@/lib/bet-enums";
 import {
   CheckCircle2,
   ChevronDown,
@@ -138,7 +138,7 @@ export function QuickBetResultSelect({ betId, result, compact = false }: QuickBe
           aria-label="Opciones de resultado"
           className="absolute left-0 top-11 z-50 w-56 overflow-hidden rounded-2xl border border-border bg-card p-1.5 shadow-xl"
         >
-          {BET_RESULTS.map((option) => {
+          {BET_RESULT_OPTIONS.map((option) => {
             const OptionIcon = RESULT_ICONS[option];
             const selected = option === selectedResult;
 

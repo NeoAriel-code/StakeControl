@@ -50,7 +50,7 @@ function buildManualReviewTicket(note?: string): ExtractedBetTicket {
   return extractedBetTicketSchema.parse({
     event: "Evento por confirmar",
     placedAt: new Date().toISOString().slice(0, 16),
-    betType: BetType.UNKNOWN,
+    betType: BetType.SINGLE,
     stake: 0,
     odds: 1.01,
     currency: "CLP",

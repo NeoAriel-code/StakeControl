@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import type { BetResultValue, BetTypeValue } from "@/lib/bet-enums";
+import { BET_RESULT_LABELS, BET_TYPE_LABELS, type BetResultValue, type BetTypeValue } from "@/lib/bet-enums";
 import type { BetActionState } from "@/lib/bet-actions";
 import { betResultOptions, betTypeOptions } from "@/lib/bet-schemas";
 import { CURRENCY_OPTIONS, isSupportedCurrency } from "@/lib/currencies";
@@ -140,7 +140,7 @@ export function BetForm({
           <select id="betType" name="betType" defaultValue={values.betType ?? "SINGLE"} className={inputClassName(state.fieldErrors?.betType)}>
             {betTypeOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {BET_TYPE_LABELS[option]}
               </option>
             ))}
           </select>
@@ -185,7 +185,7 @@ export function BetForm({
           <select id="result" name="result" defaultValue={values.result ?? "PENDING"} className={inputClassName(state.fieldErrors?.result)}>
             {betResultOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {BET_RESULT_LABELS[option]}
               </option>
             ))}
           </select>

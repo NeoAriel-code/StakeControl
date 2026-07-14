@@ -68,16 +68,16 @@ async function main() {
   });
 
   const betsData = [
-    ["Real Madrid vs Barcelona", BetType.PREMATCH, BetResult.WON, "20.00", "1.95", "39.00", "19.00", "2026-07-01T18:00:00.000Z", "2026-07-01T20:00:00.000Z"],
+    ["Real Madrid vs Barcelona", BetType.SINGLE, BetResult.WON, "20.00", "1.95", "39.00", "19.00", "2026-07-01T18:00:00.000Z", "2026-07-01T20:00:00.000Z"],
     ["Lakers Moneyline", BetType.SINGLE, BetResult.LOST, "15.00", "2.10", "0.00", "-15.00", "2026-07-02T01:00:00.000Z", "2026-07-02T03:30:00.000Z"],
     ["Parlay Champions", BetType.COMBO, BetResult.WON, "10.00", "4.50", "45.00", "35.00", "2026-07-02T16:00:00.000Z", "2026-07-02T22:00:00.000Z"],
-    ["Tennis Live Set 2", BetType.LIVE, BetResult.LOST, "12.50", "1.80", "0.00", "-12.50", "2026-07-03T14:20:00.000Z", "2026-07-03T15:15:00.000Z"],
-    ["Copa América Under 2.5", BetType.PREMATCH, BetResult.PENDING, "18.00", "1.72", null, null, "2026-07-04T23:00:00.000Z", null],
+    ["Tennis Set 2", BetType.SINGLE, BetResult.LOST, "12.50", "1.80", "0.00", "-12.50", "2026-07-03T14:20:00.000Z", "2026-07-03T15:15:00.000Z"],
+    ["Copa América Under 2.5", BetType.SINGLE, BetResult.PENDING, "18.00", "1.72", null, null, "2026-07-04T23:00:00.000Z", null],
     ["MLB Yankees Runline", BetType.SINGLE, BetResult.CASHOUT, "25.00", "2.25", "28.00", "3.00", "2026-07-05T00:10:00.000Z", "2026-07-05T02:00:00.000Z"],
     ["System 2/3 Picks", BetType.SYSTEM, BetResult.VOID, "16.00", "3.20", "16.00", "0.00", "2026-07-05T10:00:00.000Z", "2026-07-05T19:00:00.000Z"],
-    ["UFC Main Event", BetType.LIVE, BetResult.LOST, "22.00", "1.66", "0.00", "-22.00", "2026-07-06T03:00:00.000Z", "2026-07-06T03:20:00.000Z"],
+    ["UFC Main Event", BetType.SINGLE, BetResult.LOST, "22.00", "1.66", "0.00", "-22.00", "2026-07-06T03:00:00.000Z", "2026-07-06T03:20:00.000Z"],
     ["ATP Quarterfinal", BetType.SINGLE, BetResult.WON, "14.00", "2.40", "33.60", "19.60", "2026-07-06T12:00:00.000Z", "2026-07-06T14:40:00.000Z"],
-    ["Unknown Ticket Import", BetType.UNKNOWN, BetResult.UNKNOWN, "8.00", "1.00", null, null, "2026-07-07T18:15:00.000Z", null],
+    ["Ticket pendiente de revisar", BetType.SINGLE, BetResult.PENDING, "8.00", "1.10", null, null, "2026-07-07T18:15:00.000Z", null],
   ];
 
   const createdBets = [];

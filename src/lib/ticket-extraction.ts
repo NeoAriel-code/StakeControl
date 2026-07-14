@@ -1,5 +1,6 @@
-import { BetResult, BetType } from "@prisma/client";
+import { BetResult } from "@prisma/client";
 import { z } from "zod";
+import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 
 const optionalString = z
   .string()
@@ -14,7 +15,7 @@ export const ticketLegSchema = z.object({
   market: optionalString,
   selection: optionalString,
   odds: z.coerce.number().finite().gt(1).optional(),
-  result: z.nativeEnum(BetResult).default(BetResult.PENDING),
+  result: z.enum(BET_RESULT_OPTIONS).default(BetResult.PENDING),
 });
 
 export type TicketLeg = z.infer<typeof ticketLegSchema>;
@@ -27,12 +28,12 @@ export const extractedBetTicketSchema = z.object({
   league: optionalString,
   market: optionalString,
   selection: optionalString,
-  betType: z.nativeEnum(BetType),
+  betType: z.enum(BET_TYPES),
   stake: z.coerce.number().finite().min(0),
   odds: z.coerce.number().finite().gt(1),
   currency: z.string().trim().min(1),
   potentialPayout: z.coerce.number().finite().optional(),
-  result: z.nativeEnum(BetResult).default(BetResult.PENDING),
+  result: z.enum(BET_RESULT_OPTIONS).default(BetResult.PENDING),
   netProfit: z.coerce.number().finite().default(0),
   ticketCode: optionalString,
   notes: optionalString,

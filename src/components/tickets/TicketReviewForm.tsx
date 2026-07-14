@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
-import { BET_RESULT_LABELS, BET_RESULTS, BET_TYPE_LABELS, BET_TYPES } from "@/lib/bet-enums";
+import { BET_RESULT_LABELS, BET_RESULT_OPTIONS, BET_TYPE_LABELS, BET_TYPES } from "@/lib/bet-enums";
 import {
   finalizeTicketReviewAction,
   type TicketReviewActionState,
@@ -39,7 +39,7 @@ type EditableLeg = {
   market: string;
   selection: string;
   odds: string;
-  result: (typeof BET_RESULTS)[number];
+  result: (typeof BET_RESULT_OPTIONS)[number];
 };
 
 function toEditableLeg(leg: TicketLeg): EditableLeg {
@@ -179,7 +179,7 @@ export function TicketReviewForm({
         <div className="space-y-2">
           <label htmlFor="result" className="text-sm font-medium text-foreground">Resultado</label>
           <select id="result" name="result" defaultValue={extractedBet.result} className={inputClassName(isDoubtful("result"))}>
-            {BET_RESULTS.map((result) => (
+            {BET_RESULT_OPTIONS.map((result) => (
               <option key={result} value={result}>{BET_RESULT_LABELS[result]}</option>
             ))}
           </select>
@@ -309,7 +309,7 @@ export function TicketReviewForm({
                   <label className="text-sm font-medium text-foreground">
                     Resultado de selección
                     <select name="legResult" value={leg.result} onChange={(event) => updateLeg(index, "result", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10">
-                      {BET_RESULTS.map((result) => (
+                      {BET_RESULT_OPTIONS.map((result) => (
                         <option key={result} value={result}>{BET_RESULT_LABELS[result]}</option>
                       ))}
                     </select>

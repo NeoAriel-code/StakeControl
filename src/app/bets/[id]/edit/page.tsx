@@ -5,6 +5,7 @@ import { updateBetAction } from "@/lib/bet-actions";
 import { requireUser } from "@/lib/auth";
 import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
+import { BET_RESULT_OPTIONS, BET_TYPES, type BetResultOption, type BetTypeValue } from "@/lib/bet-enums";
 
 type EditBetPageProps = {
   params: Promise<{ id: string }>;
@@ -14,6 +15,14 @@ function toDateTimeLocal(date: Date) {
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function toEditableBetType(value: string): BetTypeValue {
+  return BET_TYPES.includes(value as BetTypeValue) ? (value as BetTypeValue) : "SINGLE";
+}
+
+function toEditableBetResult(value: string): BetResultOption {
+  return BET_RESULT_OPTIONS.includes(value as BetResultOption) ? (value as BetResultOption) : "PENDING";
 }
 
 export default async function EditBetPage({ params }: EditBetPageProps) {
@@ -75,12 +84,12 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
               league: bet.league,
               market: bet.market,
               selection: bet.selection,
-              betType: bet.betType,
+              betType: toEditableBetType(bet.betType),
               stake: bet.stake.toString(),
               odds: bet.odds.toString(),
               currency: bet.currency,
               potentialPayout: bet.potentialPayout?.toString(),
-              result: bet.result,
+              result: toEditableBetResult(bet.result),
               netProfit: bet.profitLoss?.toString() ?? "0",
               ticketCode: bet.ticketCode,
               notes: bet.notes,
