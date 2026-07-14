@@ -95,8 +95,9 @@ Para activarla en Vercel, configura estas variables sensibles en `Production` y 
 ```env
 AI_PROVIDER="openai"
 OPENAI_API_KEY="sk-..."
-AI_TICKET_PRIMARY_MODEL="gpt-5-mini"
-AI_TICKET_FALLBACK_MODEL="gpt-4.1-mini"
+AI_TICKET_PRIMARY_MODEL="gpt-4.1-mini"
+AI_TICKET_FALLBACK_MODEL="gpt-5-mini"
+AI_TICKET_TIMEOUT_MS="8000"
 AI_REPORT_PRIMARY_MODEL="gpt-5-mini"
 AI_REPORT_FALLBACK_MODEL="gpt-4.1-mini"
 ```

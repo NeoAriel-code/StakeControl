@@ -5,6 +5,19 @@ type OpenAiResponse = {
   usage?: { total_tokens?: number };
 };
 
+type OpenAiErrorResponse = {
+  error?: { message?: string };
+};
+
+function getRequestTimeoutMs(task: Parameters<AiProvider["generateStructured"]>[0]["task"]) {
+  const defaultTimeout = task === "ticket_extraction" ? 8000 : 15000;
+  const configuredTimeout = task === "ticket_extraction" ? Number(process.env.AI_TICKET_TIMEOUT_MS) : NaN;
+
+  return Number.isFinite(configuredTimeout) && configuredTimeout >= 1000 && configuredTimeout <= 30000
+    ? configuredTimeout
+    : defaultTimeout;
+}
+
 export class OpenAiProvider implements AiProvider {
   constructor(private readonly apiKey = process.env.OPENAI_API_KEY) {}
 
@@ -19,6 +32,7 @@ export class OpenAiProvider implements AiProvider {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(getRequestTimeoutMs(input.task)),
       body: JSON.stringify({
         model: input.model,
         instructions: input.system,
@@ -36,7 +50,11 @@ export class OpenAiProvider implements AiProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI no pudo procesar la extracción (${response.status}).`);
+      const errorPayload = (await response.json().catch(() => null)) as OpenAiErrorResponse | null;
+      const detail = errorPayload?.error?.message?.trim();
+      throw new Error(
+        `OpenAI no pudo procesar la extracción (${response.status})${detail ? `: ${detail}` : "."}`
+      );
     }
 
     const payload = (await response.json()) as OpenAiResponse;

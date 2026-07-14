@@ -58,3 +58,20 @@ test("ticket routing keeps OCR available for manual review when AI is unavailabl
   assert.equal(result.ticket.legs.length, 1);
   assert.match(result.ticket.notes ?? "", /no pudo completarse/);
 });
+
+test("ticket routing keeps manual review immediate when the primary model errors", async () => {
+  const calls: string[] = [];
+  const provider: AiProvider = {
+    async generateStructured(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      calls.push(input.model);
+      throw new Error("Primary model unavailable");
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket OCR", provider);
+
+  assert.equal(result.fallbackUsed, false);
+  assert.equal(result.model, "manual-review");
+  assert.equal(result.ticket.confidenceScore, 0);
+  assert.equal(calls.length, 1);
+});

@@ -4,8 +4,8 @@ import { getAiModelConfig } from "../src/lib/ai/ai-config";
 
 test("AI model config uses supported defaults when no model is configured", () => {
   assert.deepEqual(getAiModelConfig({}), {
-    ticketPrimary: "gpt-5-mini",
-    ticketFallback: "gpt-4.1-mini",
+    ticketPrimary: "gpt-4.1-mini",
+    ticketFallback: "gpt-5-mini",
     reportPrimary: "gpt-5-mini",
     reportFallback: "gpt-4.1-mini",
   });

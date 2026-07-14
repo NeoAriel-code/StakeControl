@@ -86,6 +86,10 @@ function isMockTicketText(rawText: string) {
   return rawText.trim().startsWith("Sportsbook:") && rawText.includes("Evento:") && rawText.includes("Stake:");
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Error desconocido";
+}
+
 export async function parseTicketWithRouting(rawText: string, provider = getProvider()): Promise<TicketRoutingResult> {
   if (provider instanceof MockAiProvider) {
     const ticket = isMockTicketText(rawText) ? structureMockBetTicket(rawText) : buildManualReviewTicket();
@@ -94,22 +98,55 @@ export async function parseTicketWithRouting(rawText: string, provider = getProv
   const cleanedText = sanitizeOcrText(rawText);
   const { ticketPrimary: primaryModel, ticketFallback: fallbackModel } = getAiModelConfig();
   const request = (model: string) => provider.generateStructured({ task: "ticket_extraction", model, system: TICKET_SYSTEM_PROMPT, prompt: `Texto OCR (sin datos personales):\n${cleanedText}`, schemaName: "ticket_extraction", jsonSchema: aiTicketExtractionJsonSchema });
+  const startedAt = Date.now();
+
   try {
     const primary = await request(primaryModel);
-    let ticket = toExtractedTicket(primary.data);
+    const ticket = toExtractedTicket(primary.data);
     if (ticket.confidenceScore >= MIN_CONFIDENCE) {
+      console.info("AI ticket extraction completed", {
+        model: primary.model,
+        fallbackUsed: false,
+        elapsedMs: Date.now() - startedAt,
+      });
       return { ticket, model: primary.model, estimatedTokens: primary.estimatedTokens, fallbackUsed: false };
     }
+  } catch (error) {
+    console.error("AI ticket extraction failed", {
+      model: primaryModel,
+      elapsedMs: Date.now() - startedAt,
+      error: getErrorMessage(error),
+    });
+    return {
+      ticket: buildManualReviewTicket(
+        "El texto OCR está disponible, pero la extracción estructurada no pudo completarse. Completa y revisa los campos antes de confirmar."
+      ),
+      model: "manual-review",
+      estimatedTokens: Math.ceil(cleanedText.length / 4),
+      fallbackUsed: false,
+    };
+  }
 
+  try {
     const fallback = await request(fallbackModel);
-    ticket = toExtractedTicket(fallback.data);
+    const ticket = toExtractedTicket(fallback.data);
+    console.info("AI ticket extraction completed", {
+      model: fallback.model,
+      fallbackUsed: true,
+      elapsedMs: Date.now() - startedAt,
+    });
     return {
       ticket,
       model: fallback.model,
-      estimatedTokens: primary.estimatedTokens + fallback.estimatedTokens,
+      estimatedTokens: fallback.estimatedTokens,
       fallbackUsed: true,
     };
-  } catch {
+  } catch (fallbackError) {
+    console.error("AI ticket extraction failed", {
+      model: fallbackModel,
+      elapsedMs: Date.now() - startedAt,
+      error: getErrorMessage(fallbackError),
+    });
     return {
       ticket: buildManualReviewTicket(
         "El texto OCR está disponible, pero la extracción estructurada no pudo completarse. Completa y revisa los campos antes de confirmar."

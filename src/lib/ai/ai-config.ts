@@ -1,7 +1,7 @@
 type AiEnvironment = Record<string, string | undefined>;
 
-const DEFAULT_TICKET_PRIMARY_MODEL = "gpt-5-mini";
-const DEFAULT_TICKET_FALLBACK_MODEL = "gpt-4.1-mini";
+const DEFAULT_TICKET_PRIMARY_MODEL = "gpt-4.1-mini";
+const DEFAULT_TICKET_FALLBACK_MODEL = "gpt-5-mini";
 const DEFAULT_REPORT_PRIMARY_MODEL = "gpt-5-mini";
 const DEFAULT_REPORT_FALLBACK_MODEL = "gpt-4.1-mini";
 

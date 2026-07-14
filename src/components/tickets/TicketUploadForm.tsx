@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { FileImage, FileText, UploadCloud } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import { FileImage, FileText, LoaderCircle, UploadCloud } from "lucide-react";
 import {
   uploadTicketAction,
   type TicketUploadActionState,
@@ -10,6 +11,28 @@ import {
 const initialState: TicketUploadActionState = {};
 
 const ACCEPTED_TYPES = ".jpg,.jpeg,.png,.webp,.pdf";
+
+function SubmitTicketButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="submit"
+        disabled={pending}
+        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-wait disabled:opacity-70"
+      >
+        {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}
+        {pending ? "Procesando ticket..." : "Subir ticket"}
+      </button>
+      {pending && (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          Extrayendo texto y preparando la revisión.
+        </p>
+      )}
+    </div>
+  );
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -161,12 +184,7 @@ export function TicketUploadForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
-      >
-        Subir ticket
-      </button>
+      <SubmitTicketButton />
     </form>
   );
 }
