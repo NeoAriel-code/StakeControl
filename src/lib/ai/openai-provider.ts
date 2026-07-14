@@ -23,6 +23,7 @@ export class OpenAiProvider implements AiProvider {
         model: input.model,
         instructions: input.system,
         input: input.prompt,
+        store: false,
         text: {
           format: {
             type: "json_schema",
@@ -35,7 +36,7 @@ export class OpenAiProvider implements AiProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI Responses API respondió ${response.status}.`);
+      throw new Error(`OpenAI no pudo procesar la extracción (${response.status}).`);
     }
 
     const payload = (await response.json()) as OpenAiResponse;

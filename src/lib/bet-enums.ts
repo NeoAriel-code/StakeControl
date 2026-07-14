@@ -1,9 +1,10 @@
-export const BET_TYPES = ["SINGLE", "COMBO", "SYSTEM", "LIVE", "PREMATCH", "UNKNOWN"] as const;
+export const BET_TYPES = ["SINGLE", "COMBO", "BET_BUILDER", "SYSTEM", "LIVE", "PREMATCH", "UNKNOWN"] as const;
 export type BetTypeValue = (typeof BET_TYPES)[number];
 
 export const BET_TYPE_LABELS: Record<BetTypeValue, string> = {
   SINGLE: "Simple",
-  COMBO: "Combinada",
+  COMBO: "Múltiple",
+  BET_BUILDER: "Bet Builder",
   SYSTEM: "Sistema",
   LIVE: "En vivo",
   PREMATCH: "Prepartido",

@@ -1,6 +1,6 @@
 # StakeControl
 
-StakeControl es un MVP web para apostadores deportivos que quieren registrar su actividad, revisar exposición histórica y mantener límites visibles. No entrega picks, predicciones ni recomendaciones de apuesta.
+StakeControl es una aplicación web para registrar actividad de apuestas, revisar exposición histórica y mantener límites visibles. No entrega picks, predicciones ni recomendaciones de apuesta.
 
 ## Principios
 
@@ -85,6 +85,23 @@ GOOGLE_VISION_CREDENTIALS_JSON='{"type":"service_account",...}'
 ```
 
 El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantienen fallback mock.
+
+### IA Para Estructurar Tickets
+
+La IA recibe solo el texto OCR saneado, no el archivo ni identificadores personales. La extracción usa salida estructurada, no guarda una apuesta automáticamente y mantiene la revisión humana como paso obligatorio. Si el proveedor no responde, el ticket queda disponible para completar manualmente.
+
+Para activarla en Vercel, configura estas variables sensibles en `Production` y `Preview`:
+
+```env
+AI_PROVIDER="openai"
+OPENAI_API_KEY="sk-..."
+AI_TICKET_PRIMARY_MODEL="gpt-5-mini"
+AI_TICKET_FALLBACK_MODEL="gpt-4.1-mini"
+AI_REPORT_PRIMARY_MODEL="gpt-5-mini"
+AI_REPORT_FALLBACK_MODEL="gpt-4.1-mini"
+```
+
+Las apuestas simples se guardan con una selección. Las múltiples y los Bet Builders conservan sus selecciones individuales con evento, mercado, elección, cuota y resultado. Antes de desplegar una versión que use esta estructura, aplica las migraciones pendientes en Turso.
 
 ### Control Privado De Planes
 

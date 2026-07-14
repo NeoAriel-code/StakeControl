@@ -7,6 +7,18 @@ const optionalString = z
   .optional()
   .transform((value) => (value && value.length > 0 ? value : undefined));
 
+export const ticketLegSchema = z.object({
+  event: z.string().trim().min(1, "El evento de la selección es obligatorio."),
+  sport: optionalString,
+  league: optionalString,
+  market: optionalString,
+  selection: optionalString,
+  odds: z.coerce.number().finite().gt(1).optional(),
+  result: z.nativeEnum(BetResult).default(BetResult.PENDING),
+});
+
+export type TicketLeg = z.infer<typeof ticketLegSchema>;
+
 export const extractedBetTicketSchema = z.object({
   sportsbook: optionalString,
   event: z.string().trim().min(1, "El evento detectado es obligatorio."),
@@ -26,6 +38,7 @@ export const extractedBetTicketSchema = z.object({
   notes: optionalString,
   confidenceScore: z.coerce.number().finite().min(0).max(1),
   doubtfulFields: z.array(z.string().trim().min(1)).default([]),
+  legs: z.array(ticketLegSchema).max(20).default([]),
 });
 
 export type ExtractedBetTicket = z.infer<typeof extractedBetTicketSchema>;

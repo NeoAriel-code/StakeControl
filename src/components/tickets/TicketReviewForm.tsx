@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useActionState, useState } from "react";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { BET_RESULT_LABELS, BET_RESULTS, BET_TYPE_LABELS, BET_TYPES } from "@/lib/bet-enums";
 import {
   finalizeTicketReviewAction,
   type TicketReviewActionState,
 } from "@/lib/ticket-actions";
 import { CURRENCY_OPTIONS, isSupportedCurrency } from "@/lib/currencies";
-import type { ExtractedBetTicket } from "@/lib/ticket-extraction";
+import type { ExtractedBetTicket, TicketLeg } from "@/lib/ticket-extraction";
 
 const initialState: TicketReviewActionState = {};
 
@@ -32,6 +32,46 @@ function inputClassName(isDoubtful: boolean) {
   }`;
 }
 
+type EditableLeg = {
+  event: string;
+  sport: string;
+  league: string;
+  market: string;
+  selection: string;
+  odds: string;
+  result: (typeof BET_RESULTS)[number];
+};
+
+function toEditableLeg(leg: TicketLeg): EditableLeg {
+  return {
+    event: leg.event,
+    sport: leg.sport ?? "",
+    league: leg.league ?? "",
+    market: leg.market ?? "",
+    selection: leg.selection ?? "",
+    odds: leg.odds === undefined ? "" : String(leg.odds),
+    result: leg.result,
+  };
+}
+
+function getInitialLegs(extractedBet: ExtractedBetTicket): EditableLeg[] {
+  if (extractedBet.legs.length > 0) {
+    return extractedBet.legs.map(toEditableLeg);
+  }
+
+  return [
+    {
+      event: extractedBet.event,
+      sport: extractedBet.sport ?? "",
+      league: extractedBet.league ?? "",
+      market: extractedBet.market ?? "",
+      selection: extractedBet.selection ?? "",
+      odds: String(extractedBet.odds),
+      result: extractedBet.result,
+    },
+  ];
+}
+
 export function TicketReviewForm({
   ticketId,
   extractedBet,
@@ -41,6 +81,7 @@ export function TicketReviewForm({
     finalizeTicketReviewAction.bind(null, ticketId),
     initialState
   );
+  const [legs, setLegs] = useState(() => getInitialLegs(extractedBet));
 
   function isDoubtful(fieldName: string) {
     return extractedBet.doubtfulFields.includes(fieldName);
@@ -48,6 +89,23 @@ export function TicketReviewForm({
 
   const fieldHelp = "Campo detectado automáticamente. Revísalo antes de confirmar.";
   const selectedCurrency = isSupportedCurrency(extractedBet.currency) ? extractedBet.currency : "USD";
+
+  function updateLeg(index: number, field: keyof EditableLeg, value: string) {
+    setLegs((currentLegs) =>
+      currentLegs.map((leg, legIndex) => (legIndex === index ? { ...leg, [field]: value } : leg))
+    );
+  }
+
+  function addLeg() {
+    setLegs((currentLegs) => [
+      ...currentLegs,
+      { event: "", sport: "", league: "", market: "", selection: "", odds: "", result: "PENDING" },
+    ]);
+  }
+
+  function removeLeg(index: number) {
+    setLegs((currentLegs) => currentLegs.filter((_, legIndex) => legIndex !== index));
+  }
 
   return (
     <form action={action} className="space-y-6">
@@ -168,6 +226,100 @@ export function TicketReviewForm({
           <textarea id="notes" name="notes" rows={4} defaultValue={extractedBet.notes ?? ""} className={inputClassName(isDoubtful("notes"))} />
         </div>
       </div>
+
+      <section className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Selecciones del ticket</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Revisa cada selección. Una simple tiene una; una múltiple o Bet Builder puede tener varias.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addLeg}
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-card"
+          >
+            <Plus size={16} aria-hidden="true" />
+            Agregar selección
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          {legs.map((leg, index) => (
+            <fieldset key={index} className="rounded-xl border border-border bg-card p-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <legend className="text-sm font-semibold text-foreground">Selección {index + 1}</legend>
+                {legs.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeLeg(index)}
+                    className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger-soft"
+                    aria-label={`Quitar selección ${index + 1}`}
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                    Quitar
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Evento
+                    <input
+                      name="legEvent"
+                      value={leg.event}
+                      onChange={(event) => updateLeg(index, "event", event.target.value)}
+                      required
+                      className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Deporte
+                    <input name="legSport" value={leg.sport} onChange={(event) => updateLeg(index, "sport", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Liga
+                    <input name="legLeague" value={leg.league} onChange={(event) => updateLeg(index, "league", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Mercado
+                    <input name="legMarket" value={leg.market} onChange={(event) => updateLeg(index, "market", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Selección
+                    <input name="legSelection" value={leg.selection} onChange={(event) => updateLeg(index, "selection", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Cuota de selección
+                    <input name="legOdds" type="number" min="1.01" step="0.01" value={leg.odds} onChange={(event) => updateLeg(index, "odds", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10" />
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Resultado de selección
+                    <select name="legResult" value={leg.result} onChange={(event) => updateLeg(index, "result", event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10">
+                      {BET_RESULTS.map((result) => (
+                        <option key={result} value={result}>{BET_RESULT_LABELS[result]}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          ))}
+        </div>
+      </section>
 
       <input type="hidden" name="confidenceScore" value={String(extractedBet.confidenceScore)} />
       {extractedBet.doubtfulFields.map((field) => (

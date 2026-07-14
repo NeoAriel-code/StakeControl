@@ -7,6 +7,7 @@ import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "
 import prisma from "@/lib/prisma";
 import { isPrivateStorageReference } from "@/lib/storage";
 import { formatOdds } from "@/lib/odds-format";
+import { BET_RESULT_LABELS, BET_TYPE_LABELS } from "@/lib/bet-enums";
 
 type BetDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -26,6 +27,9 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
       userId: user.id,
     },
     include: {
+      legs: {
+        orderBy: { position: "asc" },
+      },
       ticketImages: {
         orderBy: { uploadedAt: "desc" },
       },
@@ -106,11 +110,11 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tipo de apuesta</dt>
-                <dd className="mt-1 text-sm text-foreground">{bet.betType}</dd>
+                <dd className="mt-1 text-sm text-foreground">{BET_TYPE_LABELS[bet.betType]}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Resultado</dt>
-                <dd className="mt-1 text-sm text-foreground">{bet.result}</dd>
+                <dd className="mt-1 text-sm text-foreground">{BET_RESULT_LABELS[bet.result]}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Descripción</dt>
@@ -227,6 +231,54 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
             )}
           </div>
         </div>
+
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Selecciones del ticket</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Detalle histórico de las selecciones que componen esta apuesta.
+            </p>
+          </div>
+          {bet.legs.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Este registro fue creado antes del detalle por selección. Consulta los datos generales arriba.
+            </p>
+          ) : (
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-3 font-semibold">#</th>
+                    <th className="px-3 py-3 font-semibold">Evento</th>
+                    <th className="px-3 py-3 font-semibold">Mercado</th>
+                    <th className="px-3 py-3 font-semibold">Selección</th>
+                    <th className="px-3 py-3 font-semibold">Cuota</th>
+                    <th className="px-3 py-3 font-semibold">Resultado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bet.legs.map((leg) => (
+                    <tr key={leg.id} className="border-b border-border last:border-0">
+                      <td className="px-3 py-3 text-muted-foreground">{leg.position + 1}</td>
+                      <td className="px-3 py-3 text-foreground">
+                        <p>{leg.event}</p>
+                        {(leg.sport || leg.league) && (
+                          <p className="mt-1 text-xs text-muted-foreground">{[leg.sport, leg.league].filter(Boolean).join(" · ")}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-foreground">{leg.market || "—"}</td>
+                      <td className="px-3 py-3 text-foreground">{leg.selection || "—"}</td>
+                      <td className="px-3 py-3 text-foreground">
+                        {leg.odds ? formatOdds(Number(leg.odds), user.oddsFormat) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-foreground">{BET_RESULT_LABELS[leg.result]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </section>
     </AppLayout>
   );

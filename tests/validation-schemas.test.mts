@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { BetResult, BetType } from "@prisma/client";
 import { betFormSchema } from "../src/lib/bet-schemas";
-import { reviewedTicketBetSchema } from "../src/lib/ticket-extraction";
+import { reviewedTicketBetSchema, ticketLegSchema } from "../src/lib/ticket-extraction";
 
 test("betFormSchema accepts valid manual bet input", () => {
   const parsed = betFormSchema.parse({
@@ -81,4 +81,32 @@ test("reviewedTicketBetSchema validates confidence score bounds", () => {
   });
 
   assert.equal(parsed.success, false);
+});
+
+test("ticket review accepts multiple legs and preserves a Bet Builder type", () => {
+  const parsed = reviewedTicketBetSchema.parse({
+    event: "Noruega vs Inglaterra",
+    placedAt: "2026-07-13T10:00",
+    betType: BetType.BET_BUILDER,
+    stake: "5000",
+    odds: "2.10",
+    currency: "CLP",
+    result: BetResult.PENDING,
+    netProfit: "0",
+    confidenceScore: "0.72",
+    doubtfulFields: ["legs"],
+    legs: [
+      { event: "Noruega vs Inglaterra", market: "Más de 1.5", selection: "Sí", odds: "1.40" },
+      { event: "Noruega vs Inglaterra", market: "Corners", selection: "Más de 8.5", odds: "1.50" },
+    ],
+  });
+
+  assert.equal(parsed.betType, BetType.BET_BUILDER);
+  assert.equal(parsed.legs.length, 2);
+  assert.equal(parsed.legs[1]?.odds, 1.5);
+});
+
+test("ticket legs require an event and reject invalid individual odds", () => {
+  assert.equal(ticketLegSchema.safeParse({ event: "" }).success, false);
+  assert.equal(ticketLegSchema.safeParse({ event: "Evento", odds: "1" }).success, false);
 });

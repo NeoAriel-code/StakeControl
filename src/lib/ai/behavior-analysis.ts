@@ -3,6 +3,7 @@ import "server-only";
 import type { AiProvider } from "@/lib/ai/ai-provider";
 import { MockAiProvider } from "@/lib/ai/mock-ai-provider";
 import { OpenAiProvider } from "@/lib/ai/openai-provider";
+import { getAiModelConfig } from "@/lib/ai/ai-config";
 import { behaviorNarrativeJsonSchema, behaviorNarrativeSchema, type BehaviorNarrative } from "@/lib/ai/schemas/behavior-report.schema";
 import { assertSafeAiOutput } from "@/lib/ai/safety-filter";
 
@@ -14,8 +15,7 @@ function getProvider(): AiProvider {
 
 export async function generateBehaviorNarrative(input: Record<string, unknown>, fallback: BehaviorNarrative, provider = getProvider()) {
   if (provider instanceof MockAiProvider) return { narrative: fallback, model: "mock-v1", estimatedTokens: 0, fallbackUsed: false };
-  const primaryModel = process.env.AI_REPORT_PRIMARY_MODEL || "gpt-5-mini";
-  const fallbackModel = process.env.AI_REPORT_FALLBACK_MODEL || "gpt-5.6-terra";
+  const { reportPrimary: primaryModel, reportFallback: fallbackModel } = getAiModelConfig();
   const request = (model: string) => provider.generateStructured({ task: "behavior_analysis", model, system: SYSTEM_PROMPT, prompt: `Datos agregados históricos, sin identificadores personales:\n${JSON.stringify(input)}`, schemaName: "behavior_report", jsonSchema: behaviorNarrativeJsonSchema });
   try {
     const primary = await request(primaryModel);

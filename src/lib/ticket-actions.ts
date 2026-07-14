@@ -8,7 +8,7 @@ import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
 import { getStorageService, sanitizeUploadedFileName } from "@/lib/storage";
 import { createOcrService, getConfiguredOcrProviderName } from "@/lib/ocr-service";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
-import { reviewedTicketBetSchema } from "@/lib/ticket-extraction";
+import { reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
 import { Prisma } from "@prisma/client";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
@@ -186,6 +186,37 @@ function toDecimal(value: number) {
   return new Prisma.Decimal(value.toString());
 }
 
+function getOptionalValue(values: FormDataEntryValue[], index: number) {
+  const value = values[index];
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function parseTicketLegs(formData: FormData) {
+  const events = formData.getAll("legEvent");
+  const sports = formData.getAll("legSport");
+  const leagues = formData.getAll("legLeague");
+  const markets = formData.getAll("legMarket");
+  const selections = formData.getAll("legSelection");
+  const odds = formData.getAll("legOdds");
+  const results = formData.getAll("legResult");
+
+  if (events.length === 0) {
+    throw new Error("Agrega al menos una selección al ticket.");
+  }
+
+  return events.map((event, index) =>
+    ticketLegSchema.parse({
+      event,
+      sport: getOptionalValue(sports, index),
+      league: getOptionalValue(leagues, index),
+      market: getOptionalValue(markets, index),
+      selection: getOptionalValue(selections, index),
+      odds: getOptionalValue(odds, index),
+      result: getOptionalValue(results, index) ?? "PENDING",
+    })
+  );
+}
+
 export async function finalizeTicketReviewAction(
   ticketId: string,
   _prevState: TicketReviewActionState,
@@ -240,53 +271,67 @@ export async function finalizeTicketReviewAction(
         .getAll("doubtfulFields")
         .filter((field): field is string => typeof field === "string"),
     });
+    const legs = parseTicketLegs(formData);
 
-    const createdBet = await prisma.bet.create({
-      data: {
-        userId: user.id,
-        title: parsed.event,
-        sportsbook: parsed.sportsbook,
-        ticketCode: parsed.ticketCode,
-        sport: parsed.sport,
-        league: parsed.league,
-        market: parsed.market,
-        selection: parsed.selection,
-        betType: parsed.betType,
-        currency: parsed.currency,
-        result: parsed.result,
-        stake: toDecimal(parsed.stake),
-        odds: toDecimal(parsed.odds),
-        potentialPayout:
-          parsed.potentialPayout !== undefined ? toDecimal(parsed.potentialPayout) : null,
-        profitLoss: toDecimal(parsed.netProfit),
-        settledPayout:
-          parsed.potentialPayout !== undefined && parsed.result === "WON"
-            ? toDecimal(parsed.potentialPayout)
-            : parsed.result === "VOID"
-              ? toDecimal(parsed.stake)
-              : null,
-        placedAt: new Date(parsed.placedAt),
-        notes: parsed.notes,
-      },
-    });
+    await prisma.$transaction(async (transaction) => {
+      const createdBet = await transaction.bet.create({
+        data: {
+          userId: user.id,
+          title: parsed.event,
+          sportsbook: parsed.sportsbook,
+          ticketCode: parsed.ticketCode,
+          sport: parsed.sport,
+          league: parsed.league,
+          market: parsed.market,
+          selection: parsed.selection,
+          betType: parsed.betType,
+          currency: parsed.currency,
+          result: parsed.result,
+          stake: toDecimal(parsed.stake),
+          odds: toDecimal(parsed.odds),
+          potentialPayout:
+            parsed.potentialPayout !== undefined ? toDecimal(parsed.potentialPayout) : null,
+          profitLoss: toDecimal(parsed.netProfit),
+          settledPayout:
+            parsed.potentialPayout !== undefined && parsed.result === "WON"
+              ? toDecimal(parsed.potentialPayout)
+              : parsed.result === "VOID"
+                ? toDecimal(parsed.stake)
+                : null,
+          placedAt: new Date(parsed.placedAt),
+          notes: parsed.notes,
+          legs: {
+            create: legs.map((leg, position) => ({
+              position,
+              event: leg.event,
+              sport: leg.sport,
+              league: leg.league,
+              market: leg.market,
+              selection: leg.selection,
+              odds: leg.odds === undefined ? null : toDecimal(leg.odds),
+              result: leg.result,
+            })),
+          },
+        },
+      });
 
-    await prisma.betTicketImage.update({
-      where: { id: ticketImage.id },
-      data: {
-        betId: createdBet.id,
-      },
-    });
+      await transaction.betTicketImage.update({
+        where: { id: ticketImage.id },
+        data: { betId: createdBet.id },
+      });
 
-    await prisma.aIExtraction.update({
-      where: { betTicketImageId: ticketImage.id },
-      data: {
-        status: "reviewed_and_confirmed",
-        confidence: toDecimal(parsed.confidenceScore),
-        extractedData: sanitizeJsonRecord({
-          ...parsed,
-          requiresReview: parsed.confidenceScore < 0.85,
-        }),
-      },
+      await transaction.aIExtraction.update({
+        where: { betTicketImageId: ticketImage.id },
+        data: {
+          status: "reviewed_and_confirmed",
+          confidence: toDecimal(parsed.confidenceScore),
+          extractedData: sanitizeJsonRecord({
+            ...parsed,
+            legs,
+            requiresReview: parsed.confidenceScore < 0.85,
+          }),
+        },
+      });
     });
 
     await evaluateResponsibleGamingAlerts(user.id);

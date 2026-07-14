@@ -6,7 +6,7 @@ import { parseTicketWithRouting } from "../src/lib/ai/ticket-parser";
 
 function extraction(confidenceScore: number) {
   return {
-    sportsbook: "StakeControl Test", event: "Equipo A vs Equipo B", placedAt: "2026-07-13T10:00", sport: "Fútbol", league: null, market: "Ganador", selection: "Equipo A", betType: BetType.SINGLE, stake: 5000, odds: 2.1, currency: "CLP", potentialPayout: 10500, result: BetResult.PENDING, netProfit: 0, ticketCode: null, notes: null, confidenceScore, doubtfulFields: confidenceScore < 0.85 ? ["league"] : [],
+    sportsbook: "StakeControl Test", event: "Equipo A vs Equipo B", placedAt: "2026-07-13T10:00", sport: "Fútbol", league: null, market: "Ganador", selection: "Equipo A", betType: BetType.SINGLE, stake: 5000, odds: 2.1, currency: "CLP", potentialPayout: 10500, result: BetResult.PENDING, netProfit: 0, ticketCode: null, notes: null, confidenceScore, doubtfulFields: confidenceScore < 0.85 ? ["league"] : [], legs: [{ event: "Equipo A vs Equipo B", sport: "Fútbol", league: null, market: "Ganador", selection: "Equipo A", odds: 2.1, result: BetResult.PENDING }],
   };
 }
 
@@ -42,4 +42,19 @@ test("mock AI does not invent ticket fields from real OCR text", async () => {
   assert.equal(result.ticket.stake, 0);
   assert.equal(result.ticket.confidenceScore, 0);
   assert.match(result.ticket.notes ?? "", /Texto OCR disponible/);
+});
+
+test("ticket routing keeps OCR available for manual review when AI is unavailable", async () => {
+  const unavailableProvider: AiProvider = {
+    async generateStructured() {
+      throw new Error("Provider unavailable");
+    },
+  };
+
+  const result = await parseTicketWithRouting("Texto OCR real", unavailableProvider);
+
+  assert.equal(result.model, "manual-review");
+  assert.equal(result.ticket.confidenceScore, 0);
+  assert.equal(result.ticket.legs.length, 1);
+  assert.match(result.ticket.notes ?? "", /no pudo completarse/);
 });

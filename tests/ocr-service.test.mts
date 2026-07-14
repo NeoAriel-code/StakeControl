@@ -22,6 +22,8 @@ test("mock ticket parser structures mocked OCR text", async () => {
   assert.equal(extracted.stake > 0, true);
   assert.equal(extracted.odds > 1, true);
   assert.equal(extracted.confidenceScore >= 0 && extracted.confidenceScore <= 1, true);
+  assert.equal(extracted.legs.length, 1);
+  assert.equal(extracted.legs[0]?.event, extracted.event);
 });
 
 test("OCR provider config supports local Tesseract and falls back to mock", () => {

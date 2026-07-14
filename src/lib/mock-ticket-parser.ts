@@ -52,5 +52,16 @@ export function structureMockBetTicket(rawText: string): ExtractedBetTicket {
     notes: "Extracción generada por proveedor mock.",
     confidenceScore,
     doubtfulFields,
+    legs: [
+      {
+        event,
+        sport,
+        league,
+        market,
+        selection,
+        odds,
+        result: BetResult.PENDING,
+      },
+    ],
   });
 }
