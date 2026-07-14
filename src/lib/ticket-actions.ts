@@ -248,14 +248,21 @@ export async function finalizeTicketReviewAction(
   }
 
   try {
+    const legs = parseTicketLegs(formData);
+    const primaryLeg = legs[0];
+
+    if (!primaryLeg) {
+      throw new Error("Agrega al menos una selección al ticket.");
+    }
+
     const parsed = reviewedTicketBetSchema.parse({
       sportsbook: formData.get("sportsbook"),
-      event: formData.get("event"),
+      event: legs.length === 1 ? primaryLeg.event : `Ticket con ${legs.length} selecciones`,
       placedAt: formData.get("placedAt"),
-      sport: formData.get("sport"),
-      league: formData.get("league"),
-      market: formData.get("market"),
-      selection: formData.get("selection"),
+      sport: primaryLeg.sport,
+      league: primaryLeg.league,
+      market: primaryLeg.market,
+      selection: primaryLeg.selection,
       betType: formData.get("betType"),
       stake: formData.get("stake"),
       odds: formData.get("odds"),
@@ -271,7 +278,6 @@ export async function finalizeTicketReviewAction(
         .getAll("doubtfulFields")
         .filter((field): field is string => typeof field === "string"),
     });
-    const legs = parseTicketLegs(formData);
 
     await prisma.$transaction(async (transaction) => {
       const createdBet = await transaction.bet.create({

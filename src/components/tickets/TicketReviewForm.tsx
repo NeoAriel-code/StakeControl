@@ -126,12 +126,6 @@ export function TicketReviewForm({
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 md:col-span-2">
-          <label htmlFor="event" className="text-sm font-medium text-foreground">Evento</label>
-          <input id="event" name="event" defaultValue={extractedBet.event} className={inputClassName(isDoubtful("event"))} />
-          {isDoubtful("event") && <p className="text-xs text-warning">{fieldHelp}</p>}
-        </div>
-
         <div className="space-y-2">
           <label htmlFor="sportsbook" className="text-sm font-medium text-foreground">Sportsbook</label>
           <input id="sportsbook" name="sportsbook" defaultValue={extractedBet.sportsbook ?? ""} className={inputClassName(isDoubtful("sportsbook"))} />
@@ -142,29 +136,6 @@ export function TicketReviewForm({
           <label htmlFor="placedAt" className="text-sm font-medium text-foreground">Fecha y hora</label>
           <input id="placedAt" name="placedAt" type="datetime-local" defaultValue={toDateTimeLocal(extractedBet.placedAt)} className={inputClassName(isDoubtful("placedAt"))} />
           {isDoubtful("placedAt") && <p className="text-xs text-warning">{fieldHelp}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="sport" className="text-sm font-medium text-foreground">Deporte</label>
-          <input id="sport" name="sport" defaultValue={extractedBet.sport ?? ""} className={inputClassName(isDoubtful("sport"))} />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="league" className="text-sm font-medium text-foreground">Liga</label>
-          <input id="league" name="league" defaultValue={extractedBet.league ?? ""} className={inputClassName(isDoubtful("league"))} />
-          {isDoubtful("league") && <p className="text-xs text-warning">{fieldHelp}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="market" className="text-sm font-medium text-foreground">Mercado</label>
-          <input id="market" name="market" defaultValue={extractedBet.market ?? ""} className={inputClassName(isDoubtful("market"))} />
-          {isDoubtful("market") && <p className="text-xs text-warning">{fieldHelp}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="selection" className="text-sm font-medium text-foreground">Selección</label>
-          <input id="selection" name="selection" defaultValue={extractedBet.selection ?? ""} className={inputClassName(isDoubtful("selection"))} />
-          {isDoubtful("selection") && <p className="text-xs text-warning">{fieldHelp}</p>}
         </div>
 
         <div className="space-y-2">
@@ -227,7 +198,7 @@ export function TicketReviewForm({
         </div>
       </div>
 
-      <section className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+      <section className="border-t border-border pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-foreground">Selecciones del ticket</h2>
@@ -245,9 +216,9 @@ export function TicketReviewForm({
           </button>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 divide-y divide-border">
           {legs.map((leg, index) => (
-            <fieldset key={index} className="rounded-xl border border-border bg-card p-4">
+            <fieldset key={index} className="py-5 first:pt-0 last:pb-0">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <legend className="text-sm font-semibold text-foreground">Selección {index + 1}</legend>
                 {legs.length > 1 && (
