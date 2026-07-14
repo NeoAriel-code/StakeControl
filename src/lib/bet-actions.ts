@@ -7,6 +7,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { betFormSchema, type BetFormValues } from "@/lib/bet-schemas";
+import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
 import {
   evaluateResponsibleGamingAlerts,
   formatPauseMessage,
@@ -123,7 +124,7 @@ function buildBetPayload(values: BetFormValues) {
     odds: toDecimal(values.odds),
     potentialPayout:
       values.potentialPayout !== undefined ? toDecimal(values.potentialPayout) : null,
-    profitLoss: toDecimal(values.netProfit),
+    profitLoss: toDecimal(getRealizedProfitLoss(values.result, values.netProfit)),
     settledPayout:
       values.potentialPayout !== undefined && values.result === "WON"
         ? toDecimal(values.potentialPayout)

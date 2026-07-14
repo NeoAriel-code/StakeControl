@@ -97,7 +97,7 @@ export default async function DashboardPage() {
       id: "roi-historic",
       title: "ROI histórico",
       value: formatPercent(metrics.roiHistorical),
-      subtitle: "profitLoss / stake total",
+      subtitle: "ganancia realizada / stake resuelto",
       icon: Percent,
       variant: metrics.roiHistorical >= 0 ? ("success" as const) : ("risk" as const),
     },

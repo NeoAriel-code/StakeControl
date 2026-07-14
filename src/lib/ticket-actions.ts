@@ -14,6 +14,7 @@ import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { buildUserScopedWhere } from "@/lib/security-scopes";
+import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
 
 const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -279,8 +280,9 @@ export async function finalizeTicketReviewAction(
       confidenceScore: formData.get("confidenceScore"),
       doubtfulFields: formData
         .getAll("doubtfulFields")
-        .filter((field): field is string => typeof field === "string"),
+      .filter((field): field is string => typeof field === "string"),
     });
+    const realizedNetProfit = getRealizedProfitLoss(parsed.result, parsed.netProfit);
 
     await prisma.$transaction(async (transaction) => {
       const createdBet = await transaction.bet.create({
@@ -300,7 +302,7 @@ export async function finalizeTicketReviewAction(
           odds: toDecimal(parsed.odds),
           potentialPayout:
             parsed.potentialPayout !== undefined ? toDecimal(parsed.potentialPayout) : null,
-          profitLoss: toDecimal(parsed.netProfit),
+          profitLoss: toDecimal(realizedNetProfit),
           settledPayout:
             parsed.potentialPayout !== undefined && parsed.result === "WON"
               ? toDecimal(parsed.potentialPayout)
@@ -336,6 +338,7 @@ export async function finalizeTicketReviewAction(
           confidence: toDecimal(parsed.confidenceScore),
           extractedData: sanitizeJsonRecord({
             ...parsed,
+            netProfit: realizedNetProfit,
             legs,
             requiresReview: parsed.confidenceScore < 0.85,
           }),

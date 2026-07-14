@@ -90,6 +90,36 @@ test("calculateDashboardMetrics handles zero divisions safely", () => {
   assert.deepEqual(metrics.marketExposure, []);
 });
 
+test("calculateDashboardMetrics excludes pending values from realized performance", () => {
+  const metrics = calculateDashboardMetrics([
+    {
+      id: "settled",
+      title: "Ganada",
+      result: "WON",
+      stake: 50000,
+      odds: 1.93,
+      profitLoss: 46500,
+      placedAt: new Date("2026-07-14T10:00:00.000Z"),
+    },
+    {
+      id: "pending",
+      title: "Pendiente",
+      result: "PENDING",
+      stake: 121286.7,
+      odds: 21,
+      profitLoss: 1212867,
+      placedAt: new Date("2026-07-15T10:00:00.000Z"),
+    },
+  ]);
+
+  assert.equal(metrics.stakeTotal, 171286.7);
+  assert.equal(metrics.profitLossTotal, 46500);
+  assert.equal(metrics.roiHistorical, 93);
+  assert.deepEqual(metrics.monthlyProfitLoss, [
+    { month: "2026-07", profitLoss: 46500 },
+  ]);
+});
+
 test("calculateDashboardMetrics computes winning streak from latest resolved bets", () => {
   const metrics = calculateDashboardMetrics([
     {

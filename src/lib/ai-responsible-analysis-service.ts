@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { assertResponsibleAnalysisOutput } from "@/lib/ai-responsible-output-filter";
 import { generateBehaviorNarrative } from "@/lib/ai/behavior-analysis";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
+import { getRealizedProfitLoss, isResolvedBetResult } from "@/lib/bet-outcomes";
 
 export const AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION = "responsible-analysis-v1";
 
@@ -93,10 +94,6 @@ function getPeriodLabel(date: Date) {
     month: "long",
     year: "numeric",
   }).format(date);
-}
-
-function isResolvedResult(result: string) {
-  return result !== "PENDING" && result !== "UNKNOWN";
 }
 
 function buildCategoryName(bet: AnalysisBet) {
@@ -265,9 +262,9 @@ export class AiResponsibleAnalysisService {
     const previousMonthBets = previousMonthBetsRaw.map(toAnalysisBet);
     const historicalBets = historicalBetsRaw.map(toAnalysisBet);
     const totalBets = monthBets.length;
-    const resolvedBets = monthBets.filter((bet) => isResolvedResult(bet.result));
+    const resolvedBets = monthBets.filter((bet) => isResolvedBetResult(bet.result));
     const totalStake = round(monthBets.reduce((sum, bet) => sum + bet.stake, 0));
-    const totalProfit = round(monthBets.reduce((sum, bet) => sum + bet.profitLoss, 0));
+    const totalProfit = round(monthBets.reduce((sum, bet) => sum + getRealizedProfitLoss(bet.result, bet.profitLoss), 0));
     const averageStake = round(safeDivide(totalStake, totalBets));
     const previousAverageStake = round(
       safeDivide(
@@ -426,7 +423,7 @@ function toAnalysisBet(bet: {
     market: bet.market,
     result: bet.result,
     stake: Number(bet.stake),
-    profitLoss: bet.profitLoss ? Number(bet.profitLoss) : 0,
+    profitLoss: getRealizedProfitLoss(bet.result, bet.profitLoss ? Number(bet.profitLoss) : 0),
     placedAt: bet.placedAt,
   };
 }
