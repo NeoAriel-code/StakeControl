@@ -5,6 +5,7 @@ import { randomBytes, scryptSync } from "node:crypto";
 
 const adapter = new PrismaLibSql({
   url: process.env.DATABASE_URL,
+  ...(process.env.TURSO_AUTH_TOKEN ? { authToken: process.env.TURSO_AUTH_TOKEN } : {}),
 });
 
 const prisma = new PrismaClient({ adapter });
