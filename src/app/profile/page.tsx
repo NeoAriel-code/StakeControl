@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { getMonthlyOcrTicketUsage, getPlanLabel, getUserPlan } from "@/lib/plans";
 import { getCountryName } from "@/lib/countries";
 import { parsePreferredSports } from "@/lib/sports";
+import { canUsePlanTestControls } from "@/lib/plan-testing";
+import { PlanTestingControls } from "@/components/profile/PlanTestingControls";
 import Link from "next/link";
 
 export default async function ProfilePage() {
@@ -32,6 +34,8 @@ export default async function ProfilePage() {
             Información de tu cuenta y preferencias actuales.
           </p>
         </div>
+
+        {canUsePlanTestControls(user.email) && <PlanTestingControls plan={plan} />}
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <dl className="grid gap-4 sm:grid-cols-2">

@@ -8,7 +8,7 @@ import { getPlanLabel, getUserPlan } from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Upgrade | StakeControl",
-  description: "Comparación entre el plan Free y Premium para habilitar funciones avanzadas sin pago obligatorio todavía.",
+  description: "Comparación entre los planes Free y Premium de StakeControl.",
 };
 
 const FREE_FEATURES = [
@@ -39,13 +39,13 @@ export default async function UpgradePage() {
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="Planes StakeControl"
-          description="El gating ya está activo. Puedes mantener Free para el MVP o preparar el salto a Premium más adelante."
+          description="Compara las funciones disponibles en cada plan."
           icon={Crown}
           breadcrumb="StakeControl"
         />
 
         <div className="rounded-3xl border border-warning/30 bg-warning-soft p-5 text-sm text-warning-foreground shadow-sm">
-          No hay pago real obligatorio todavía. Esta pantalla prepara el gating funcional para el MVP.
+          La activación de Premium estará disponible próximamente.
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -83,7 +83,7 @@ export default async function UpgradePage() {
                 </span>
               ) : (
                 <span className="rounded-full border border-warning/30 bg-warning-soft px-3 py-1 text-xs font-semibold text-warning-foreground">
-                  Próxima activación
+                  No disponible aún
                 </span>
               )}
             </div>

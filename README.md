@@ -51,7 +51,7 @@ La app queda disponible en `http://localhost:3000`.
 
 ## OCR Local Con Tesseract
 
-El MVP soporta OCR local experimental con Tesseract para probar tickets sin pagar proveedores cloud.
+La aplicación soporta OCR local experimental con Tesseract para probar tickets sin pagar proveedores cloud.
 
 En Ubuntu/Debian:
 
@@ -71,7 +71,7 @@ TESSERACT_LANG="spa+eng"
 Notas:
 
 - Tesseract procesa localmente imagenes JPG, PNG y WEBP.
-- Los PDF subidos usan fallback mock en este MVP.
+- Los PDF subidos usan fallback mock.
 - Si Tesseract no esta instalado o no puede leer la imagen, StakeControl mantiene el flujo usando mock y muestra una advertencia en el texto extraido.
 - La revision humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
 
@@ -84,9 +84,19 @@ OCR_PROVIDER="google_vision"
 GOOGLE_VISION_CREDENTIALS_JSON='{"type":"service_account",...}'
 ```
 
-El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantienen fallback mock en este MVP.
+El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantienen fallback mock.
 
-## Rutas Oficiales Del MVP
+### Control Privado De Planes
+
+Para alternar rápidamente entre Free y Premium durante QA, define los emails autorizados en Vercel:
+
+```env
+PLAN_TESTER_EMAILS="arielalfaro.94@gmail.com"
+```
+
+Solo los correos incluidos verán el control en `/profile`; el servidor vuelve a validar el permiso antes de cambiar la suscripción. No procesa pagos.
+
+## Rutas De La Aplicación
 
 - `/`: landing publica.
 - `/register`: registro.
@@ -96,7 +106,7 @@ El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantie
 - `/health`: salud de juego y datos demo.
 - `/bets`: historial de apuestas.
 - `/bets/new`: registro manual.
-- `/tickets`: carga y revision de tickets con OCR mock.
+- `/tickets`: carga y revisión de tickets con OCR.
 - `/limits`: limites y pausas voluntarias.
 - `/alerts`: historial de alertas.
 - `/analysis`: analisis IA responsable premium.
