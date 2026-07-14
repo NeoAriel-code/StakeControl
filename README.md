@@ -75,6 +75,17 @@ Notas:
 - Si Tesseract no esta instalado o no puede leer la imagen, StakeControl mantiene el flujo usando mock y muestra una advertencia en el texto extraido.
 - La revision humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
 
+### Google Vision En Produccion
+
+Para usar OCR cloud en Vercel, configura el proveedor y una cuenta de servicio de Google Cloud como variables sensibles:
+
+```env
+OCR_PROVIDER="google_vision"
+GOOGLE_VISION_CREDENTIALS_JSON='{"type":"service_account",...}'
+```
+
+El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantienen fallback mock en este MVP.
+
 ## Rutas Oficiales Del MVP
 
 - `/`: landing publica.

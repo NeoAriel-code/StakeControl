@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@google-cloud/vision": "^5.3.7",
     "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",
