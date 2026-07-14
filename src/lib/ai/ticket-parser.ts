@@ -8,7 +8,7 @@ import { extractedBetTicketSchema, type ExtractedBetTicket } from "@/lib/ticket-
 import { structureMockBetTicket } from "@/lib/mock-ticket-parser";
 
 const MIN_CONFIDENCE = 0.85;
-const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa valores seguros, baja confidenceScore y agrega doubtfulFields cuando falte un dato. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
+const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha, usa null en placedAt, baja confidenceScore y agrega placedAt en doubtfulFields. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
 
 export type TicketRoutingResult = { ticket: ExtractedBetTicket; model: string; estimatedTokens: number; fallbackUsed: boolean };
 
@@ -25,8 +25,13 @@ function sanitizeOcrText(rawText: string) {
 
 function toExtractedTicket(value: unknown): ExtractedBetTicket {
   const parsed = aiTicketExtractionSchema.parse(value);
+  const placedAtWasMissing = !parsed.placedAt;
   return extractedBetTicketSchema.parse({
     ...parsed,
+    placedAt: parsed.placedAt ?? new Date().toISOString().slice(0, 16),
+    doubtfulFields: placedAtWasMissing
+      ? [...new Set([...parsed.doubtfulFields, "placedAt"])]
+      : parsed.doubtfulFields,
     sportsbook: parsed.sportsbook ?? undefined,
     sport: parsed.sport ?? undefined,
     league: parsed.league ?? undefined,

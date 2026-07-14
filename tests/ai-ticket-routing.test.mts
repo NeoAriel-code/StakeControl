@@ -35,6 +35,22 @@ test("ticket routing preserves primary output with sufficient confidence", async
   assert.equal(result.estimatedTokens, 9);
 });
 
+test("ticket routing keeps an AI extraction when its date is unavailable", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      const data = extraction(0.9);
+      data.placedAt = "";
+      return { data: data as T, model: input.model, estimatedTokens: 9 };
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket OCR", provider);
+
+  assert.equal(result.model, "gpt-4.1-mini");
+  assert.ok(result.ticket.placedAt.length > 0);
+  assert.ok(result.ticket.doubtfulFields.includes("placedAt"));
+});
+
 test("mock AI does not invent ticket fields from real OCR text", async () => {
   const result = await parseTicketWithRouting("Betano\nSimple $50.000,00\nNoruega\nInglaterra");
 

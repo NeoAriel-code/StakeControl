@@ -14,7 +14,10 @@ const aiTicketLegSchema = z.object({
 export const aiTicketExtractionSchema = z.object({
   sportsbook: z.string().nullable(),
   event: z.string().min(1),
-  placedAt: z.string().min(1),
+  placedAt: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length === 0 ? null : value),
+    z.string().min(1).nullable()
+  ),
   sport: z.string().nullable(),
   league: z.string().nullable(),
   market: z.string().nullable(),
@@ -54,7 +57,7 @@ export const aiTicketExtractionJsonSchema = {
   type: "object", additionalProperties: false,
   required: ["sportsbook", "event", "placedAt", "sport", "league", "market", "selection", "betType", "stake", "odds", "currency", "potentialPayout", "result", "netProfit", "ticketCode", "notes", "confidenceScore", "doubtfulFields", "legs"],
   properties: {
-    sportsbook: { type: ["string", "null"] }, event: { type: "string" }, placedAt: { type: "string" }, sport: { type: ["string", "null"] }, league: { type: ["string", "null"] }, market: { type: ["string", "null"] }, selection: { type: ["string", "null"] },
+    sportsbook: { type: ["string", "null"] }, event: { type: "string" }, placedAt: { type: ["string", "null"] }, sport: { type: ["string", "null"] }, league: { type: ["string", "null"] }, market: { type: ["string", "null"] }, selection: { type: ["string", "null"] },
     betType: { type: "string", enum: BET_TYPES }, stake: { type: "number" }, odds: { type: "number" }, currency: { type: "string" }, potentialPayout: { type: ["number", "null"] }, result: { type: "string", enum: BET_RESULT_OPTIONS }, netProfit: { type: "number" }, ticketCode: { type: ["string", "null"] }, notes: { type: ["string", "null"] }, confidenceScore: { type: "number" }, doubtfulFields: { type: "array", items: { type: "string" } }, legs: { type: "array", minItems: 1, maxItems: 20, items: aiTicketLegJsonSchema },
   },
 } as const;
