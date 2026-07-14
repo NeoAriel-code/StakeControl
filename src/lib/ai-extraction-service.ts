@@ -1,26 +1,19 @@
 import "server-only";
 
-import type { ExtractedBetTicket } from "@/lib/ticket-extraction";
-import { structureMockBetTicket } from "@/lib/mock-ticket-parser";
+import { parseTicketWithRouting, type TicketRoutingResult } from "@/lib/ai/ticket-parser";
 
 export interface AiExtractionProvider {
-  structureBetTicket(rawText: string): Promise<ExtractedBetTicket>;
-}
-
-class MockAiExtractionProvider implements AiExtractionProvider {
-  async structureBetTicket(rawText: string): Promise<ExtractedBetTicket> {
-    return structureMockBetTicket(rawText);
-  }
+  structureBetTicket(rawText: string): Promise<TicketRoutingResult>;
 }
 
 export class AiExtractionService {
   constructor(private readonly provider: AiExtractionProvider) {}
 
-  structureBetTicket(rawText: string) {
+  structureBetTicket(rawText: string): Promise<TicketRoutingResult> {
     return this.provider.structureBetTicket(rawText);
   }
 }
 
 export function createAiExtractionService() {
-  return new AiExtractionService(new MockAiExtractionProvider());
+  return new AiExtractionService({ structureBetTicket: parseTicketWithRouting });
 }

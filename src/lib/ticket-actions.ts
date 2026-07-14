@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
 import { getStorageService, sanitizeUploadedFileName } from "@/lib/storage";
-import { createOcrService } from "@/lib/ocr-service";
+import { createOcrService, getConfiguredOcrProviderName } from "@/lib/ocr-service";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
 import { reviewedTicketBetSchema } from "@/lib/ticket-extraction";
 import { Prisma } from "@prisma/client";
@@ -124,6 +124,7 @@ export async function uploadTicketAction(
 
     const safeFileName = sanitizeUploadedFileName(fileEntry.name);
     const storage = getStorageService();
+    const ocrProviderName = getConfiguredOcrProviderName();
     const ocrService = createOcrService();
     const aiExtractionService = createAiExtractionService();
     const storedObject = await storage.savePrivateObject({
@@ -145,20 +146,26 @@ export async function uploadTicketAction(
     });
 
     const rawText = await ocrService.extractText(storedObject.reference);
-    const structuredBet = await aiExtractionService.structureBetTicket(rawText);
+    const aiResult = await aiExtractionService.structureBetTicket(rawText);
+    const structuredBet = aiResult.ticket;
     const requiresReview = structuredBet.confidenceScore < 0.85;
 
     await prisma.aIExtraction.create({
       data: {
         betTicketImageId: ticketImage.id,
-        provider: "mock-ocr+mock-ai",
-        model: "mock-v1",
+        provider: `${ocrProviderName}+${process.env.AI_PROVIDER?.trim().toLowerCase() || "mock"}`,
+        model: aiResult.model,
         status: requiresReview ? "requires_review" : "ready_for_review",
         confidence: new Prisma.Decimal(structuredBet.confidenceScore.toString()),
         rawText,
         extractedData: sanitizeJsonRecord({
           ...structuredBet,
           requiresReview,
+          aiMetadata: {
+            model: aiResult.model,
+            estimatedTokens: aiResult.estimatedTokens,
+            fallbackUsed: aiResult.fallbackUsed,
+          },
         }),
       },
     });

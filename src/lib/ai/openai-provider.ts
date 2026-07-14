@@ -1,0 +1,52 @@
+import type { AiProvider, AiStructuredResponse } from "@/lib/ai/ai-provider";
+
+type OpenAiResponse = {
+  output_text?: string;
+  usage?: { total_tokens?: number };
+};
+
+export class OpenAiProvider implements AiProvider {
+  constructor(private readonly apiKey = process.env.OPENAI_API_KEY) {}
+
+  async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]): Promise<AiStructuredResponse<T>> {
+    if (!this.apiKey) {
+      throw new Error("OPENAI_API_KEY no está configurada.");
+    }
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: input.model,
+        instructions: input.system,
+        input: input.prompt,
+        text: {
+          format: {
+            type: "json_schema",
+            name: input.schemaName,
+            strict: true,
+            schema: input.jsonSchema,
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI Responses API respondió ${response.status}.`);
+    }
+
+    const payload = (await response.json()) as OpenAiResponse;
+    if (!payload.output_text) {
+      throw new Error("OpenAI no devolvió una salida estructurada.");
+    }
+
+    return {
+      data: JSON.parse(payload.output_text) as T,
+      model: input.model,
+      estimatedTokens: payload.usage?.total_tokens ?? Math.ceil((input.prompt.length + payload.output_text.length) / 4),
+    };
+  }
+}

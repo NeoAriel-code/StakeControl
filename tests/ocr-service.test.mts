@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MockOcrProvider } from "../src/lib/ocr-providers/MockOcrProvider";
 import { structureMockBetTicket } from "../src/lib/mock-ticket-parser";
+import { resolveOcrProviderName } from "../src/lib/ocr-config";
 
 test("MockOcrProvider returns ticket text with expected fields", async () => {
   const provider = new MockOcrProvider();
@@ -21,4 +22,12 @@ test("mock ticket parser structures mocked OCR text", async () => {
   assert.equal(extracted.stake > 0, true);
   assert.equal(extracted.odds > 1, true);
   assert.equal(extracted.confidenceScore >= 0 && extracted.confidenceScore <= 1, true);
+});
+
+test("OCR provider config supports local Tesseract and falls back to mock", () => {
+  assert.equal(resolveOcrProviderName("tesseract"), "tesseract");
+  assert.equal(resolveOcrProviderName(" TESSERACT "), "tesseract");
+  assert.equal(resolveOcrProviderName("google_vision"), "google_vision");
+  assert.equal(resolveOcrProviderName("unknown-provider"), "mock");
+  assert.equal(resolveOcrProviderName(undefined), "mock");
 });

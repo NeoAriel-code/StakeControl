@@ -4,31 +4,23 @@ import { AwsTextractOcrProvider } from "@/lib/ocr-providers/AwsTextractOcrProvid
 import { AzureVisionOcrProvider } from "@/lib/ocr-providers/AzureVisionOcrProvider";
 import { GoogleVisionOcrProvider } from "@/lib/ocr-providers/GoogleVisionOcrProvider";
 import { MockOcrProvider } from "@/lib/ocr-providers/MockOcrProvider";
+import { TesseractOcrProvider } from "@/lib/ocr-providers/TesseractOcrProvider";
+import { resolveOcrProviderName, type OcrProviderName } from "@/lib/ocr-config";
 
 export interface OcrProvider {
   extractText(fileUrl: string): Promise<string>;
 }
 
-export type OcrProviderName = "mock" | "google_vision" | "aws_textract" | "azure_vision";
-
-function getConfiguredOcrProviderName(): OcrProviderName {
-  const provider = process.env.OCR_PROVIDER?.trim().toLowerCase();
-
-  switch (provider) {
-    case "google_vision":
-    case "aws_textract":
-    case "azure_vision":
-    case "mock":
-      return provider;
-    default:
-      return "mock";
-  }
+export function getConfiguredOcrProviderName(): OcrProviderName {
+  return resolveOcrProviderName(process.env.OCR_PROVIDER);
 }
 
 export function createOcrProvider(): OcrProvider {
   const providerName = getConfiguredOcrProviderName();
 
   switch (providerName) {
+    case "tesseract":
+      return new TesseractOcrProvider();
     case "google_vision":
       return new GoogleVisionOcrProvider();
     case "aws_textract":

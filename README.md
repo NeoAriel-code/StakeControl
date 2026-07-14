@@ -49,6 +49,32 @@ npm run dev
 
 La app queda disponible en `http://localhost:3000`.
 
+## OCR Local Con Tesseract
+
+El MVP soporta OCR local experimental con Tesseract para probar tickets sin pagar proveedores cloud.
+
+En Ubuntu/Debian:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng
+```
+
+En `.env`:
+
+```env
+OCR_PROVIDER="tesseract"
+TESSERACT_BIN="tesseract"
+TESSERACT_LANG="spa+eng"
+```
+
+Notas:
+
+- Tesseract procesa localmente imagenes JPG, PNG y WEBP.
+- Los PDF subidos usan fallback mock en este MVP.
+- Si Tesseract no esta instalado o no puede leer la imagen, StakeControl mantiene el flujo usando mock y muestra una advertencia en el texto extraido.
+- La revision humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
+
 ## Rutas Oficiales Del MVP
 
 - `/`: landing publica.
@@ -130,7 +156,7 @@ La suite actual cubre:
 ## Limites Conocidos
 
 - No hay pasarela de pago real.
-- OCR real queda preparado a nivel arquitectura, pero el MVP usa mock.
+- OCR local con Tesseract esta disponible como proveedor experimental; cloud OCR queda preparado a nivel arquitectura.
 - No se conectan cuentas de sportsbooks.
 - No se guardan credenciales de casas de apuesta.
 - La base local es SQLite/libSQL; para produccion se debe migrar a un proveedor administrado como Supabase u otro backend elegido.

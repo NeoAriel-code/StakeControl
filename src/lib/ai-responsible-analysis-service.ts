@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { assertResponsibleAnalysisOutput } from "@/lib/ai-responsible-output-filter";
+import { generateBehaviorNarrative } from "@/lib/ai/behavior-analysis";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 
 export const AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION = "responsible-analysis-v1";
@@ -326,7 +327,39 @@ export class AiResponsibleAnalysisService {
 
     report.preventiveMessages = buildPreventiveMessages(report);
 
+    const aiNarrative = await generateBehaviorNarrative(
+      {
+        periodLabel: report.periodLabel,
+        totalBets: report.totalBets,
+        resolvedBets: report.resolvedBets,
+        totalStake: report.totalStake,
+        totalProfit: report.totalProfit,
+        roi: report.roi,
+        averageStake: report.averageStake,
+        stakeVariationPct: report.stakeVariationPct,
+        betsPerWeek: report.betsPerWeek,
+        currentLosingStreak: report.currentLosingStreak,
+        warnings: report.warnings,
+      },
+      {
+        summary: report.summary,
+        preventiveMessages: report.preventiveMessages,
+        warnings: report.warnings,
+      }
+    );
+    report.summary = aiNarrative.narrative.summary;
+    report.preventiveMessages = aiNarrative.narrative.preventiveMessages;
+    report.warnings = aiNarrative.narrative.warnings;
+
     const safeReport = filterResponsibleAnalysisOutput(report);
+    const analysisData = {
+      ...safeReport,
+      aiMetadata: {
+        model: aiNarrative.model,
+        estimatedTokens: aiNarrative.estimatedTokens,
+        fallbackUsed: aiNarrative.fallbackUsed,
+      },
+    };
 
     await prisma.monthlyReport.upsert({
       where: {
@@ -349,7 +382,7 @@ export class AiResponsibleAnalysisService {
           resolvedBets.length
         ) * 100),
         netUnits: new Prisma.Decimal(safeDivide(safeReport.totalProfit, safeReport.averageStake)),
-        analysisData: safeReport as unknown as Prisma.InputJsonValue,
+        analysisData: analysisData as unknown as Prisma.InputJsonValue,
         safePromptVersion: AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION,
         analysisGeneratedAt: new Date(safeReport.generatedAt),
       },
@@ -363,7 +396,7 @@ export class AiResponsibleAnalysisService {
           resolvedBets.length
         ) * 100),
         netUnits: new Prisma.Decimal(safeDivide(safeReport.totalProfit, safeReport.averageStake)),
-        analysisData: safeReport as unknown as Prisma.InputJsonValue,
+        analysisData: analysisData as unknown as Prisma.InputJsonValue,
         safePromptVersion: AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION,
         analysisGeneratedAt: new Date(safeReport.generatedAt),
         generatedAt: new Date(safeReport.generatedAt),
@@ -372,6 +405,10 @@ export class AiResponsibleAnalysisService {
 
     return safeReport;
   }
+}
+
+export async function generateResponsibleBehaviorReport(userId: string, period = new Date()) {
+  return new AiResponsibleAnalysisService().generateMonthlyReport(userId, period);
 }
 
 function toAnalysisBet(bet: {

@@ -25,3 +25,10 @@ test("assertResponsibleAnalysisOutput blocks prohibited betting recommendations"
     /lenguaje prohibido/
   );
 });
+
+test("assertResponsibleAnalysisOutput blocks predictions and profit promises", () => {
+  assert.throws(
+    () => assertResponsibleAnalysisOutput({ summary: "Con esta selección vas a ganar." }),
+    /lenguaje prohibido/
+  );
+});

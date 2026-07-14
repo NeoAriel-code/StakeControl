@@ -4,8 +4,17 @@ const FORBIDDEN_OUTPUT_PHRASES = [
   "aquí ganarás más",
   "aqui ganaras mas",
   "sube tu stake",
+  "aumenta tu stake",
+  "duplica tu stake",
   "recupera pérdidas",
   "recupera perdidas",
+  "vas a ganar",
+  "ganarás seguro",
+  "ganaras seguro",
+  "predicción",
+  "prediccion",
+  "apuesta recomendada",
+  "mercado recomendado",
 ];
 
 function normalizeText(value: string) {
