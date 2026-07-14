@@ -2,6 +2,12 @@ import type { AiProvider, AiStructuredResponse } from "@/lib/ai/ai-provider";
 
 type OpenAiResponse = {
   output_text?: string;
+  output?: Array<{
+    content?: Array<{
+      type?: string;
+      text?: string;
+    }>;
+  }>;
   usage?: { total_tokens?: number };
 };
 
@@ -16,6 +22,22 @@ function getRequestTimeoutMs(task: Parameters<AiProvider["generateStructured"]>[
   return Number.isFinite(configuredTimeout) && configuredTimeout >= 1000 && configuredTimeout <= 30000
     ? configuredTimeout
     : defaultTimeout;
+}
+
+export function getStructuredOutputText(payload: OpenAiResponse) {
+  if (payload.output_text?.trim()) {
+    return payload.output_text;
+  }
+
+  for (const item of payload.output ?? []) {
+    for (const content of item.content ?? []) {
+      if (content.type === "output_text" && content.text?.trim()) {
+        return content.text;
+      }
+    }
+  }
+
+  return null;
 }
 
 export class OpenAiProvider implements AiProvider {
@@ -58,14 +80,15 @@ export class OpenAiProvider implements AiProvider {
     }
 
     const payload = (await response.json()) as OpenAiResponse;
-    if (!payload.output_text) {
+    const outputText = getStructuredOutputText(payload);
+    if (!outputText) {
       throw new Error("OpenAI no devolvió una salida estructurada.");
     }
 
     return {
-      data: JSON.parse(payload.output_text) as T,
+      data: JSON.parse(outputText) as T,
       model: input.model,
-      estimatedTokens: payload.usage?.total_tokens ?? Math.ceil((input.prompt.length + payload.output_text.length) / 4),
+      estimatedTokens: payload.usage?.total_tokens ?? Math.ceil((input.prompt.length + outputText.length) / 4),
     };
   }
 }
