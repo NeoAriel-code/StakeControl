@@ -51,6 +51,35 @@ test("ticket routing keeps an AI extraction when its date is unavailable", async
   assert.ok(result.ticket.doubtfulFields.includes("placedAt"));
 });
 
+test("ticket routing applies the user's locale preferences to ambiguous ticket values", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      const extracted = extraction(0.9);
+      const data = {
+        ...extracted,
+        currency: "USD",
+        sport: null,
+        placedAt: "2026-07-14T04:21",
+        legs: extracted.legs.map((leg) => ({ ...leg, sport: null })),
+      };
+      return { data: data as T, model: input.model, estimatedTokens: 9 };
+    },
+  };
+
+  const result = await parseTicketWithRouting(
+    "Betano\nMás 1.5\nNoruega Córners Más/Menos Tiempo Extra\n$50.000,00",
+    provider,
+    { preferredCurrency: "CLP", timezone: "America/Santiago" }
+  );
+
+  assert.equal(result.ticket.currency, "CLP");
+  assert.equal(result.ticket.sport, "Fútbol");
+  assert.equal(result.ticket.legs[0]?.sport, "Fútbol");
+  assert.ok(result.ticket.doubtfulFields.includes("currency"));
+  assert.ok(result.ticket.doubtfulFields.includes("placedAt"));
+  assert.match(result.ticket.placedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+});
+
 test("mock AI does not invent ticket fields from real OCR text", async () => {
   const result = await parseTicketWithRouting("Betano\nSimple $50.000,00\nNoruega\nInglaterra");
 

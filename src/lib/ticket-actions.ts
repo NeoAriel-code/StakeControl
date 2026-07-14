@@ -146,7 +146,10 @@ export async function uploadTicketAction(
     });
 
     const rawText = await ocrService.extractText(storedObject.reference);
-    const aiResult = await aiExtractionService.structureBetTicket(rawText);
+    const aiResult = await aiExtractionService.structureBetTicket(rawText, {
+      preferredCurrency: user.currency,
+      timezone: user.timezone,
+    });
     const structuredBet = aiResult.ticket;
     const requiresReview = structuredBet.confidenceScore < 0.85;
 
