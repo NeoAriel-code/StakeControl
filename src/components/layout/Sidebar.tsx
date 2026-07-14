@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +15,6 @@ import {
   BarChart3,
   HeartPulse,
   User,
-  Sliders,
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
@@ -163,17 +163,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           className="flex cursor-pointer items-center gap-3 px-5 py-5 border-b border-sidebar-border flex-shrink-0 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-primary/60"
           aria-label="Ir al dashboard"
         >
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-cyan-500/25 flex-shrink-0">
-            <Sliders size={18} strokeWidth={2.5} />
-          </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight text-white leading-none">
-              Stake<span className="text-sidebar-primary">Control</span>
-            </span>
-            <p className="text-[10px] text-white/50 font-medium uppercase tracking-widest leading-none mt-0.5">
-              Autocontrol
-            </p>
-          </div>
+          <Image
+            src="/brand/stakecontrol-logo-white.svg"
+            alt="StakeControl"
+            width={180}
+            height={43}
+            priority
+            className="h-auto w-[164px]"
+          />
         </Link>
 
         {/* ── Navigation groups ── */}

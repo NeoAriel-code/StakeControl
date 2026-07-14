@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BarChart3,
@@ -11,7 +12,6 @@ import {
   ScanLine,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   WalletCards,
 } from "lucide-react";
@@ -119,15 +119,22 @@ export default async function RootPage() {
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#07111f] dark:text-white">
       <header className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-slate-900/10 bg-white/85 px-4 py-3 shadow-lg shadow-slate-950/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-slate-950/40">
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-cyan-200 shadow-lg shadow-cyan-400/20 dark:bg-cyan-300 dark:text-slate-950">
-            <SlidersHorizontal size={19} strokeWidth={2.4} />
-          </span>
-          <span>
-            <span className="block text-sm font-black tracking-tight">StakeControl</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-700/70 dark:text-cyan-100/60">
-              Apuestas deportivas
-            </span>
-          </span>
+          <Image
+            src="/brand/stakecontrol-logo-horizontal.svg"
+            alt="StakeControl"
+            width={200}
+            height={48}
+            priority
+            className="h-auto w-[170px] dark:hidden"
+          />
+          <Image
+            src="/brand/stakecontrol-logo-white.svg"
+            alt="StakeControl"
+            width={200}
+            height={48}
+            priority
+            className="hidden h-auto w-[170px] dark:block"
+          />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-semibold text-slate-600 md:flex dark:text-white/70">

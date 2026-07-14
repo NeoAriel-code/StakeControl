@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="170" viewBox="0 0 720 170" role="img">
+<g transform="translate(16 12)">
+
+<path d="M60 7 L108 29 V66 C108 101 88 122 60 136 C32 122 12 101 12 66 V29 Z"
+      fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round"/>
+<path d="M27 76 L47 55 L66 73 L92 44"
+      fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="27" cy="76" r="5.5" fill="#0F172A" stroke="#FFFFFF" stroke-width="4"/>
+<circle cx="47" cy="55" r="5.5" fill="#FFFFFF"/>
+<circle cx="66" cy="73" r="5.5" fill="#FFFFFF"/>
+<circle cx="92" cy="44" r="6" fill="#FFFFFF"/>
+<path d="M42 96 L55 109 L80 84"
+      fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+</g>
+<text x="165" y="103" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="-3" fill="#FFFFFF">StakeControl</text>
+</svg>

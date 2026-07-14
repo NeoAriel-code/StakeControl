@@ -1,5 +1,6 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import Link from "next/link";
+import Image from "next/image";
 import { redirectAuthenticatedUser } from "@/lib/auth";
 
 export default async function RegisterPage() {
@@ -9,9 +10,22 @@ export default async function RegisterPage() {
     <div className="min-h-screen bg-background px-4 py-10">
       <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">
-            StakeControl
-          </p>
+          <Image
+            src="/brand/stakecontrol-logo-horizontal.svg"
+            alt="StakeControl"
+            width={190}
+            height={45}
+            priority
+            className="h-auto w-[160px] dark:hidden"
+          />
+          <Image
+            src="/brand/stakecontrol-logo-white.svg"
+            alt="StakeControl"
+            width={190}
+            height={45}
+            priority
+            className="hidden h-auto w-[160px] dark:block"
+          />
           <h1 className="mt-2 text-3xl font-bold text-foreground">Crear cuenta</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Configura tu acceso inicial, país, moneda por defecto y confirmaciones legales.

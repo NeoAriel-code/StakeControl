@@ -15,6 +15,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_AR",
   },
+  icons: {
+    icon: [{ url: "/brand/favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/brand/stakecontrol-app-icon-1024.png", sizes: "1024x1024" }],
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
