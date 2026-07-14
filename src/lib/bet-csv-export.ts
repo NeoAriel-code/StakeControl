@@ -1,5 +1,5 @@
 import type { UserPlan } from "@/lib/plans";
-import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
+import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 
 export type CsvExportBet = {
   placedAt: Date;
@@ -86,7 +86,7 @@ function getRowValues(bet: CsvExportBet, plan: UserPlan) {
     bet.stake,
     bet.odds,
     bet.result,
-    getRealizedProfitLoss(bet.result, Number(bet.profitLoss ?? 0)),
+    getHistoricalProfitLoss(bet.result, Number(bet.stake), Number(bet.profitLoss ?? 0)),
     bet.currency,
   ];
 

@@ -1,4 +1,4 @@
-import { getRealizedProfitLoss, isResolvedBetResult } from "@/lib/bet-outcomes";
+import { getHistoricalProfitLoss, isResolvedBetResult } from "@/lib/bet-outcomes";
 
 export type MetricBet = {
   id: string;
@@ -106,7 +106,7 @@ function buildMonthlyProfitLoss(bets: MetricBet[]) {
 
   for (const bet of ordered) {
     const monthKey = `${bet.placedAt.getFullYear()}-${String(bet.placedAt.getMonth() + 1).padStart(2, "0")}`;
-    grouped.set(monthKey, (grouped.get(monthKey) ?? 0) + getRealizedProfitLoss(bet.result, bet.profitLoss));
+    grouped.set(monthKey, (grouped.get(monthKey) ?? 0) + getHistoricalProfitLoss(bet.result, bet.stake, bet.profitLoss));
   }
 
   return Array.from(grouped.entries()).map(([month, profitLoss]) => ({
@@ -147,7 +147,9 @@ export function calculateDashboardMetrics(bets: MetricBet[]): DashboardMetrics {
 
   const resolvedBets = bets.filter((bet) => isResolvedBetResult(bet.result));
   const winningBets = resolvedBets.filter((bet) => bet.result === "WON");
-  const profitLossTotal = calculateProfitLoss(resolvedBets);
+  const profitLossTotal = round(
+    resolvedBets.reduce((sum, bet) => sum + getHistoricalProfitLoss(bet.result, bet.stake, bet.profitLoss), 0)
+  );
   const resolvedStakeTotal = round(resolvedBets.reduce((sum, bet) => sum + bet.stake, 0));
 
   return {

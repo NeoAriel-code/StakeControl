@@ -14,7 +14,7 @@ import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { buildUserScopedWhere } from "@/lib/security-scopes";
-import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
+import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 
 const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -282,7 +282,7 @@ export async function finalizeTicketReviewAction(
         .getAll("doubtfulFields")
       .filter((field): field is string => typeof field === "string"),
     });
-    const realizedNetProfit = getRealizedProfitLoss(parsed.result, parsed.netProfit);
+    const realizedNetProfit = getHistoricalProfitLoss(parsed.result, parsed.stake, parsed.netProfit);
 
     await prisma.$transaction(async (transaction) => {
       const createdBet = await transaction.bet.create({

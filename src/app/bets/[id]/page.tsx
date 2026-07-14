@@ -7,7 +7,7 @@ import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "
 import prisma from "@/lib/prisma";
 import { isPrivateStorageReference } from "@/lib/storage";
 import { formatOdds } from "@/lib/odds-format";
-import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
+import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 import { BET_RESULT_LABELS, BET_TYPE_LABELS } from "@/lib/bet-enums";
 
 type BetDetailPageProps = {
@@ -140,7 +140,7 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Ganancia / pérdida neta</dt>
                 <dd className="mt-1 text-sm text-foreground">
-                  {`${bet.currency} ${getRealizedProfitLoss(bet.result, bet.profitLoss ? Number(bet.profitLoss) : 0)}`}
+                  {`${bet.currency} ${getHistoricalProfitLoss(bet.result, Number(bet.stake), bet.profitLoss ? Number(bet.profitLoss) : 0)}`}
                 </dd>
               </div>
               <div>

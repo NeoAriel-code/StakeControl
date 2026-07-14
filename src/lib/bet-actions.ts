@@ -7,7 +7,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { betFormSchema, type BetFormValues } from "@/lib/bet-schemas";
-import { getRealizedProfitLoss } from "@/lib/bet-outcomes";
+import { getHistoricalProfitLoss, getQuickResultFinancials, isResolvedBetResult } from "@/lib/bet-outcomes";
 import {
   evaluateResponsibleGamingAlerts,
   formatPauseMessage,
@@ -124,7 +124,7 @@ function buildBetPayload(values: BetFormValues) {
     odds: toDecimal(values.odds),
     potentialPayout:
       values.potentialPayout !== undefined ? toDecimal(values.potentialPayout) : null,
-    profitLoss: toDecimal(getRealizedProfitLoss(values.result, values.netProfit)),
+    profitLoss: toDecimal(getHistoricalProfitLoss(values.result, values.stake, values.netProfit)),
     settledPayout:
       values.potentialPayout !== undefined && values.result === "WON"
         ? toDecimal(values.potentialPayout)
@@ -251,18 +251,21 @@ export async function updateBetResultAction(formData: FormData) {
   }
 
   const bet = await ensureUserOwnsBet(user.id, parsed.data.betId);
-  const settledPayout =
-    parsed.data.result === "WON" && bet.potentialPayout
-      ? bet.potentialPayout
-      : parsed.data.result === "VOID"
-        ? bet.stake
-        : null;
+  const financials = getQuickResultFinancials({
+    result: parsed.data.result,
+    stake: Number(bet.stake),
+    odds: Number(bet.odds),
+    potentialPayout: bet.potentialPayout ? Number(bet.potentialPayout) : null,
+    settledPayout: bet.settledPayout ? Number(bet.settledPayout) : null,
+  });
 
   await prisma.bet.update({
     where: { id: bet.id },
     data: {
       result: parsed.data.result,
-      settledPayout,
+      profitLoss: toDecimal(financials.profitLoss),
+      settledPayout: financials.settledPayout === null ? null : toDecimal(financials.settledPayout),
+      settledAt: isResolvedBetResult(parsed.data.result) ? new Date() : null,
     },
   });
   await evaluateResponsibleGamingAlerts(user.id);
