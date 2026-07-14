@@ -34,3 +34,12 @@ test("ticket routing preserves primary output with sufficient confidence", async
   assert.equal(result.fallbackUsed, false);
   assert.equal(result.estimatedTokens, 9);
 });
+
+test("mock AI does not invent ticket fields from real OCR text", async () => {
+  const result = await parseTicketWithRouting("Betano\nSimple $50.000,00\nNoruega\nInglaterra");
+
+  assert.equal(result.ticket.event, "Evento por confirmar");
+  assert.equal(result.ticket.stake, 0);
+  assert.equal(result.ticket.confidenceScore, 0);
+  assert.match(result.ticket.notes ?? "", /Texto OCR disponible/);
+});

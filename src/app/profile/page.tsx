@@ -29,7 +29,7 @@ export default async function ProfilePage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold text-foreground">Perfil</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Resumen básico del acceso y del estado de onboarding.
+            Información de tu cuenta y preferencias actuales.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default async function ProfilePage() {
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Onboarding
+                Configuración inicial
               </dt>
               <dd className="mt-1 text-sm text-foreground">
                 {user.onboardingCompletedAt ? "Completo" : "Pendiente"}
@@ -125,7 +125,7 @@ export default async function ProfilePage() {
         <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">Documentos legales</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Consulta los términos de uso y la política de privacidad del MVP.
+            Consulta los términos de uso y la política de privacidad de StakeControl.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link

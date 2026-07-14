@@ -41,7 +41,7 @@ export default async function ReportsPage() {
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="Reportes y análisis"
-          description="Aquí vivirá la capa de informes y segmentación avanzada. El gating ya separa Free de Premium."
+          description="Consulta exportaciones y accede a análisis avanzados según tu plan."
           icon={BarChart3}
           breadcrumb="StakeControl"
         />
@@ -78,7 +78,7 @@ export default async function ReportsPage() {
                 <h2 className="mt-4 text-2xl font-bold text-foreground">Funciones avanzadas bloqueadas en Free</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
                   El historial extendido, la segmentación avanzada, los informes mensuales y la exportación avanzada
-                  quedan reservados para Premium. El MVP puede seguir operando con Free sin tocar este flujo.
+                  están disponibles con Premium.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -102,7 +102,7 @@ export default async function ReportsPage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Free</p>
-            <h2 className="mt-2 text-xl font-semibold text-foreground">Base operativa del MVP</h2>
+            <h2 className="mt-2 text-xl font-semibold text-foreground">Herramientas esenciales</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Dashboard básico, exportación CSV simple, alertas por límites y navegación histórica acotada.
             </p>

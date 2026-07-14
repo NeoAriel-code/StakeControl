@@ -1,4 +1,5 @@
 import type { AiProvider } from "@/lib/ai/ai-provider";
+import { BetResult, BetType } from "@prisma/client";
 import { MockAiProvider } from "@/lib/ai/mock-ai-provider";
 import { OpenAiProvider } from "@/lib/ai/openai-provider";
 import { aiTicketExtractionJsonSchema, aiTicketExtractionSchema } from "@/lib/ai/schemas/ticket-extraction.schema";
@@ -26,9 +27,43 @@ function toExtractedTicket(value: unknown): ExtractedBetTicket {
   return extractedBetTicketSchema.parse({ ...parsed, sportsbook: parsed.sportsbook ?? undefined, sport: parsed.sport ?? undefined, league: parsed.league ?? undefined, market: parsed.market ?? undefined, selection: parsed.selection ?? undefined, potentialPayout: parsed.potentialPayout ?? undefined, ticketCode: parsed.ticketCode ?? undefined, notes: parsed.notes ?? undefined });
 }
 
+function buildManualReviewTicket(): ExtractedBetTicket {
+  return extractedBetTicketSchema.parse({
+    event: "Evento por confirmar",
+    placedAt: new Date().toISOString().slice(0, 16),
+    betType: BetType.UNKNOWN,
+    stake: 0,
+    odds: 1.01,
+    currency: "CLP",
+    result: BetResult.PENDING,
+    netProfit: 0,
+    confidenceScore: 0,
+    doubtfulFields: [
+      "event",
+      "sportsbook",
+      "placedAt",
+      "sport",
+      "league",
+      "market",
+      "selection",
+      "betType",
+      "stake",
+      "odds",
+      "currency",
+      "potentialPayout",
+      "ticketCode",
+    ],
+    notes: "Texto OCR disponible. Completa y revisa los campos antes de confirmar.",
+  });
+}
+
+function isMockTicketText(rawText: string) {
+  return rawText.trim().startsWith("Sportsbook:") && rawText.includes("Evento:") && rawText.includes("Stake:");
+}
+
 export async function parseTicketWithRouting(rawText: string, provider = getProvider()): Promise<TicketRoutingResult> {
   if (provider instanceof MockAiProvider) {
-    const ticket = structureMockBetTicket(rawText);
+    const ticket = isMockTicketText(rawText) ? structureMockBetTicket(rawText) : buildManualReviewTicket();
     return { ticket, model: "mock-v1", estimatedTokens: Math.ceil(rawText.length / 4), fallbackUsed: false };
   }
   const cleanedText = sanitizeOcrText(rawText);

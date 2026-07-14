@@ -46,6 +46,13 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
   const isPdf = ticketImage.mimeType === "application/pdf";
   const extractedBet = extractedBetTicketSchema.parse(ticketImage.aiExtraction.extractedData);
   const requiresReview = extractedBet.confidenceScore < 0.85;
+  const ocrProvider = ticketImage.aiExtraction.provider?.split("+")[0];
+  const processingDescription =
+    ocrProvider === "google_vision"
+      ? "Google Vision extrajo el texto del ticket. Revisa los campos antes de crear la apuesta final."
+      : ocrProvider === "tesseract"
+        ? "Tesseract extrajo el texto del ticket. Revisa los campos antes de crear la apuesta final."
+        : "El ticket fue procesado para su revisión. Revisa los campos antes de crear la apuesta final.";
 
   return (
     <AppLayout
@@ -100,7 +107,7 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
                   {requiresReview ? "Revisión obligatoria" : "Lista para confirmación manual"}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  El OCR mock ya procesó el ticket. Revisa los campos detectados antes de crear la apuesta final.
+                  {processingDescription}
                 </p>
               </div>
             </section>

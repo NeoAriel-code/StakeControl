@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { BET_RESULTS, BET_TYPES } from "@/lib/bet-enums";
+import { BET_RESULT_LABELS, BET_RESULTS, BET_TYPE_LABELS, BET_TYPES } from "@/lib/bet-enums";
 import {
   finalizeTicketReviewAction,
   type TicketReviewActionState,
@@ -113,7 +113,7 @@ export function TicketReviewForm({
           <label htmlFor="betType" className="text-sm font-medium text-foreground">Tipo de apuesta</label>
           <select id="betType" name="betType" defaultValue={extractedBet.betType} className={inputClassName(isDoubtful("betType"))}>
             {BET_TYPES.map((betType) => (
-              <option key={betType} value={betType}>{betType}</option>
+              <option key={betType} value={betType}>{BET_TYPE_LABELS[betType]}</option>
             ))}
           </select>
         </div>
@@ -122,7 +122,7 @@ export function TicketReviewForm({
           <label htmlFor="result" className="text-sm font-medium text-foreground">Resultado</label>
           <select id="result" name="result" defaultValue={extractedBet.result} className={inputClassName(isDoubtful("result"))}>
             {BET_RESULTS.map((result) => (
-              <option key={result} value={result}>{result}</option>
+              <option key={result} value={result}>{BET_RESULT_LABELS[result]}</option>
             ))}
           </select>
         </div>
