@@ -7,8 +7,9 @@ export default async function RegisterPage() {
   await redirectAuthenticatedUser();
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 shadow-sm">
+    <div className="auth-stage flex items-center justify-center">
+      <div className="w-full max-w-2xl">
+      <div className="auth-panel p-7 sm:p-9">
         <div className="mb-8">
           <Image
             src="/brand/stakecontrol-logo-horizontal.svg"
@@ -26,7 +27,8 @@ export default async function RegisterPage() {
             priority
             className="hidden h-auto w-[160px] dark:block"
           />
-          <h1 className="mt-2 text-3xl font-bold text-foreground">Crear cuenta</h1>
+          <p className="auth-kicker mt-8">Paso 01 · Configuración inicial</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">Crear cuenta</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Configura tu acceso inicial, país, moneda por defecto y confirmaciones legales.
           </p>
@@ -34,7 +36,7 @@ export default async function RegisterPage() {
 
         <RegisterForm />
       </div>
-      <footer className="mx-auto mt-6 flex max-w-md justify-center gap-4 text-xs text-muted-foreground">
+      <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground">
         <Link href="/terms" className="hover:text-primary">
           Términos
         </Link>
@@ -42,6 +44,7 @@ export default async function RegisterPage() {
           Privacidad
         </Link>
       </footer>
+      </div>
     </div>
   );
 }

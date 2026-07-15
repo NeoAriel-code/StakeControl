@@ -116,8 +116,8 @@ export default async function RootPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-[#07111f] dark:text-white">
-      <header className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-slate-900/10 bg-white/85 px-4 py-3 shadow-lg shadow-slate-950/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-slate-950/40">
+    <main className="min-h-screen bg-[#f1f6f7] text-[#10262d] dark:bg-[#07171b] dark:text-[#e6f2f2]">
+      <header className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between rounded-md border border-[#a9c1c5] bg-[#fcfefe]/90 px-4 py-3 shadow-[0_8px_24px_-20px_rgba(16,38,45,0.7)] backdrop-blur-xl dark:border-[#3d6269] dark:bg-[#07171b]/90 dark:shadow-black/40">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/brand/stakecontrol-logo-horizontal.svg"
@@ -162,7 +162,7 @@ export default async function RootPage() {
           </Link>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+            className="inline-flex items-center gap-2 rounded-md bg-[#102c34] px-4 py-2 text-sm font-black text-white transition hover:bg-[#0b5968] dark:bg-[#77dadd] dark:text-[#073239] dark:hover:bg-[#a0e8e9]"
           >
             Crear cuenta
             <ArrowRight size={15} />
@@ -171,13 +171,13 @@ export default async function RootPage() {
       </header>
 
       <section className="relative overflow-hidden pt-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(8,145,178,0.18),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(30,58,138,0.10),transparent_30%),linear-gradient(135deg,#f8fafc_0%,#eef7fb_48%,#e7eef7_100%)] dark:bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.24),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(125,176,255,0.18),transparent_30%),linear-gradient(135deg,#061827_0%,#07111f_48%,#0c1728_100%)]" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(90deg,rgba(15,23,42,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(15,23,42,0.06)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40 dark:bg-[linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.06)_1px,transparent_1px)] dark:opacity-30" />
+        <div className="absolute inset-0 bg-[#f1f6f7] dark:bg-[#07171b]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(89,112,120,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(89,112,120,0.16)_1px,transparent_1px)] bg-[size:28px_28px] opacity-45 dark:bg-[linear-gradient(rgba(155,181,185,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(155,181,185,0.12)_1px,transparent_1px)]" />
 
         <div className="relative mx-auto flex max-w-7xl flex-col gap-16 px-4 py-6 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 pb-20 pt-8 lg:grid-cols-[minmax(0,1fr)_520px] lg:pb-28 lg:pt-16">
             <section className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-700/20 bg-cyan-700/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-800 dark:border-cyan-200/25 dark:bg-cyan-200/10 dark:text-cyan-100">
+              <div className="inline-flex items-center gap-2 rounded-sm border-l-2 border-[#0b5968] bg-[#dff0f1] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#0b5968] dark:border-[#77dadd] dark:bg-[#123842] dark:text-[#bce8e8]">
                 <ShieldCheck size={13} />
                 Bitácora privada para apostadores deportivos
               </div>
@@ -193,14 +193,14 @@ export default async function RootPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white shadow-2xl shadow-slate-950/10 transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-cyan-300 dark:text-slate-950 dark:shadow-cyan-500/20 dark:hover:bg-cyan-200"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-[#102c34] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#0b5968]/10 transition hover:-translate-y-0.5 hover:bg-[#0b5968] dark:bg-[#77dadd] dark:text-[#073239] dark:shadow-[#77dadd]/20 dark:hover:bg-[#a0e8e9]"
                 >
                   Ordenar mi historial
                   <ArrowRight size={16} />
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white/80 px-5 py-4 text-sm font-bold text-slate-900 shadow-lg shadow-slate-950/5 transition hover:bg-white dark:border-white/25 dark:bg-white/10 dark:text-white dark:shadow-slate-950/10 dark:hover:bg-white/15"
+                  className="inline-flex items-center justify-center rounded-md border border-[#a9c1c5] bg-white/80 px-5 py-4 text-sm font-bold text-[#10262d] shadow-lg shadow-[#10262d]/5 transition hover:bg-white dark:border-[#3d6269] dark:bg-white/10 dark:text-white dark:shadow-black/10 dark:hover:bg-white/15"
                 >
                   Ya tengo cuenta
                 </Link>
@@ -213,9 +213,9 @@ export default async function RootPage() {
             </section>
 
             <aside className="relative">
-              <div className="absolute -inset-4 rounded-[2rem] bg-cyan-300/10 blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/12 bg-slate-950/80 p-4 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
-                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="absolute -inset-4 bg-[#0c8194]/10 blur-2xl" />
+              <div className="relative overflow-hidden rounded-md border border-[#214048] bg-[#102c34] p-4 shadow-2xl shadow-[#10262d]/40 backdrop-blur-xl">
+                <div className="border border-white/10 bg-white/[0.04] p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100/60">Dashboard</p>
