@@ -1,28 +1,26 @@
-import "server-only";
-
 import { ImageAnnotatorClient } from "@google-cloud/vision";
 import type { OcrProvider } from "@/lib/ocr-service";
+import { OcrProcessingError } from "../ocr-errors";
 import { parseGoogleVisionCredentials } from "@/lib/google-vision-config";
-import { getStorageService } from "@/lib/storage";
-import { MockOcrProvider } from "@/lib/ocr-providers/MockOcrProvider";
 
 const SUPPORTED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-function buildFallbackText(reason: string, fallbackText: string) {
-  return [
-    "Aviso OCR: Google Vision no pudo procesar el ticket.",
-    `Motivo: ${reason}`,
-    "Se usaron datos mock para mantener el flujo de revisión. Revisa manualmente todos los campos antes de guardar.",
-    "",
-    fallbackText,
-  ].join("\n");
-}
+type StoredObject = { buffer: Buffer; mimeType: string; fileName: string };
+type VisionClient = Pick<ImageAnnotatorClient, "documentTextDetection">;
+
+type GoogleVisionOcrProviderDependencies = {
+  getStoredObject?: (fileUrl: string) => Promise<StoredObject>;
+  client?: VisionClient;
+};
 
 export class GoogleVisionOcrProvider implements OcrProvider {
-  private readonly fallbackProvider = new MockOcrProvider();
-  private client: ImageAnnotatorClient | null = null;
+  private client: VisionClient | null;
 
-  private getClient() {
+  constructor(private readonly dependencies: GoogleVisionOcrProviderDependencies = {}) {
+    this.client = dependencies.client ?? null;
+  }
+
+  private getClient(): VisionClient {
     if (!this.client) {
       const credentials = parseGoogleVisionCredentials();
       this.client = new ImageAnnotatorClient({
@@ -34,17 +32,21 @@ export class GoogleVisionOcrProvider implements OcrProvider {
     return this.client;
   }
 
-  async extractText(fileUrl: string): Promise<string> {
-    const fallbackText = await this.fallbackProvider.extractText(fileUrl);
+  private async getStoredObject(fileUrl: string): Promise<StoredObject> {
+    if (this.dependencies.getStoredObject) {
+      return this.dependencies.getStoredObject(fileUrl);
+    }
 
+    const { getStorageService } = await import("@/lib/storage");
+    return getStorageService().getPrivateObject(fileUrl);
+  }
+
+  async extractText(fileUrl: string): Promise<string> {
     try {
-      const storedObject = await getStorageService().getPrivateObject(fileUrl);
+      const storedObject = await this.getStoredObject(fileUrl);
 
       if (!SUPPORTED_IMAGE_MIME_TYPES.has(storedObject.mimeType)) {
-        return buildFallbackText(
-          `Formato ${storedObject.mimeType} no soportado por Google Vision en este MVP.`,
-          fallbackText
-        );
+        throw new OcrProcessingError();
       }
 
       const [result] = await this.getClient().documentTextDetection({
@@ -54,13 +56,12 @@ export class GoogleVisionOcrProvider implements OcrProvider {
       const extractedText = result.fullTextAnnotation?.text?.trim() || result.textAnnotations?.[0]?.description?.trim();
 
       if (!extractedText) {
-        return buildFallbackText("Google Vision no devolvió texto legible.", fallbackText);
+        throw new OcrProcessingError();
       }
 
       return extractedText;
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "Error desconocido ejecutando Google Vision.";
-      return buildFallbackText(reason, fallbackText);
+    } catch {
+      throw new OcrProcessingError();
     }
   }
 }

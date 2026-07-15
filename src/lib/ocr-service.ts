@@ -10,16 +10,10 @@ import {
   resolveOcrProviderName,
   type OcrProviderName,
 } from "@/lib/ocr-config";
+export { OcrProcessingError } from "@/lib/ocr-errors";
 
 export interface OcrProvider {
   extractText(fileUrl: string): Promise<string>;
-}
-
-export class OcrProcessingError extends Error {
-  constructor() {
-    super("No se pudo procesar el ticket. Inténtalo de nuevo o completa los datos manualmente.");
-    this.name = "OcrProcessingError";
-  }
 }
 
 export function getConfiguredOcrProviderName(): OcrProviderName {
