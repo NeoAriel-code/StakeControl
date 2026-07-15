@@ -11,7 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { updateBetResultAction } from "@/lib/bet-actions";
 import { cn } from "@/lib/utils";
 
@@ -58,15 +58,11 @@ const RESULT_ICON_COLORS: Record<BetResultValue, string> = {
 };
 
 export function QuickBetResultSelect({ betId, result, compact = false }: QuickBetResultSelectProps) {
-  const [selectedResult, setSelectedResult] = useState(result);
+  const [selectedResult, setSelectedResult] = useOptimistic(result);
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
   const Icon = RESULT_ICONS[selectedResult];
-
-  useEffect(() => {
-    setSelectedResult(result);
-  }, [result]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -91,10 +87,10 @@ export function QuickBetResultSelect({ betId, result, compact = false }: QuickBe
   }, []);
 
   function updateResult(nextResult: BetResultValue) {
-    setSelectedResult(nextResult);
     setOpen(false);
 
     startTransition(async () => {
+      setSelectedResult(nextResult);
       const formData = new FormData();
       formData.set("betId", betId);
       formData.set("result", nextResult);

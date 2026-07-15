@@ -71,6 +71,15 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
     setPendingAlertCount(0);
   }
 
+  function handleAlertsToggle() {
+    const nextAlertsOpen = !alertsOpen;
+    setAlertsOpen(nextAlertsOpen);
+
+    if (nextAlertsOpen) {
+      void loadUnreadAlerts();
+    }
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -102,14 +111,6 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
       isMounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!alertsOpen) {
-      return;
-    }
-
-    loadUnreadAlerts();
-  }, [alertsOpen]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -207,7 +208,7 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
             aria-label={notificationLabel}
             aria-expanded={alertsOpen}
             aria-haspopup="dialog"
-            onClick={() => setAlertsOpen((open) => !open)}
+            onClick={handleAlertsToggle}
             className={cn(
               "relative flex items-center justify-center w-9 h-9 rounded-xl",
               "text-muted-foreground hover:text-primary hover:bg-accent",
