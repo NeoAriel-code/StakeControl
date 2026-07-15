@@ -7,7 +7,7 @@ Reemplazar los términos básicos de StakeControl por términos de uso completos
 ## Identificación y contacto
 
 - Prestador: StakeControl, empresa chilena.
-- Soporte y asuntos generales: `contacto@getstakecontrol.com`.
+- Soporte y asuntos generales: `contact@getstakecontrol.com`.
 - Privacidad: `privacy@getstakecontrol.com`.
 
 ## Naturaleza del servicio
@@ -47,4 +47,3 @@ La página `/terms` mantendrá el diseño de tarjetas y los enlaces actuales. La
 ## Exclusiones de alcance
 
 No se implementarán cobros, reembolsos, pasarelas de pago, marketing, afiliados, enlaces a operadores, emails salientes, comparadores de promociones ni cambios en el producto de apuestas.
-
