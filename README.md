@@ -49,48 +49,29 @@ npm run dev
 
 La app queda disponible en `http://localhost:3000`.
 
-## OCR Local Con Tesseract
+## Procesamiento De Tickets En Produccion
 
-La aplicación soporta OCR local experimental con Tesseract para probar tickets sin pagar proveedores cloud.
+La carga de tickets acepta únicamente imágenes JPG, PNG y WEBP; los PDF no son aceptados. El OCR debe configurarse explícitamente: si no está disponible o no puede procesar una imagen, la carga falla de forma segura y no se genera texto de reemplazo. La revisión humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
 
-En Ubuntu/Debian:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng
-```
-
-En `.env`:
+Para desplegar en producción, configura estas variables sensibles:
 
 ```env
-OCR_PROVIDER="tesseract"
-TESSERACT_BIN="tesseract"
-TESSERACT_LANG="spa+eng"
-```
-
-Notas:
-
-- Tesseract procesa localmente imagenes JPG, PNG y WEBP.
-- Los PDF subidos usan fallback mock.
-- Si Tesseract no esta instalado o no puede leer la imagen, StakeControl mantiene el flujo usando mock y muestra una advertencia en el texto extraido.
-- La revision humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
-
-### Google Vision En Produccion
-
-Para usar OCR cloud en Vercel, configura el proveedor y una cuenta de servicio de Google Cloud como variables sensibles:
-
-```env
+AUTH_SECRET="un-secreto-largo-y-aleatorio"
 OCR_PROVIDER="google_vision"
 GOOGLE_VISION_CREDENTIALS_JSON='{"type":"service_account",...}'
+AI_PROVIDER="openai"
+OPENAI_API_KEY="sk-..."
+SUPABASE_URL="https://project.supabase.co"
+SUPABASE_SECRET_KEY="sb_secret_..."
 ```
 
-El proveedor usa `DOCUMENT_TEXT_DETECTION` sobre JPG, PNG y WEBP. Los PDF mantienen fallback mock.
+En producción, Google Vision procesa las imágenes mediante `DOCUMENT_TEXT_DETECTION`, OpenAI estructura el texto OCR y Supabase Storage almacena los archivos privados. `AUTH_SECRET` también es obligatorio en todos los entornos.
 
 ### IA Para Estructurar Tickets
 
 La IA recibe solo el texto OCR saneado, no el archivo ni identificadores personales. La extracción usa salida estructurada, no guarda una apuesta automáticamente y mantiene la revisión humana como paso obligatorio. Si el proveedor no responde, el ticket queda disponible para completar manualmente.
 
-Para activarla en Vercel, configura estas variables sensibles en `Production` y `Preview`:
+Para ajustar los modelos de IA en Vercel, configura estas variables opcionales en `Production` y `Preview`:
 
 ```env
 AI_PROVIDER="openai"
@@ -175,6 +156,7 @@ Ejecutar antes de declarar una version como estable:
 
 ```bash
 npx tsc --noEmit
+npm run lint
 git diff --check
 npm test
 npm run build
@@ -187,7 +169,7 @@ La suite actual cubre:
 - alertas responsables,
 - permisos por `userId`,
 - validaciones Zod,
-- OCR mockeado,
+- configuración explícita de proveedores OCR y almacenamiento,
 - bloqueo premium/free,
 - filtro de salida del analisis IA responsable,
 - exportacion CSV.
@@ -195,7 +177,7 @@ La suite actual cubre:
 ## Limites Conocidos
 
 - No hay pasarela de pago real.
-- OCR local con Tesseract esta disponible como proveedor experimental; cloud OCR queda preparado a nivel arquitectura.
+- La carga de tickets no acepta PDF; solo admite JPG, PNG y WEBP.
 - No se conectan cuentas de sportsbooks.
 - No se guardan credenciales de casas de apuesta.
 - La base local es SQLite/libSQL; para produccion se debe migrar a un proveedor administrado como Supabase u otro backend elegido.

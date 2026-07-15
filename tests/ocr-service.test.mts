@@ -26,10 +26,10 @@ test("mock ticket parser structures mocked OCR text", async () => {
   assert.equal(extracted.legs[0]?.event, extracted.event);
 });
 
-test("OCR provider config supports local Tesseract and falls back to mock", () => {
+test("OCR provider configuration requires an explicit supported provider", () => {
   assert.equal(resolveOcrProviderName("tesseract"), "tesseract");
   assert.equal(resolveOcrProviderName(" TESSERACT "), "tesseract");
   assert.equal(resolveOcrProviderName("google_vision"), "google_vision");
-  assert.equal(resolveOcrProviderName("unknown-provider"), "mock");
-  assert.equal(resolveOcrProviderName(undefined), "mock");
+  assert.throws(() => resolveOcrProviderName("unknown-provider"), /OCR_PROVIDER/);
+  assert.throws(() => resolveOcrProviderName(undefined), /OCR_PROVIDER/);
 });
