@@ -1,12 +1,6 @@
-import { OcrProcessingError } from "@/lib/ocr-errors";
-
 const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
-
-function isOcrProcessingError(error: unknown) {
-  return error instanceof OcrProcessingError || (error as Error | undefined)?.name === "OcrProcessingError";
-}
 
 type StoredObject = {
   reference: string;
@@ -93,7 +87,7 @@ export async function saveTicketAndExtractText({
       rawText: await ocrService.extractText(storedReference),
     };
   } catch (error) {
-    if (storedReference && isOcrProcessingError(error)) {
+    if (storedReference) {
       await storage.deletePrivateObject(storedReference).catch(() => undefined);
     }
     throw error;
