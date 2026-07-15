@@ -5,14 +5,25 @@ import { AzureVisionOcrProvider } from "@/lib/ocr-providers/AzureVisionOcrProvid
 import { GoogleVisionOcrProvider } from "@/lib/ocr-providers/GoogleVisionOcrProvider";
 import { MockOcrProvider } from "@/lib/ocr-providers/MockOcrProvider";
 import { TesseractOcrProvider } from "@/lib/ocr-providers/TesseractOcrProvider";
-import { resolveOcrProviderName, type OcrProviderName } from "@/lib/ocr-config";
+import {
+  assertOcrProviderAllowed,
+  resolveOcrProviderName,
+  type OcrProviderName,
+} from "@/lib/ocr-config";
 
 export interface OcrProvider {
   extractText(fileUrl: string): Promise<string>;
 }
 
+export class OcrProcessingError extends Error {
+  constructor() {
+    super("No se pudo procesar el ticket. Inténtalo de nuevo o completa los datos manualmente.");
+    this.name = "OcrProcessingError";
+  }
+}
+
 export function getConfiguredOcrProviderName(): OcrProviderName {
-  return resolveOcrProviderName(process.env.OCR_PROVIDER);
+  return assertOcrProviderAllowed(resolveOcrProviderName(process.env.OCR_PROVIDER));
 }
 
 export function createOcrProvider(): OcrProvider {
@@ -28,7 +39,6 @@ export function createOcrProvider(): OcrProvider {
     case "azure_vision":
       return new AzureVisionOcrProvider();
     case "mock":
-    default:
       return new MockOcrProvider();
   }
 }

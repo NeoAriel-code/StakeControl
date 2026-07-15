@@ -4,7 +4,7 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { resolveStorageProviderName } from "@/lib/storage-config";
+import { assertStorageProviderAllowed, resolveStorageProviderName } from "@/lib/storage-config";
 
 const LOCAL_STORAGE_ROOT = path.join("/tmp", "stakecontrol-storage");
 const LOCAL_REFERENCE_PREFIX = "local://";
@@ -197,19 +197,23 @@ class SupabaseStorageService implements StorageService {
   }
 }
 
-function createStorageService(): StorageService {
-  const providerName = resolveStorageProviderName();
+export function createStorageService(environment: NodeJS.ProcessEnv = process.env): StorageService {
+  const providerName = assertStorageProviderAllowed(
+    resolveStorageProviderName(environment.SUPABASE_URL, environment.SUPABASE_SECRET_KEY),
+    environment.NODE_ENV
+  );
 
   if (providerName === "supabase") {
-    return new SupabaseStorageService(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+    return new SupabaseStorageService(environment.SUPABASE_URL!, environment.SUPABASE_SECRET_KEY!);
   }
 
   return new LocalStorageService();
 }
 
-const storageService = createStorageService();
+let storageService: StorageService | undefined;
 
 export function getStorageService() {
+  storageService ??= createStorageService();
   return storageService;
 }
 

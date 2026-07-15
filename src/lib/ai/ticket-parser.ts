@@ -1,7 +1,7 @@
 import type { AiProvider } from "@/lib/ai/ai-provider";
 import { BetResult, BetType } from "@prisma/client";
 import { MockAiProvider } from "@/lib/ai/mock-ai-provider";
-import { OpenAiProvider } from "@/lib/ai/openai-provider";
+import { createConfiguredAiProvider } from "@/lib/ai/ai-provider-factory";
 import { getAiModelConfig } from "@/lib/ai/ai-config";
 import { aiTicketExtractionJsonSchema, aiTicketExtractionSchema } from "@/lib/ai/schemas/ticket-extraction.schema";
 import { CURRENCY_CODES, isSupportedCurrency } from "@/lib/currencies";
@@ -19,7 +19,7 @@ export type TicketExtractionContext = {
 };
 
 function getProvider(): AiProvider {
-  return process.env.AI_PROVIDER?.trim().toLowerCase() === "openai" ? new OpenAiProvider() : new MockAiProvider();
+  return createConfiguredAiProvider();
 }
 
 function sanitizeOcrText(rawText: string) {

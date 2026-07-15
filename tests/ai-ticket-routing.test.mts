@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { BetResult, BetType } from "@prisma/client";
 import type { AiProvider } from "../src/lib/ai/ai-provider";
+import { createConfiguredAiProvider } from "../src/lib/ai/ai-provider-factory";
 import { parseTicketWithRouting } from "../src/lib/ai/ticket-parser";
 
 function extraction(confidenceScore: number) {
@@ -109,7 +110,10 @@ test("ticket routing keeps future events pending when a cash out offer is visibl
 });
 
 test("mock AI does not invent ticket fields from real OCR text", async () => {
-  const result = await parseTicketWithRouting("Betano\nSimple $50.000,00\nNoruega\nInglaterra");
+  const result = await parseTicketWithRouting(
+    "Betano\nSimple $50.000,00\nNoruega\nInglaterra",
+    createConfiguredAiProvider({ AI_PROVIDER: "mock", NODE_ENV: "test" })
+  );
 
   assert.equal(result.ticket.event, "Evento por confirmar");
   assert.equal(result.ticket.stake, 0);

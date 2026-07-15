@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AiProvider } from "@/lib/ai/ai-provider";
 import { MockAiProvider } from "@/lib/ai/mock-ai-provider";
-import { OpenAiProvider } from "@/lib/ai/openai-provider";
+import { createConfiguredAiProvider } from "@/lib/ai/ai-provider-factory";
 import { getAiModelConfig } from "@/lib/ai/ai-config";
 import { behaviorNarrativeJsonSchema, behaviorNarrativeSchema, type BehaviorNarrative } from "@/lib/ai/schemas/behavior-report.schema";
 import { assertSafeAiOutput } from "@/lib/ai/safety-filter";
@@ -10,7 +10,7 @@ import { assertSafeAiOutput } from "@/lib/ai/safety-filter";
 const SYSTEM_PROMPT = "Redacta un análisis exclusivamente histórico y preventivo. No recomiendes apuestas, mercados, selecciones, cuotas ni aumentar stakes. No predigas resultados ni prometas ganancias. Usa un tono prudente, menciona varianza y límites cuando proceda.";
 
 function getProvider(): AiProvider {
-  return process.env.AI_PROVIDER?.trim().toLowerCase() === "openai" ? new OpenAiProvider() : new MockAiProvider();
+  return createConfiguredAiProvider();
 }
 
 export async function generateBehaviorNarrative(input: Record<string, unknown>, fallback: BehaviorNarrative, provider = getProvider()) {
