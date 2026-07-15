@@ -32,6 +32,7 @@ import { formatMoney } from "@/lib/currency-format";
 import { isPauseActive } from "@/lib/responsible-gaming";
 import { formatOdds } from "@/lib/odds-format";
 import { createDemoDataAction } from "@/lib/demo-actions";
+import { canUseDemoData } from "@/lib/demo-access";
 
 export const metadata: Metadata = {
   title: "Dashboard | StakeControl",
@@ -45,6 +46,7 @@ function formatPercent(value: number) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  const canLoadDemoData = canUseDemoData(user.email);
   const [bets, allBets, limits] = await Promise.all([
     prisma.bet.findMany({
       where: { userId: user.id },
@@ -213,7 +215,7 @@ export default async function DashboardPage() {
             <HeartPulse size={16} />
             Ver salud de juego
           </Link>
-          {allBets.length === 0 && (
+          {canLoadDemoData && allBets.length === 0 && (
             <form action={createDemoDataAction}>
               <button
                 type="submit"
@@ -323,15 +325,17 @@ export default async function DashboardPage() {
                       <PlusCircle size={14} />
                       Registrar control
                     </Link>
-                    <form action={createDemoDataAction}>
-                      <button
-                        type="submit"
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border-strong bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-background"
-                      >
-                        <DatabaseZap size={14} />
-                        Cargar demo
-                      </button>
-                    </form>
+                    {canLoadDemoData && (
+                      <form action={createDemoDataAction}>
+                        <button
+                          type="submit"
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-border-strong bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-background"
+                        >
+                          <DatabaseZap size={14} />
+                          Cargar demo
+                        </button>
+                      </form>
+                    )}
                   </div>
                 }
               />

@@ -15,7 +15,15 @@ type SessionPayload = {
 };
 
 function getAuthSecret() {
-  return process.env.AUTH_SECRET ?? "stakecontrol-local-dev-secret-change-me";
+  if (process.env.AUTH_SECRET) {
+    return process.env.AUTH_SECRET;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET must be configured in production.");
+  }
+
+  return "stakecontrol-local-dev-secret-change-me";
 }
 
 function base64UrlEncode(value: string) {

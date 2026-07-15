@@ -48,6 +48,12 @@ export function LoginForm() {
 
       <SubmitButton idleLabel="Iniciar sesión" pendingLabel="Ingresando..." />
 
+      <p className="text-right text-sm">
+        <Link href="/forgot-password" className="font-semibold text-primary hover:text-primary-hover">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
+
       <p className="text-center text-sm text-muted-foreground">
         ¿No tienes cuenta?{" "}
         <Link href="/register" className="font-semibold text-primary hover:text-primary-hover">

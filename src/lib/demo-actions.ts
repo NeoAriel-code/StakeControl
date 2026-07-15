@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
+import { canUseDemoData } from "@/lib/demo-access";
 
 const DEMO_TICKET_PREFIX = "DEMO-STC";
 
@@ -78,6 +79,10 @@ function profitLossFor(seed: DemoBetSeed) {
 
 export async function createDemoDataAction() {
   const user = await requireUser();
+
+  if (!canUseDemoData(user.email)) {
+    throw new Error("La carga de datos demo solo está disponible para cuentas QA autorizadas.");
+  }
   const existingDemoBet = await prisma.bet.findFirst({
     where: {
       userId: user.id,

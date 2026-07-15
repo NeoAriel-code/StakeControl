@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ResponsibleDisclaimer } from "@/components/ui/ResponsibleDisclaimer";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { createDemoDataAction } from "@/lib/demo-actions";
+import { canUseDemoData } from "@/lib/demo-access";
 import { requireUser } from "@/lib/auth";
 import { calculateDashboardMetrics } from "@/lib/dashboard-metrics";
 import { formatMoney } from "@/lib/currency-format";
@@ -88,6 +89,7 @@ function DemoDataForm({ disabled }: { disabled: boolean }) {
 
 export default async function HealthPage({ searchParams }: HealthPageProps) {
   const [user, resolvedSearchParams] = await Promise.all([requireUser(), searchParams]);
+  const canLoadDemoData = canUseDemoData(user.email);
   const [plan, bets, limits, totals, unreadAlerts, highSeverityAlerts, existingDemoBet] = await Promise.all([
     getUserPlan(user.id),
     prisma.bet.findMany({
@@ -215,7 +217,7 @@ export default async function HealthPage({ searchParams }: HealthPageProps) {
                   <SlidersHorizontal size={16} />
                   Ajustar límites
                 </Link>
-                <DemoDataForm disabled={hasDemoData} />
+                {canLoadDemoData && <DemoDataForm disabled={hasDemoData} />}
               </div>
             </div>
 

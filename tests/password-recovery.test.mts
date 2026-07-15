@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { hashPasswordResetToken, isPasswordResetTokenUsable } from "../src/lib/password-recovery";
+import { isPasswordRecoveryEmailConfigured } from "../src/lib/password-recovery-email";
+
+test("hashes reset tokens without retaining their plaintext value", () => {
+  assert.equal(hashPasswordResetToken("secret-token"), hashPasswordResetToken("secret-token"));
+  assert.notEqual(hashPasswordResetToken("secret-token"), "secret-token");
+});
+
+test("accepts only unused, unexpired reset tokens", () => {
+  const now = new Date("2026-07-15T12:00:00.000Z");
+
+  assert.equal(isPasswordResetTokenUsable({ expiresAt: new Date("2026-07-15T12:30:00.000Z"), usedAt: null }, now), true);
+  assert.equal(isPasswordResetTokenUsable({ expiresAt: new Date("2026-07-15T11:30:00.000Z"), usedAt: null }, now), false);
+  assert.equal(isPasswordResetTokenUsable({ expiresAt: new Date("2026-07-15T12:30:00.000Z"), usedAt: now }, now), false);
+});
+
+test("does not enable recovery delivery without a configured email provider", () => {
+  assert.equal(isPasswordRecoveryEmailConfigured({ EMAIL_PROVIDER: "resend", RESEND_API_KEY: "" }), false);
+  assert.equal(isPasswordRecoveryEmailConfigured({ EMAIL_PROVIDER: "mock", RESEND_API_KEY: "key" }), false);
+});
