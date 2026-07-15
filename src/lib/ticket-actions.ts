@@ -6,7 +6,16 @@ import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
 import { getStorageService, sanitizeUploadedFileName } from "@/lib/storage";
-import { createOcrService, getConfiguredOcrProviderName } from "@/lib/ocr-service";
+import {
+  createOcrService,
+  getConfiguredOcrProviderName,
+  OcrProcessingError,
+} from "@/lib/ocr-service";
+import {
+  saveTicketAndExtractText,
+  validateFileSignature,
+  validateTicketFile,
+} from "@/lib/ticket-upload-utils";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
 import { reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
 import { Prisma } from "@prisma/client";
@@ -15,15 +24,6 @@ import { getFeatureAccess } from "@/lib/plans";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { buildUserScopedWhere } from "@/lib/security-scopes";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
-
-const MAX_TICKET_UPLOAD_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-]);
-const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf"]);
 
 export type TicketUploadActionState = {
   error?: string;
@@ -37,40 +37,6 @@ function sanitizeJsonRecord(value: Record<string, unknown>): Prisma.InputJsonObj
   return Object.fromEntries(
     Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
   ) as Prisma.InputJsonObject;
-}
-
-function getFileExtension(fileName: string) {
-  const index = fileName.lastIndexOf(".");
-  return index >= 0 ? fileName.slice(index).toLowerCase() : "";
-}
-
-function validateTicketFile(file: File) {
-  if (!file || file.size === 0) {
-    throw new Error("Selecciona un archivo JPG, PNG, WEBP o PDF antes de continuar.");
-  }
-
-  if (file.size > MAX_TICKET_UPLOAD_BYTES) {
-    throw new Error("El archivo supera el tamaño máximo permitido de 10 MB.");
-  }
-
-  const extension = getFileExtension(file.name);
-  if (!ALLOWED_MIME_TYPES.has(file.type) || !ALLOWED_EXTENSIONS.has(extension)) {
-    throw new Error("Formato no permitido. Solo se aceptan archivos JPG, PNG, WEBP o PDF.");
-  }
-}
-
-function validateFileSignature(buffer: Buffer, mimeType: string) {
-  const signatures: Record<string, (buffer: Buffer) => boolean> = {
-    "image/jpeg": (value) => value[0] === 0xff && value[1] === 0xd8 && value[2] === 0xff,
-    "image/png": (value) => value.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
-    "image/webp": (value) =>
-      value.subarray(0, 4).toString("ascii") === "RIFF" && value.subarray(8, 12).toString("ascii") === "WEBP",
-    "application/pdf": (value) => value.subarray(0, 5).toString("ascii") === "%PDF-",
-  };
-
-  if (!signatures[mimeType]?.(buffer)) {
-    throw new Error("El contenido del archivo no coincide con el formato declarado.");
-  }
 }
 
 export async function uploadTicketAction(
@@ -128,12 +94,15 @@ export async function uploadTicketAction(
     const ocrProviderName = getConfiguredOcrProviderName();
     const ocrService = createOcrService();
     const aiExtractionService = createAiExtractionService();
-    const storedObject = await storage.savePrivateObject({
-      userId: user.id,
-      namespace: "tickets",
-      fileName: safeFileName,
-      mimeType: fileEntry.type,
-      buffer,
+    const { storedObject, rawText } = await saveTicketAndExtractText({
+      storage,
+      ocrService,
+      input: {
+        userId: user.id,
+        fileName: safeFileName,
+        mimeType: fileEntry.type,
+        buffer,
+      },
     });
 
     const ticketImage = await prisma.betTicketImage.create({
@@ -146,7 +115,6 @@ export async function uploadTicketAction(
       },
     });
 
-    const rawText = await ocrService.extractText(storedObject.reference);
     const aiResult = await aiExtractionService.structureBetTicket(rawText, {
       preferredCurrency: user.currency,
       timezone: user.timezone,
@@ -177,7 +145,7 @@ export async function uploadTicketAction(
     ticketImageId = ticketImage.id;
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "No se pudo subir el ticket.",
+      error: error instanceof OcrProcessingError ? error.message : "No se pudo subir el ticket.",
     };
   }
 

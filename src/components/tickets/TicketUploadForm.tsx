@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { FileImage, FileText, LoaderCircle, UploadCloud } from "lucide-react";
+import { FileImage, LoaderCircle, UploadCloud } from "lucide-react";
 import {
   uploadTicketAction,
   type TicketUploadActionState,
@@ -10,7 +10,7 @@ import {
 
 const initialState: TicketUploadActionState = {};
 
-const ACCEPTED_TYPES = ".jpg,.jpeg,.png,.webp,.pdf";
+const ACCEPTED_TYPES = ".jpg,.jpeg,.png,.webp";
 
 function SubmitTicketButton() {
   const { pending } = useFormStatus();
@@ -64,7 +64,7 @@ export function TicketUploadForm() {
 
     setSelectedFile(file);
 
-    if (!file || file.type === "application/pdf") {
+    if (!file) {
       setPreviewUrl(null);
       return;
     }
@@ -131,7 +131,7 @@ export function TicketUploadForm() {
               Arrastra tu ticket aquí o haz clic para seleccionarlo
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Formatos permitidos: JPG, PNG, WEBP y PDF. Tamaño máximo: 10 MB.
+              Formatos permitidos: JPG, PNG y WEBP. Tamaño máximo: 10 MB.
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export function TicketUploadForm() {
         <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background text-primary">
-              {selectedFile.type === "application/pdf" ? <FileText size={22} /> : <FileImage size={22} />}
+              <FileImage size={22} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">{selectedFile.name}</p>
@@ -169,10 +169,6 @@ export function TicketUploadForm() {
                 alt="Vista previa del ticket"
                 className="h-auto max-h-[420px] w-full rounded-xl object-contain"
               />
-            </div>
-          ) : selectedFile.type === "application/pdf" ? (
-            <div className="mt-4 rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
-              Vista previa PDF lista para revisión después de subir el archivo.
             </div>
           ) : null}
         </div>
