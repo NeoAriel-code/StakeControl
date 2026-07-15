@@ -4,6 +4,8 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { WebSocketLikeConstructor } from "@supabase/realtime-js";
+import WebSocket from "ws";
 import { assertStorageProviderAllowed, resolveStorageProviderName } from "@/lib/storage-config";
 
 const LOCAL_STORAGE_ROOT = path.join("/tmp", "stakecontrol-storage");
@@ -148,6 +150,9 @@ class SupabaseStorageService implements StorageService {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+      },
+      realtime: {
+        transport: WebSocket as unknown as WebSocketLikeConstructor,
       },
     });
   }

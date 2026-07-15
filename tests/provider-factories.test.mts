@@ -37,6 +37,16 @@ test("storage factory refuses local storage in production", () => {
   assert.throws(() => createStorageService({ NODE_ENV: "production" }), /storage/);
 });
 
+test("storage factory constructs the Supabase client with complete server credentials", () => {
+  const storageService = createStorageService({
+    NODE_ENV: "production",
+    SUPABASE_URL: "https://project.supabase.co",
+    SUPABASE_SECRET_KEY: "sb_secret_test",
+  });
+
+  assert.ok(storageService);
+});
+
 test("AI factory refuses mock configuration in production", () => {
   assert.throws(
     () => createConfiguredAiProvider({ NODE_ENV: "production", AI_PROVIDER: "mock" }),
