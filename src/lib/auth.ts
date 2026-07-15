@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { User } from "@prisma/client";
 import prisma from "@/lib/prisma";
+export { getAuthSecret } from "./auth-secret-config";
+import { getAuthSecret } from "./auth-secret-config";
 
 const SESSION_COOKIE_NAME = "stakecontrol_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
@@ -13,18 +15,6 @@ type SessionPayload = {
   userId: string;
   exp: number;
 };
-
-function getAuthSecret() {
-  if (process.env.AUTH_SECRET) {
-    return process.env.AUTH_SECRET;
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("AUTH_SECRET must be configured in production.");
-  }
-
-  return "stakecontrol-local-dev-secret-change-me";
-}
 
 function base64UrlEncode(value: string) {
   return Buffer.from(value, "utf8").toString("base64url");
