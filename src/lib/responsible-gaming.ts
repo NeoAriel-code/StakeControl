@@ -36,16 +36,29 @@ export function formatPauseMessage(pauseUntil: Date) {
   return `Tu pausa voluntaria está activa hasta ${formattedDate}. Durante este período no podrás registrar nuevas apuestas.`;
 }
 
-export function getPeriodStarts(referenceDate = new Date()) {
-  const dailyStart = new Date(referenceDate);
-  dailyStart.setHours(0, 0, 0, 0);
+function zonedParts(date: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
+  return { year: value("year"), month: value("month"), day: value("day"), hour: value("hour"), minute: value("minute"), second: value("second") };
+}
+
+function zonedDate(year: number, month: number, day: number, timezone: string) {
+  const guess = new Date(Date.UTC(year, month - 1, day));
+  const local = zonedParts(guess, timezone);
+  const offset = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second) - guess.getTime();
+  return new Date(guess.getTime() - offset);
+}
+
+export function getPeriodStarts(referenceDate = new Date(), timezone = "UTC") {
+  const local = zonedParts(referenceDate, timezone);
+  const dailyStart = zonedDate(local.year, local.month, local.day, timezone);
 
   const weeklyStart = new Date(dailyStart);
-  const day = weeklyStart.getDay();
+  const day = new Date(Date.UTC(local.year, local.month - 1, local.day)).getUTCDay();
   const diffToMonday = day === 0 ? 6 : day - 1;
-  weeklyStart.setDate(weeklyStart.getDate() - diffToMonday);
+  weeklyStart.setUTCDate(weeklyStart.getUTCDate() - diffToMonday);
 
-  const monthlyStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+  const monthlyStart = zonedDate(local.year, local.month, 1, timezone);
 
   return { dailyStart, weeklyStart, monthlyStart };
 }
@@ -63,7 +76,8 @@ export function getLimitStatus({
 }
 
 export async function getCurrentStakeTotals(userId: string, referenceDate = new Date()): Promise<LimitTotals> {
-  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate);
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate, user?.timezone || "UTC");
 
   const [daily, weekly, monthly] = await Promise.all([
     prisma.bet.aggregate({
