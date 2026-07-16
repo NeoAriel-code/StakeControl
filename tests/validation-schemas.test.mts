@@ -68,6 +68,22 @@ test("betFormSchema rejects invalid odds and negative stake", () => {
   assert.equal(parsed.success, false);
 });
 
+test("betFormSchema rejects malformed datetimes and overlong bounded fields", () => {
+  const baseBet = {
+    event: "Evento",
+    betType: BetType.SINGLE,
+    stake: "1000",
+    odds: "1.8",
+    currency: "CLP",
+    result: BetResult.PENDING,
+    netProfit: "0",
+  };
+
+  assert.equal(betFormSchema.safeParse({ ...baseBet, placedAt: "2026-07-13" }).success, false);
+  assert.equal(betFormSchema.safeParse({ ...baseBet, sportsbook: "x".repeat(121) }).success, false);
+  assert.equal(betFormSchema.safeParse({ ...baseBet, notes: "x".repeat(2001) }).success, false);
+});
+
 test("betFormSchema only accepts meaningful ticket types and results", () => {
   const baseBet = {
     placedAt: "2026-07-13T10:00",

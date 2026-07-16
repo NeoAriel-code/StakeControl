@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildBetsCsv } from "../src/lib/bet-csv-export";
+import { buildBetsCsv, escapeCsvValue } from "../src/lib/bet-csv-export";
 
 const baseBet = {
   placedAt: new Date("2026-07-13T12:00:00.000Z"),
@@ -46,4 +46,10 @@ test("CSV exports an empty date for a bet without placedAt", () => {
   const csv = buildBetsCsv([{ ...baseBet, placedAt: null }], "FREE");
 
   assert.match(csv.split("\n")[1]!, /^""/);
+});
+
+test("CSV neutralizes spreadsheet formulas in every dangerous prefix", () => {
+  for (const value of ["=SUM(A1:A2)", "+1+1", "-1+1", "@SUM(A1:A2)"]) {
+    assert.equal(escapeCsvValue(value), `"'${value}"`);
+  }
 });

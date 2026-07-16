@@ -2,15 +2,19 @@ import { z } from "zod";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 
-const optionalTrimmedString = z
-  .string()
-  .trim()
-  .max(2_000, "El texto no puede superar 2000 caracteres.")
-  .optional()
-  .transform((value) => (value && value.length > 0 ? value : undefined));
+const optionalTrimmedString = (maxLength = 2_000) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength, `El texto no puede superar ${maxLength} caracteres.`)
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined));
 
-const optionalDateTime = optionalTrimmedString.refine(
-  (value) => value === undefined || !Number.isNaN(new Date(value).getTime()),
+const optionalDateTime = optionalTrimmedString(25).refine(
+  (value) => value === undefined || (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value) &&
+    !Number.isNaN(new Date(value).getTime())
+  ),
   "La fecha y hora es inválida."
 );
 
@@ -22,14 +26,14 @@ const decimalField = (label: string) =>
     .finite(`${label} es inválido.`);
 
 export const betFormSchema = z.object({
-  sportsbook: optionalTrimmedString,
+  sportsbook: optionalTrimmedString(120),
   placedAt: optionalDateTime,
   eventStartAt: optionalDateTime,
   event: z.string().trim().min(1, "El evento es obligatorio.").max(300, "El evento no puede superar 300 caracteres."),
-  sport: optionalTrimmedString,
-  league: optionalTrimmedString,
-  market: optionalTrimmedString,
-  selection: optionalTrimmedString,
+  sport: optionalTrimmedString(80),
+  league: optionalTrimmedString(120),
+  market: optionalTrimmedString(160),
+  selection: optionalTrimmedString(160),
   betType: z.enum(BET_TYPES, {
     error: "El tipo de apuesta es obligatorio.",
   }),
@@ -50,8 +54,8 @@ export const betFormSchema = z.object({
     error: "El resultado es obligatorio.",
   }),
   netProfit: decimalField("La ganancia o pérdida neta"),
-  ticketCode: optionalTrimmedString,
-  notes: optionalTrimmedString,
+  ticketCode: optionalTrimmedString(120),
+  notes: optionalTrimmedString(2_000),
 });
 
 export type BetFormValues = z.infer<typeof betFormSchema>;

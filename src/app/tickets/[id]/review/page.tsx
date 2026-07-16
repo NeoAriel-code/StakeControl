@@ -78,11 +78,11 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
 
             <div className="overflow-hidden rounded-2xl border border-border bg-background p-2">
               {isPdf ? (
-                <iframe
-                  src={fileUrl}
-                  title={ticketImage.fileName || "Vista previa del ticket"}
-                  className="h-[640px] w-full rounded-xl"
-                />
+                <div className="flex min-h-48 items-center justify-center p-6 text-center">
+                  <a href={fileUrl} className="rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-card">
+                    Descargar PDF de forma segura
+                  </a>
+                </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
