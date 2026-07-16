@@ -35,9 +35,10 @@ export async function GET(_request: Request, context: RouteContext) {
     status: 200,
     headers: {
       "Content-Type": ticketImage.mimeType || storedObject.mimeType,
-      "Content-Disposition": `inline; filename="${sanitizeUploadedFileName(ticketImage.fileName || storedObject.fileName)}"`,
+      "Content-Disposition": `attachment; filename="${sanitizeUploadedFileName(ticketImage.fileName || storedObject.fileName)}"`,
       "Cache-Control": "private, no-store, max-age=0",
       "X-Robots-Tag": "noindex, nofollow",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

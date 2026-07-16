@@ -91,7 +91,7 @@ export async function loginAction(
   }
 
   const { email, password } = parsed.data;
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `login:${email}`,
     limit: 5,
     windowMs: 15 * 60 * 1000,

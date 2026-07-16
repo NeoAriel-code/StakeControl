@@ -1,4 +1,5 @@
 import "server-only";
+import prisma from "@/lib/prisma";
 
 type RateLimitOptions = {
   key: string;
@@ -6,45 +7,18 @@ type RateLimitOptions = {
   windowMs: number;
 };
 
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
-
-const globalForRateLimit = globalThis as unknown as {
-  stakeControlRateLimits?: Map<string, RateLimitEntry>;
-};
-
-const buckets = globalForRateLimit.stakeControlRateLimits ?? new Map<string, RateLimitEntry>();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForRateLimit.stakeControlRateLimits = buckets;
-}
-
-export function checkRateLimit({ key, limit, windowMs }: RateLimitOptions) {
+export async function checkRateLimit({ key, limit, windowMs }: RateLimitOptions) {
   const now = Date.now();
-  const current = buckets.get(key);
+  const current = await prisma.rateLimitBucket.findUnique({ where: { key } });
 
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, {
-      count: 1,
-      resetAt: now + windowMs,
-    });
-    return { allowed: true, remaining: Math.max(limit - 1, 0), resetAt: now + windowMs };
+  if (!current || current.resetAt.getTime() <= now) {
+    const resetAt = new Date(now + windowMs);
+    await prisma.rateLimitBucket.upsert({ where: { key }, create: { key, count: 1, resetAt }, update: { count: 1, resetAt } });
+    return { allowed: true, remaining: Math.max(limit - 1, 0), resetAt: resetAt.getTime() };
   }
-
-  if (current.count >= limit) {
-    return { allowed: false, remaining: 0, resetAt: current.resetAt };
-  }
-
-  current.count += 1;
-  buckets.set(key, current);
-
-  return {
-    allowed: true,
-    remaining: Math.max(limit - current.count, 0),
-    resetAt: current.resetAt,
-  };
+  if (current.count >= limit) return { allowed: false, remaining: 0, resetAt: current.resetAt.getTime() };
+  const updated = await prisma.rateLimitBucket.update({ where: { key }, data: { count: { increment: 1 } } });
+  return { allowed: true, remaining: Math.max(limit - updated.count, 0), resetAt: updated.resetAt.getTime() };
 }
 
 export function formatRateLimitMessage(resetAt: number) {

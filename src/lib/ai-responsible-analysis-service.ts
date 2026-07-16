@@ -220,7 +220,7 @@ function buildPreventiveMessages(report: Pick<AiResponsibleAnalysisReport, "stak
 
 export class AiResponsibleAnalysisService {
   async generateMonthlyReport(userId: string, referenceDate = new Date()) {
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       key: `ai-analysis:${userId}`,
       limit: 20,
       windowMs: 60 * 60 * 1000,

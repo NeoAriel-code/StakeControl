@@ -48,7 +48,9 @@ const PREMIUM_COLUMNS = [
 
 export function escapeCsvValue(value: string | number | null | undefined) {
   const normalized = value ?? "";
-  return `"${String(normalized).replace(/"/g, '""')}"`;
+  const text = String(normalized);
+  const safeValue = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeValue.replace(/"/g, '""')}"`;
 }
 
 function getCategory(bet: CsvExportBet) {

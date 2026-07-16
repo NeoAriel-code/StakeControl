@@ -5,8 +5,14 @@ import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 const optionalTrimmedString = z
   .string()
   .trim()
+  .max(2_000, "El texto no puede superar 2000 caracteres.")
   .optional()
   .transform((value) => (value && value.length > 0 ? value : undefined));
+
+const optionalDateTime = optionalTrimmedString.refine(
+  (value) => value === undefined || !Number.isNaN(new Date(value).getTime()),
+  "La fecha y hora es inválida."
+);
 
 const decimalField = (label: string) =>
   z.coerce
@@ -17,9 +23,9 @@ const decimalField = (label: string) =>
 
 export const betFormSchema = z.object({
   sportsbook: optionalTrimmedString,
-  placedAt: optionalTrimmedString,
-  eventStartAt: optionalTrimmedString,
-  event: z.string().trim().min(1, "El evento es obligatorio."),
+  placedAt: optionalDateTime,
+  eventStartAt: optionalDateTime,
+  event: z.string().trim().min(1, "El evento es obligatorio.").max(300, "El evento no puede superar 300 caracteres."),
   sport: optionalTrimmedString,
   league: optionalTrimmedString,
   market: optionalTrimmedString,

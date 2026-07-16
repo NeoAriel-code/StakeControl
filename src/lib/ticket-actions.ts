@@ -44,7 +44,7 @@ export async function uploadTicketAction(
   formData: FormData
 ): Promise<TicketUploadActionState> {
   const user = await requireUser();
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkRateLimit({
     key: `upload:${user.id}`,
     limit: 10,
     windowMs: 10 * 60 * 1000,
