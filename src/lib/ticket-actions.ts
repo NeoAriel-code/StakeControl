@@ -18,12 +18,13 @@ import {
 } from "@/lib/ticket-upload-utils";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
 import { extractedBetTicketSchema, reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
-import { FieldSource, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { buildUserScopedWhere } from "@/lib/security-scopes";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
+import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 
 export type TicketUploadActionState = {
   error?: string;
@@ -163,16 +164,6 @@ function getOptionalValue(values: FormDataEntryValue[], index: number) {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
-function sourceAfterReview<T extends FieldSource | undefined>(
-  submittedValue: string | undefined,
-  extractedValue: string | undefined,
-  extractedSource: T
-) {
-  return submittedValue === extractedValue
-    ? extractedSource ?? FieldSource.UNKNOWN
-    : FieldSource.USER;
-}
-
 function parseTicketLegs(formData: FormData) {
   const events = formData.getAll("legEvent");
   const sports = formData.getAll("legSport");
@@ -264,17 +255,17 @@ export async function finalizeTicketReviewAction(
       .filter((field): field is string => typeof field === "string"),
     });
     const realizedNetProfit = getHistoricalProfitLoss(parsed.result, parsed.stake, parsed.netProfit);
-    const placedAtSource = sourceAfterReview(
+    const placedAtSource = resolveFieldSourceAfterEdit(
       parsed.placedAt,
       extractedBet?.placedAt,
       extractedBet?.placedAtSource
     );
-    const eventStartAtSource = sourceAfterReview(
+    const eventStartAtSource = resolveFieldSourceAfterEdit(
       parsed.eventStartAt,
       extractedBet?.eventStartAt,
       extractedBet?.eventStartAtSource
     );
-    const currencySource = sourceAfterReview(
+    const currencySource = resolveFieldSourceAfterEdit(
       parsed.currency,
       extractedBet?.currency,
       extractedBet?.currencySource

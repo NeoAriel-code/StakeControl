@@ -1,6 +1,6 @@
 "use server";
 
-import { BetResult, FieldSource, Prisma } from "@prisma/client";
+import { BetResult, FieldSource, Prisma, type Bet } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import {
   formatPauseMessage,
   isPauseActive,
 } from "@/lib/responsible-gaming";
+import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 
 export type BetActionState = {
   error?: string;
@@ -149,8 +150,25 @@ function buildCreateBetData(userId: string, values: BetFormValues) {
   };
 }
 
-function buildUpdateBetData(values: BetFormValues) {
-  return buildBetPayload(values);
+function buildUpdateBetData(values: BetFormValues, existingBet: Pick<Bet, "placedAt" | "eventStartAt" | "currency" | "placedAtSource" | "eventStartAtSource" | "currencySource">) {
+  return {
+    ...buildBetPayload(values),
+    placedAtSource: resolveFieldSourceAfterEdit(
+      values.placedAt,
+      existingBet.placedAt,
+      existingBet.placedAtSource
+    ),
+    eventStartAtSource: resolveFieldSourceAfterEdit(
+      values.eventStartAt,
+      existingBet.eventStartAt,
+      existingBet.eventStartAtSource
+    ),
+    currencySource: resolveFieldSourceAfterEdit(
+      values.currency,
+      existingBet.currency,
+      existingBet.currencySource
+    ),
+  };
 }
 
 export async function createBetAction(
@@ -212,7 +230,7 @@ export async function updateBetAction(
   }
 
   try {
-    await ensureUserOwnsBet(user.id, betId);
+    const existingBet = await ensureUserOwnsBet(user.id, betId);
 
     const userLimits = await prisma.userLimits.findUnique({
       where: { userId: user.id },
@@ -231,7 +249,7 @@ export async function updateBetAction(
 
     await prisma.bet.update({
       where: { id: betId },
-      data: buildUpdateBetData(parsed.values),
+      data: buildUpdateBetData(parsed.values, existingBet),
     });
     await evaluateResponsibleGamingAlerts(user.id);
   } catch (error) {

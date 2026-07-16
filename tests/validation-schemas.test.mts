@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { BetResult, BetType } from "@prisma/client";
 import { betFormSchema } from "../src/lib/bet-schemas";
 import { reviewedTicketBetSchema, ticketLegSchema } from "../src/lib/ticket-extraction";
+import { resolveFieldSourceAfterEdit } from "../src/lib/field-provenance";
 
 test("betFormSchema preserves missing dates and discards client-supplied field sources", () => {
   const parsed = betFormSchema.parse({
@@ -152,4 +153,22 @@ test("ticket review accepts multiple legs and preserves a Bet Builder type", () 
 test("ticket legs require an event and reject invalid individual odds", () => {
   assert.equal(ticketLegSchema.safeParse({ event: "" }).success, false);
   assert.equal(ticketLegSchema.safeParse({ event: "Evento", odds: "1" }).success, false);
+});
+
+test("editing unchanged date and currency preserves their detected provenance", () => {
+  const existingDate = new Date("2026-07-13T10:00:00.000Z");
+
+  assert.equal(
+    resolveFieldSourceAfterEdit("2026-07-13T10:00:00.000Z", existingDate, "OCR"),
+    "OCR"
+  );
+  assert.equal(resolveFieldSourceAfterEdit("CLP", "CLP", "INFERRED"), "INFERRED");
+});
+
+test("editing a date or currency records user provenance", () => {
+  assert.equal(
+    resolveFieldSourceAfterEdit("2026-07-14T10:00:00.000Z", new Date("2026-07-13T10:00:00.000Z"), "OCR"),
+    "USER"
+  );
+  assert.equal(resolveFieldSourceAfterEdit("USD", "CLP", "OCR"), "USER");
 });
