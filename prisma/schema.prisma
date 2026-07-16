@@ -26,6 +26,13 @@ enum BetResult {
   UNKNOWN
 }
 
+enum FieldSource {
+  USER
+  OCR
+  INFERRED
+  UNKNOWN
+}
+
 enum AlertType {
   LIMIT_APPROACHING
   LIMIT_EXCEEDED
@@ -99,7 +106,11 @@ model Bet {
   potentialPayout   Decimal?
   settledPayout     Decimal?
   profitLoss        Decimal?
-  placedAt          DateTime
+  placedAt          DateTime?
+  eventStartAt      DateTime?
+  placedAtSource    FieldSource?
+  eventStartAtSource FieldSource?
+  currencySource    FieldSource?
   settledAt         DateTime?
   notes             String?
   createdAt         DateTime          @default(now())

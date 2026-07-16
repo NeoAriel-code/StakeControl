@@ -4,6 +4,29 @@ import { BetResult, BetType } from "@prisma/client";
 import { betFormSchema } from "../src/lib/bet-schemas";
 import { reviewedTicketBetSchema, ticketLegSchema } from "../src/lib/ticket-extraction";
 
+test("betFormSchema preserves missing dates and accepts field sources", () => {
+  const parsed = betFormSchema.parse({
+    event: "Evento",
+    betType: BetType.SINGLE,
+    stake: "1000",
+    odds: "1.8",
+    currency: "CLP",
+    result: BetResult.PENDING,
+    netProfit: "0",
+    placedAt: "",
+    eventStartAt: "",
+    placedAtSource: "OCR",
+    eventStartAtSource: "UNKNOWN",
+    currencySource: "USER",
+  });
+
+  assert.equal(parsed.placedAt, undefined);
+  assert.equal(parsed.eventStartAt, undefined);
+  assert.equal(parsed.placedAtSource, "OCR");
+  assert.equal(parsed.eventStartAtSource, "UNKNOWN");
+  assert.equal(parsed.currencySource, "USER");
+});
+
 test("betFormSchema accepts valid manual bet input", () => {
   const parsed = betFormSchema.parse({
     sportsbook: "DemoBook",
