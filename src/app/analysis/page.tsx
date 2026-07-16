@@ -308,20 +308,22 @@ export default async function AnalysisPage() {
             </div>
           </article>
 
-          <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-foreground">Mejor desempeño histórico</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              En tus datos históricos, esto no implica ventaja futura ni recomendación de aumentar exposición.
-            </p>
-            <div className="mt-5">
-              <CategoryList
-                categories={report.bestHistoricalCategories}
-                currency={currency}
-                emptyMessage="Aún no hay suficientes categorías históricas para comparar desempeño."
-                tone="success"
-              />
-            </div>
-          </article>
+          {report.bestHistoricalCategories.length > 0 && (
+            <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground">Mejor desempeño histórico</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                En tus datos históricos, esto no implica ventaja futura ni recomendación de aumentar exposición.
+              </p>
+              <div className="mt-5">
+                <CategoryList
+                  categories={report.bestHistoricalCategories}
+                  currency={currency}
+                  emptyMessage="Aún no hay suficientes categorías históricas para comparar desempeño."
+                  tone="success"
+                />
+              </div>
+            </article>
+          )}
         </section>
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">

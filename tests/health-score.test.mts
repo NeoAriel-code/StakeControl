@@ -42,6 +42,7 @@ test("calculateResponsibleHealth prioritizes active pause", () => {
 
   assert.equal(health.status, "pause-active");
   assert.ok(health.signals.some((signal) => signal.id === "pause-active"));
+  assert.equal(health.score, 100);
 });
 
 test("calculateResponsibleHealth flags loss streak and concentrated exposure", () => {

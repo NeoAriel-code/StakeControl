@@ -6,6 +6,12 @@ import { assertResponsibleAnalysisOutput } from "@/lib/ai-responsible-output-fil
 import { generateBehaviorNarrative } from "@/lib/ai/behavior-analysis";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { getHistoricalProfitLoss, isResolvedBetResult } from "@/lib/bet-outcomes";
+import { buildPerformanceCategories } from "@/lib/resolved-performance-categories";
+import {
+  getLocalDateKey,
+  getMonthBoundsForUserTimezone,
+  getYearMonthForUserTimezone,
+} from "@/lib/user-time-periods";
 
 export const AI_RESPONSIBLE_ANALYSIS_PROMPT_VERSION = "responsible-analysis-v1";
 
@@ -81,18 +87,11 @@ function safeDivide(numerator: number, denominator: number) {
   return numerator / denominator;
 }
 
-function getMonthBounds(referenceDate = new Date()) {
-  const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
-  const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 1);
-  const previousStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
-
-  return { start, end, previousStart };
-}
-
-function getPeriodLabel(date: Date) {
+function getPeriodLabel(date: Date, timezone: string) {
   return new Intl.DateTimeFormat("es-CL", {
     month: "long",
     year: "numeric",
+    timeZone: timezone,
   }).format(date);
 }
 
@@ -230,7 +229,11 @@ export class AiResponsibleAnalysisService {
       throw new Error(formatRateLimitMessage(rateLimit.resetAt));
     }
 
-    const { start, end, previousStart } = getMonthBounds(referenceDate);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+    const timezone = user?.timezone || "UTC";
+    const { start, end } = getMonthBoundsForUserTimezone(referenceDate, timezone);
+    const { start: previousStart } = getMonthBoundsForUserTimezone(new Date(start.getTime() - 1), timezone);
+    const { year, month } = getYearMonthForUserTimezone(referenceDate, timezone);
 
     const [monthBetsRaw, previousMonthBetsRaw, historicalBetsRaw] = await Promise.all([
       prisma.bet.findMany({
@@ -280,16 +283,16 @@ export class AiResponsibleAnalysisService {
         ? safeDivide(averageStake - previousAverageStake, previousAverageStake) * 100
         : 0
     );
-    const activeDays = new Set(monthBets.map((bet) => bet.placedAt.toISOString().slice(0, 10))).size;
+    const activeDays = new Set(monthBets.map((bet) => getLocalDateKey(bet.placedAt, timezone))).size;
     const daysInPeriod = Math.max(1, Math.ceil((Math.min(Date.now(), end.getTime()) - start.getTime()) / 86_400_000));
     const betsPerWeek = round(safeDivide(totalBets, daysInPeriod) * 7);
-    const historicalCategories = buildCategories(historicalBets);
+    const historicalCategories = buildPerformanceCategories(historicalBets);
     const monthCategories = buildCategories(monthBets);
 
     const report: AiResponsibleAnalysisReport = {
-      periodLabel: getPeriodLabel(start),
-      year: start.getFullYear(),
-      month: start.getMonth() + 1,
+      periodLabel: getPeriodLabel(start, timezone),
+      year,
+      month,
       generatedAt: new Date().toISOString(),
       summary: buildSummary({
         totalBets,
@@ -314,11 +317,9 @@ export class AiResponsibleAnalysisService {
       maxLosingStreak: buildMaxStreak(historicalBets, "LOST"),
       topExposureCategories: [...monthCategories].sort((a, b) => b.stake - a.stake).slice(0, 5),
       worstHistoricalCategories: [...historicalCategories]
-        .filter((category) => category.betCount >= 2)
         .sort((a, b) => a.roi - b.roi)
         .slice(0, 5),
       bestHistoricalCategories: [...historicalCategories]
-        .filter((category) => category.betCount >= 2)
         .sort((a, b) => b.roi - a.roi)
         .slice(0, 5),
       warnings: totalBets < 30 ? ["Esto puede estar influido por muestra pequeña o varianza."] : [],
