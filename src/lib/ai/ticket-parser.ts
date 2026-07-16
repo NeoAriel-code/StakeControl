@@ -16,6 +16,7 @@ export type TicketExtractionContext = {
   preferredCurrency?: string;
   timezone?: string;
   referenceDate?: Date;
+  timeoutMs?: number;
 };
 
 function getProvider(): AiProvider {
@@ -106,27 +107,58 @@ function inferSportFromTicket(rawText: string) {
 
 function toExtractedTicket(value: unknown, rawText: string, context: TicketExtractionContext): ExtractedBetTicket {
   const parsed = aiTicketExtractionSchema.parse(value);
-  if (!parsed.event || !parsed.betType || parsed.stake === null || parsed.odds === null || !parsed.currency || !parsed.result || parsed.netProfit === null || !parsed.legs) {
-    throw new Error("La extracción no contiene los datos mínimos para un borrador estructurado.");
-  }
   const placedAtWasMissing = !parsed.placedAt || !hasDateInOcr(rawText);
   const preferredCurrency = preferredCurrencyFromContext(context);
-  const currencyWasAssumed = Boolean(preferredCurrency && !hasExplicitCurrency(rawText));
+  const currencyWasAssumed = !parsed.currency || Boolean(preferredCurrency && !hasExplicitCurrency(rawText));
   const inferredSport = inferSportFromTicket(rawText);
   const resultWasCorrected = isFutureScheduledEvent(rawText, context) && parsed.result !== BetResult.PENDING;
+  const event = parsed.event ?? "Evento por confirmar";
+  const betType = parsed.betType ?? BetType.SINGLE;
+  const stake = parsed.stake ?? 0;
+  const odds = parsed.odds ?? 1.01;
+  const currency = currencyWasAssumed ? preferredCurrency ?? "CLP" : parsed.currency;
+  const result = resultWasCorrected || !parsed.result ? BetResult.PENDING : parsed.result;
+  const netProfit = parsed.netProfit ?? 0;
+  const legs = parsed.legs ?? [{
+    event: parsed.event,
+    sport: parsed.sport,
+    league: parsed.league,
+    market: parsed.market,
+    selection: parsed.selection,
+    odds: parsed.odds,
+    result: parsed.result,
+  }];
+  const missingFields = [
+    ...(parsed.sportsbook ? [] : ["sportsbook"]),
+    ...(parsed.event ? [] : ["event"]),
+    ...(parsed.betType ? [] : ["betType"]),
+    ...(parsed.stake === null ? ["stake"] : []),
+    ...(parsed.odds === null ? ["odds"] : []),
+    ...(parsed.currency ? [] : ["currency"]),
+    ...(parsed.result ? [] : ["result"]),
+    ...(parsed.netProfit === null ? ["netProfit"] : []),
+    ...(parsed.legs ? [] : ["legs"]),
+  ];
   return extractedBetTicketSchema.parse({
     ...parsed,
+    event,
+    betType,
+    stake,
+    odds,
+    currency,
+    netProfit,
+    confidenceScore: parsed.confidenceScore ?? 0,
     placedAt: placedAtWasMissing ? undefined : parsed.placedAt ?? undefined,
     eventStartAt: parsed.eventStartAt ?? undefined,
     placedAtSource: placedAtWasMissing ? FieldSource.UNKNOWN : FieldSource.OCR,
     eventStartAtSource: parsed.eventStartAt ? FieldSource.OCR : FieldSource.UNKNOWN,
-    currency: currencyWasAssumed ? preferredCurrency : parsed.currency,
     currencySource: currencyWasAssumed ? FieldSource.INFERRED : FieldSource.OCR,
     sport: parsed.sport ?? inferredSport,
-    result: resultWasCorrected ? BetResult.PENDING : parsed.result,
+    result,
     doubtfulFields: [
       ...new Set([
-        ...parsed.doubtfulFields,
+        ...(parsed.doubtfulFields ?? []),
+        ...missingFields,
         ...(placedAtWasMissing ? ["placedAt"] : []),
         ...(!parsed.eventStartAt ? ["eventStartAt"] : []),
         ...(currencyWasAssumed ? ["currency"] : []),
@@ -140,15 +172,34 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
     potentialPayout: parsed.potentialPayout ?? undefined,
     ticketCode: parsed.ticketCode ?? undefined,
     notes: parsed.notes ?? undefined,
-    legs: parsed.legs.map((leg) => ({
+    legs: legs.map((leg) => ({
       ...leg,
+      event: leg.event ?? event,
       sport: leg.sport ?? inferredSport,
-      result: resultWasCorrected ? BetResult.PENDING : leg.result,
+      result: resultWasCorrected || !leg.result ? BetResult.PENDING : leg.result,
       league: leg.league ?? undefined,
       market: leg.market ?? undefined,
       selection: leg.selection ?? undefined,
       odds: leg.odds ?? undefined,
     })),
+  });
+}
+
+class TicketExtractionTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`La extracción IA superó el límite de ${timeoutMs} ms.`);
+    this.name = "TicketExtractionTimeoutError";
+  }
+}
+
+function runWithTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => reject(new TicketExtractionTimeoutError(timeoutMs)), timeoutMs);
+  });
+
+  return Promise.race([operation, timeoutPromise]).finally(() => {
+    if (timeout) clearTimeout(timeout);
   });
 }
 
@@ -213,6 +264,7 @@ export async function parseTicketWithRouting(
   }
   const cleanedText = sanitizeOcrText(rawText);
   const { ticketPrimary: primaryModel, ticketFallback: fallbackModel } = getAiModelConfig();
+  const timeoutMs = Math.max(1, Math.min(context.timeoutMs ?? 15_000, 30_000));
   const contextPrompt = [
     context.timezone ? `Zona horaria del usuario: ${context.timezone}.` : null,
     preferredCurrencyFromContext(context) ? `Moneda principal del usuario: ${preferredCurrencyFromContext(context)}. Úsala si el ticket solo muestra un símbolo monetario ambiguo o no declara moneda.` : null,
@@ -224,7 +276,7 @@ export async function parseTicketWithRouting(
 
   for (const [model, fallbackUsed] of [[primaryModel, false], [fallbackModel, true]] as const) {
     try {
-      const response = await request(model);
+      const response = await runWithTimeout(request(model), timeoutMs);
       const ticket = toExtractedTicket(response.data, cleanedText, context);
       if (!fallbackUsed && ticket.confidenceScore < MIN_CONFIDENCE) {
         continue;

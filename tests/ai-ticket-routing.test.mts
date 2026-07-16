@@ -167,6 +167,84 @@ test("ticket routing uses fallback when the primary model errors", async () => {
   assert.equal(calls.length, 2);
 });
 
+test("ticket routing keeps detected values when AI returns null for undetected fields", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      return {
+        data: {
+          sportsbook: "Betano",
+          event: null,
+          placedAt: null,
+          eventStartAt: null,
+          sport: null,
+          league: null,
+          market: null,
+          selection: null,
+          betType: null,
+          stake: null,
+          odds: null,
+          currency: null,
+          potentialPayout: null,
+          result: null,
+          netProfit: null,
+          ticketCode: null,
+          notes: null,
+          confidenceScore: 0.2,
+          doubtfulFields: ["event"],
+          legs: null,
+        } as T,
+        model: input.model,
+        estimatedTokens: 4,
+      };
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket Betano", provider, { preferredCurrency: "CLP" });
+
+  assert.equal(result.ticket.sportsbook, "Betano");
+  assert.equal(result.ticket.event, "Evento por confirmar");
+  assert.equal(result.ticket.currency, "CLP");
+  assert.ok(result.ticket.doubtfulFields.includes("stake"));
+  assert.ok(result.ticket.doubtfulFields.includes("event"));
+});
+
+test("ticket routing retries with fallback after an extraction timeout", async () => {
+  const calls: string[] = [];
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      calls.push(input.model);
+      if (calls.length === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      return { data: extraction(0.9) as T, model: input.model, estimatedTokens: 9 };
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket OCR", provider, { timeoutMs: 1 });
+
+  assert.equal(result.fallbackUsed, true);
+  assert.equal(calls.length, 2);
+});
+
+test("ticket routing retries with fallback after invalid structured data", async () => {
+  const calls: string[] = [];
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      calls.push(input.model);
+      return {
+        data: (calls.length === 1 ? { unexpected: true } : extraction(0.9)) as T,
+        model: input.model,
+        estimatedTokens: 9,
+      };
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket OCR", provider);
+
+  assert.equal(result.fallbackUsed, true);
+  assert.equal(calls.length, 2);
+});
+
 test("ticket routing delimits untrusted OCR content", async () => {
   let prompt = "";
   const provider: AiProvider = {
