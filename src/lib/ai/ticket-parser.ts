@@ -106,6 +106,9 @@ function inferSportFromTicket(rawText: string) {
 
 function toExtractedTicket(value: unknown, rawText: string, context: TicketExtractionContext): ExtractedBetTicket {
   const parsed = aiTicketExtractionSchema.parse(value);
+  if (!parsed.event || !parsed.betType || parsed.stake === null || parsed.odds === null || !parsed.currency || !parsed.result || parsed.netProfit === null || !parsed.legs) {
+    throw new Error("La extracción no contiene los datos mínimos para un borrador estructurado.");
+  }
   const placedAtWasMissing = !parsed.placedAt || !hasDateInOcr(rawText);
   const preferredCurrency = preferredCurrencyFromContext(context);
   const currencyWasAssumed = Boolean(preferredCurrency && !hasExplicitCurrency(rawText));
