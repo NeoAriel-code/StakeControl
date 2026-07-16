@@ -347,7 +347,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
   }
 
   const last24HoursStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const betsInLast24Hours = bets.filter((bet) => bet.placedAt >= last24HoursStart).length;
+  const betsInLast24Hours = bets.filter((bet) => bet.placedAt !== null && bet.placedAt >= last24HoursStart).length;
   const highFrequencyTriggered = betsInLast24Hours > 10;
 
   if (highFrequencyTriggered) {

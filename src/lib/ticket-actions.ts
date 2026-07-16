@@ -17,8 +17,8 @@ import {
   validateTicketFile,
 } from "@/lib/ticket-upload-utils";
 import { createAiExtractionService } from "@/lib/ai-extraction-service";
-import { reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
-import { Prisma } from "@prisma/client";
+import { extractedBetTicketSchema, reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
+import { FieldSource, Prisma } from "@prisma/client";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
 import { getFeatureAccess } from "@/lib/plans";
 import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
@@ -163,6 +163,16 @@ function getOptionalValue(values: FormDataEntryValue[], index: number) {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
+function sourceAfterReview<T extends FieldSource | undefined>(
+  submittedValue: string | undefined,
+  extractedValue: string | undefined,
+  extractedSource: T
+) {
+  return submittedValue === extractedValue
+    ? extractedSource ?? FieldSource.UNKNOWN
+    : FieldSource.USER;
+}
+
 function parseTicketLegs(formData: FormData) {
   const events = formData.getAll("legEvent");
   const sports = formData.getAll("legSport");
@@ -227,10 +237,13 @@ export async function finalizeTicketReviewAction(
       throw new Error("Agrega al menos una selección al ticket.");
     }
 
+    const extraction = extractedBetTicketSchema.safeParse(ticketImage.aiExtraction.extractedData);
+    const extractedBet = extraction.success ? extraction.data : undefined;
     const parsed = reviewedTicketBetSchema.parse({
       sportsbook: formData.get("sportsbook"),
       event: legs.length === 1 ? primaryLeg.event : `Ticket con ${legs.length} selecciones`,
       placedAt: formData.get("placedAt"),
+      eventStartAt: formData.get("eventStartAt"),
       sport: primaryLeg.sport,
       league: primaryLeg.league,
       market: primaryLeg.market,
@@ -251,6 +264,21 @@ export async function finalizeTicketReviewAction(
       .filter((field): field is string => typeof field === "string"),
     });
     const realizedNetProfit = getHistoricalProfitLoss(parsed.result, parsed.stake, parsed.netProfit);
+    const placedAtSource = sourceAfterReview(
+      parsed.placedAt,
+      extractedBet?.placedAt,
+      extractedBet?.placedAtSource
+    );
+    const eventStartAtSource = sourceAfterReview(
+      parsed.eventStartAt,
+      extractedBet?.eventStartAt,
+      extractedBet?.eventStartAtSource
+    );
+    const currencySource = sourceAfterReview(
+      parsed.currency,
+      extractedBet?.currency,
+      extractedBet?.currencySource
+    );
 
     await prisma.$transaction(async (transaction) => {
       const createdBet = await transaction.bet.create({
@@ -277,7 +305,11 @@ export async function finalizeTicketReviewAction(
               : parsed.result === "VOID"
                 ? toDecimal(parsed.stake)
                 : null,
-          placedAt: new Date(parsed.placedAt),
+          placedAt: parsed.placedAt ? new Date(parsed.placedAt) : null,
+          eventStartAt: parsed.eventStartAt ? new Date(parsed.eventStartAt) : null,
+          placedAtSource,
+          eventStartAtSource,
+          currencySource,
           notes: parsed.notes,
           legs: {
             create: legs.map((leg, position) => ({
@@ -307,6 +339,9 @@ export async function finalizeTicketReviewAction(
           extractedData: sanitizeJsonRecord({
             ...parsed,
             netProfit: realizedNetProfit,
+            placedAtSource,
+            eventStartAtSource,
+            currencySource,
             legs,
             requiresReview: parsed.confidenceScore < 0.85,
           }),

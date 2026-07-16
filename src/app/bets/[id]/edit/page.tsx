@@ -11,7 +11,8 @@ type EditBetPageProps = {
   params: Promise<{ id: string }>;
 };
 
-function toDateTimeLocal(date: Date) {
+function toDateTimeLocal(date: Date | null) {
+  if (!date) return "";
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
@@ -44,7 +45,7 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
     notFound();
   }
 
-  if (!hasFullHistory && bet.placedAt < getHistoryCutoffDate()) {
+  if (!hasFullHistory && bet.placedAt && bet.placedAt < getHistoryCutoffDate()) {
     redirect("/upgrade");
   }
 
@@ -79,6 +80,7 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
             defaultValues={{
               sportsbook: bet.sportsbook,
               placedAt: toDateTimeLocal(bet.placedAt),
+              eventStartAt: toDateTimeLocal(bet.eventStartAt),
               event: bet.title,
               sport: bet.sport,
               league: bet.league,

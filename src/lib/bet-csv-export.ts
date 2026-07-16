@@ -2,7 +2,7 @@ import type { UserPlan } from "@/lib/plans";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 
 export type CsvExportBet = {
-  placedAt: Date;
+  placedAt: Date | null;
   sportsbook: string | null;
   sport: string | null;
   league: string | null;
@@ -76,7 +76,7 @@ function getHeaders(plan: UserPlan) {
 
 function getRowValues(bet: CsvExportBet, plan: UserPlan) {
   const basicValues = [
-    bet.placedAt.toISOString(),
+    bet.placedAt?.toISOString() ?? "",
     bet.sportsbook,
     bet.sport,
     bet.league,

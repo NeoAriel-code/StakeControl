@@ -1,5 +1,5 @@
 import type { AiProvider } from "@/lib/ai/ai-provider";
-import { BetResult, BetType } from "@prisma/client";
+import { BetResult, BetType, FieldSource } from "@prisma/client";
 import { MockAiProvider } from "@/lib/ai/mock-ai-provider";
 import { createConfiguredAiProvider } from "@/lib/ai/ai-provider-factory";
 import { getAiModelConfig } from "@/lib/ai/ai-config";
@@ -9,7 +9,7 @@ import { extractedBetTicketSchema, type ExtractedBetTicket } from "@/lib/ticket-
 import { structureMockBetTicket } from "@/lib/mock-ticket-parser";
 
 const MIN_CONFIDENCE = 0.85;
-const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha, usa null en placedAt, baja confidenceScore y agrega placedAt en doubtfulFields. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Un botón u oferta que diga CASH OUT no prueba que se haya realizado un cashout: usa CASHOUT solo cuando el OCR confirma una operación completada. Si el evento programado aún no comienza, el resultado debe ser PENDING. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
+const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha de colocación, usa null en placedAt, y si no está el inicio del evento, usa null en eventStartAt; baja confidenceScore y agrega el campo ausente en doubtfulFields. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Un botón u oferta que diga CASH OUT no prueba que se haya realizado un cashout: usa CASHOUT solo cuando el OCR confirma una operación completada. Si el evento programado aún no comienza, el resultado debe ser PENDING. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
 
 export type TicketRoutingResult = { ticket: ExtractedBetTicket; model: string; estimatedTokens: number; fallbackUsed: boolean };
 export type TicketExtractionContext = {
@@ -113,10 +113,12 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
   const resultWasCorrected = isFutureScheduledEvent(rawText, context) && parsed.result !== BetResult.PENDING;
   return extractedBetTicketSchema.parse({
     ...parsed,
-    placedAt: placedAtWasMissing
-      ? formatCurrentDateTime(context.timezone, context.referenceDate)
-      : parsed.placedAt ?? formatCurrentDateTime(context.timezone, context.referenceDate),
+    placedAt: placedAtWasMissing ? undefined : parsed.placedAt ?? undefined,
+    eventStartAt: parsed.eventStartAt ?? undefined,
+    placedAtSource: placedAtWasMissing ? FieldSource.UNKNOWN : FieldSource.OCR,
+    eventStartAtSource: parsed.eventStartAt ? FieldSource.OCR : FieldSource.UNKNOWN,
     currency: currencyWasAssumed ? preferredCurrency : parsed.currency,
+    currencySource: currencyWasAssumed ? FieldSource.INFERRED : FieldSource.OCR,
     sport: parsed.sport ?? inferredSport,
     result: resultWasCorrected ? BetResult.PENDING : parsed.result,
     doubtfulFields: [
@@ -150,11 +152,15 @@ function buildManualReviewTicket(note?: string, context: TicketExtractionContext
   const preferredCurrency = preferredCurrencyFromContext(context) ?? "CLP";
   return extractedBetTicketSchema.parse({
     event: "Evento por confirmar",
-    placedAt: formatCurrentDateTime(context.timezone, context.referenceDate),
+    placedAt: undefined,
+    eventStartAt: undefined,
+    placedAtSource: FieldSource.UNKNOWN,
+    eventStartAtSource: FieldSource.UNKNOWN,
     betType: BetType.SINGLE,
     stake: 0,
     odds: 1.01,
     currency: preferredCurrency,
+    currencySource: FieldSource.INFERRED,
     result: BetResult.PENDING,
     netProfit: 0,
     confidenceScore: 0,

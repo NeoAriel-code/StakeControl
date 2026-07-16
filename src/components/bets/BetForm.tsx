@@ -17,6 +17,7 @@ type BetFormProps = {
   defaultValues?: {
     sportsbook?: string | null;
     placedAt?: string;
+    eventStartAt?: string;
     event?: string;
     sport?: string | null;
     league?: string | null;
@@ -110,8 +111,12 @@ export function BetForm({
           <input id="sportsbook" name="sportsbook" defaultValue={values.sportsbook ?? ""} className={inputClassName(state.fieldErrors?.sportsbook)} />
         </Field>
 
-        <Field label="Fecha y hora" htmlFor="placedAt" error={state.fieldErrors?.placedAt}>
-          <input id="placedAt" name="placedAt" type="datetime-local" defaultValue={values.placedAt ?? ""} required className={inputClassName(state.fieldErrors?.placedAt)} />
+        <Field label="Fecha y hora de la apuesta" htmlFor="placedAt" error={state.fieldErrors?.placedAt}>
+          <input id="placedAt" name="placedAt" type="datetime-local" defaultValue={values.placedAt ?? ""} className={inputClassName(state.fieldErrors?.placedAt)} />
+        </Field>
+
+        <Field label="Inicio del evento" htmlFor="eventStartAt" error={state.fieldErrors?.eventStartAt}>
+          <input id="eventStartAt" name="eventStartAt" type="datetime-local" defaultValue={values.eventStartAt ?? ""} className={inputClassName(state.fieldErrors?.eventStartAt)} />
         </Field>
 
         <div className="md:col-span-2">

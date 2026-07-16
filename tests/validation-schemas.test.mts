@@ -4,7 +4,7 @@ import { BetResult, BetType } from "@prisma/client";
 import { betFormSchema } from "../src/lib/bet-schemas";
 import { reviewedTicketBetSchema, ticketLegSchema } from "../src/lib/ticket-extraction";
 
-test("betFormSchema preserves missing dates and accepts field sources", () => {
+test("betFormSchema preserves missing dates and discards client-supplied field sources", () => {
   const parsed = betFormSchema.parse({
     event: "Evento",
     betType: BetType.SINGLE,
@@ -22,9 +22,9 @@ test("betFormSchema preserves missing dates and accepts field sources", () => {
 
   assert.equal(parsed.placedAt, undefined);
   assert.equal(parsed.eventStartAt, undefined);
-  assert.equal(parsed.placedAtSource, "OCR");
-  assert.equal(parsed.eventStartAtSource, "UNKNOWN");
-  assert.equal(parsed.currencySource, "USER");
+  assert.equal("placedAtSource" in parsed, false);
+  assert.equal("eventStartAtSource" in parsed, false);
+  assert.equal("currencySource" in parsed, false);
 });
 
 test("betFormSchema accepts valid manual bet input", () => {

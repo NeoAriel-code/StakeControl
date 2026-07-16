@@ -41,7 +41,7 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
     notFound();
   }
 
-  if (!hasFullHistory && bet.placedAt < getHistoryCutoffDate()) {
+  if (!hasFullHistory && bet.placedAt && bet.placedAt < getHistoryCutoffDate()) {
     redirect("/upgrade");
   }
 
@@ -83,10 +83,10 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Fecha y hora</dt>
                 <dd className="mt-1 text-sm text-foreground">
-                  {new Intl.DateTimeFormat("es-CL", {
+                  {bet.placedAt ? new Intl.DateTimeFormat("es-CL", {
                     dateStyle: "full",
                     timeStyle: "short",
-                  }).format(bet.placedAt)}
+                  }).format(bet.placedAt) : "Sin fecha registrada"}
                 </dd>
               </div>
               <div>

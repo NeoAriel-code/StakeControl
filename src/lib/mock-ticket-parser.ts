@@ -1,4 +1,4 @@
-import { BetResult, BetType } from "@prisma/client";
+import { BetResult, BetType, FieldSource } from "@prisma/client";
 import {
   extractedBetTicketSchema,
   type ExtractedBetTicket,
@@ -26,7 +26,7 @@ export function structureMockBetTicket(rawText: string): ExtractedBetTicket {
   const market = readLine(rawText, "Mercado");
   const selection = readLine(rawText, "Seleccion");
   const ticketCode = readLine(rawText, "Codigo ticket");
-  const placedAt = readLine(rawText, "Fecha") || new Date().toISOString().slice(0, 16);
+  const placedAt = readLine(rawText, "Fecha");
   const stake = parseCurrencyValue(readLine(rawText, "Stake")) ?? 15000;
   const odds = Number(readLine(rawText, "Cuota") || "2.35");
   const potentialPayout = parseCurrencyValue(readLine(rawText, "Posible retorno"));
@@ -37,6 +37,9 @@ export function structureMockBetTicket(rawText: string): ExtractedBetTicket {
     sportsbook,
     event,
     placedAt,
+    eventStartAt: undefined,
+    placedAtSource: placedAt ? FieldSource.OCR : FieldSource.UNKNOWN,
+    eventStartAtSource: FieldSource.UNKNOWN,
     sport,
     league,
     market,
@@ -45,6 +48,7 @@ export function structureMockBetTicket(rawText: string): ExtractedBetTicket {
     stake,
     odds,
     currency: "CLP",
+    currencySource: FieldSource.INFERRED,
     potentialPayout,
     result: BetResult.PENDING,
     netProfit: 0,

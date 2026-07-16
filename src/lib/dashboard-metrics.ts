@@ -9,7 +9,7 @@ export type MetricBet = {
   stake: number;
   odds: number;
   profitLoss?: number | null;
-  placedAt: Date;
+  placedAt: Date | null;
 };
 
 export type DashboardMetrics = {
@@ -102,7 +102,9 @@ function buildExposure(
 function buildMonthlyProfitLoss(bets: MetricBet[]) {
   const grouped = new Map<string, number>();
 
-  const ordered = [...bets].sort((a, b) => a.placedAt.getTime() - b.placedAt.getTime());
+  const ordered = bets
+    .filter((bet): bet is MetricBet & { placedAt: Date } => bet.placedAt !== null)
+    .sort((a, b) => a.placedAt.getTime() - b.placedAt.getTime());
 
   for (const bet of ordered) {
     const monthKey = `${bet.placedAt.getFullYear()}-${String(bet.placedAt.getMonth() + 1).padStart(2, "0")}`;
@@ -116,8 +118,8 @@ function buildMonthlyProfitLoss(bets: MetricBet[]) {
 }
 
 function buildCurrentStreak(bets: MetricBet[], targetResult: "WON" | "LOST") {
-  const resolvedForStreak = [...bets]
-    .filter((bet) => bet.result === "WON" || bet.result === "LOST")
+  const resolvedForStreak = bets
+    .filter((bet): bet is MetricBet & { placedAt: Date } => bet.placedAt !== null && (bet.result === "WON" || bet.result === "LOST"))
     .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
 
   let streak = 0;

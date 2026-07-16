@@ -1,6 +1,6 @@
 "use server";
 
-import { BetResult, Prisma } from "@prisma/client";
+import { BetResult, FieldSource, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -57,6 +57,7 @@ function parseFormData(formData: FormData) {
   const parsed = betFormSchema.safeParse({
     sportsbook: formData.get("sportsbook"),
     placedAt: formData.get("placedAt"),
+    eventStartAt: formData.get("eventStartAt"),
     event: formData.get("event"),
     sport: formData.get("sport"),
     league: formData.get("league"),
@@ -83,6 +84,7 @@ function parseFormData(formData: FormData) {
         fieldErrors: {
           sportsbook: fieldErrors.sportsbook?.[0],
           placedAt: fieldErrors.placedAt?.[0],
+          eventStartAt: fieldErrors.eventStartAt?.[0],
           event: fieldErrors.event?.[0],
           sport: fieldErrors.sport?.[0],
           league: fieldErrors.league?.[0],
@@ -131,7 +133,11 @@ function buildBetPayload(values: BetFormValues) {
         : values.result === "VOID"
           ? toDecimal(values.stake)
           : null,
-    placedAt: new Date(values.placedAt),
+    placedAt: values.placedAt ? new Date(values.placedAt) : null,
+    eventStartAt: values.eventStartAt ? new Date(values.eventStartAt) : null,
+    placedAtSource: values.placedAt ? FieldSource.USER : null,
+    eventStartAtSource: values.eventStartAt ? FieldSource.USER : null,
+    currencySource: FieldSource.USER,
     notes: values.notes,
   };
 }

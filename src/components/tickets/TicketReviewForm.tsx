@@ -18,7 +18,8 @@ type TicketReviewFormProps = {
   requiresReview: boolean;
 };
 
-function toDateTimeLocal(value: string) {
+function toDateTimeLocal(value?: string) {
+  if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const offset = date.getTimezoneOffset();
@@ -133,9 +134,15 @@ export function TicketReviewForm({
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="placedAt" className="text-sm font-medium text-foreground">Fecha y hora</label>
+          <label htmlFor="placedAt" className="text-sm font-medium text-foreground">Fecha y hora de la apuesta</label>
           <input id="placedAt" name="placedAt" type="datetime-local" defaultValue={toDateTimeLocal(extractedBet.placedAt)} className={inputClassName(isDoubtful("placedAt"))} />
           {isDoubtful("placedAt") && <p className="text-xs text-warning">{fieldHelp}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="eventStartAt" className="text-sm font-medium text-foreground">Inicio del evento</label>
+          <input id="eventStartAt" name="eventStartAt" type="datetime-local" defaultValue={toDateTimeLocal(extractedBet.eventStartAt)} className={inputClassName(isDoubtful("eventStartAt"))} />
+          {isDoubtful("eventStartAt") && <p className="text-xs text-warning">{fieldHelp}</p>}
         </div>
 
         <div className="space-y-2">

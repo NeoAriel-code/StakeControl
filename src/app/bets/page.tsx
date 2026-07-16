@@ -419,10 +419,10 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                     {bets.map((bet) => (
                       <tr key={bet.id}>
                         <td className="px-4 py-3 text-text-secondary">
-                          {new Intl.DateTimeFormat("es-CL", {
+                          {bet.placedAt ? new Intl.DateTimeFormat("es-CL", {
                             dateStyle: "short",
                             timeStyle: "short",
-                          }).format(bet.placedAt)}
+                          }).format(bet.placedAt) : "Sin fecha registrada"}
                         </td>
                         <td className="px-4 py-3 text-foreground">{bet.title}</td>
                         <td className="px-4 py-3 text-text-secondary">{bet.sportsbook || "—"}</td>
@@ -469,10 +469,10 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
                         <QuickBetResultSelect betId={bet.id} result={bet.result} compact />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {new Intl.DateTimeFormat("es-CL", {
+                        {bet.placedAt ? new Intl.DateTimeFormat("es-CL", {
                           dateStyle: "short",
                           timeStyle: "short",
-                        }).format(bet.placedAt)}
+                        }).format(bet.placedAt) : "Sin fecha registrada"}
                       </p>
                       <dl className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
                         <div>

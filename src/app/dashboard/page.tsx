@@ -352,10 +352,10 @@ export default async function DashboardPage() {
                     <div>
                       <p className="text-sm font-semibold text-foreground">{bet.title}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {new Intl.DateTimeFormat("es-CL", {
+                        {bet.placedAt ? new Intl.DateTimeFormat("es-CL", {
                           dateStyle: "short",
                           timeStyle: "short",
-                        }).format(bet.placedAt)}
+                        }).format(bet.placedAt) : "Sin fecha registrada"}
                       </p>
                     </div>
                     <StatusBadge

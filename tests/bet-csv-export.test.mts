@@ -41,3 +41,9 @@ test("buildBetsCsv exports premium columns for premium users", () => {
   assert.match(csv.split("\n")[0], /"ticketCode","notas","categoria","origen","confidenceScore"$/);
   assert.match(csv, /"ABC-123","Nota con ""comillas""","Fútbol \/ Ganador","OCR","0.92"/);
 });
+
+test("CSV exports an empty date for a bet without placedAt", () => {
+  const csv = buildBetsCsv([{ ...baseBet, placedAt: null }], "FREE");
+
+  assert.match(csv.split("\n")[1]!, /^""/);
+});

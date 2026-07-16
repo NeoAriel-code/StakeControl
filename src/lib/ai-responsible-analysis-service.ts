@@ -258,9 +258,11 @@ export class AiResponsibleAnalysisService {
       }),
     ]);
 
-    const monthBets = monthBetsRaw.map(toAnalysisBet);
-    const previousMonthBets = previousMonthBetsRaw.map(toAnalysisBet);
-    const historicalBets = historicalBetsRaw.map(toAnalysisBet);
+    const withPlacedAt = <T extends { placedAt: Date | null }>(bets: T[]) =>
+      bets.filter((bet): bet is T & { placedAt: Date } => bet.placedAt !== null);
+    const monthBets = withPlacedAt(monthBetsRaw).map(toAnalysisBet);
+    const previousMonthBets = withPlacedAt(previousMonthBetsRaw).map(toAnalysisBet);
+    const historicalBets = withPlacedAt(historicalBetsRaw).map(toAnalysisBet);
     const totalBets = monthBets.length;
     const resolvedBets = monthBets.filter((bet) => isResolvedBetResult(bet.result));
     const totalStake = round(monthBets.reduce((sum, bet) => sum + bet.stake, 0));

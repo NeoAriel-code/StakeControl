@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { FieldSource } from "@prisma/client";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 
@@ -20,8 +19,6 @@ export const betFormSchema = z.object({
   sportsbook: optionalTrimmedString,
   placedAt: optionalTrimmedString,
   eventStartAt: optionalTrimmedString,
-  placedAtSource: z.nativeEnum(FieldSource).optional(),
-  eventStartAtSource: z.nativeEnum(FieldSource).optional(),
   event: z.string().trim().min(1, "El evento es obligatorio."),
   sport: optionalTrimmedString,
   league: optionalTrimmedString,
@@ -39,7 +36,6 @@ export const betFormSchema = z.object({
   currency: z.enum(CURRENCY_CODES, {
     error: "Selecciona una moneda válida.",
   }),
-  currencySource: z.nativeEnum(FieldSource).optional(),
   potentialPayout: z.preprocess(
     (value) => (value === "" || value == null ? undefined : value),
     decimalField("El posible retorno").optional()
