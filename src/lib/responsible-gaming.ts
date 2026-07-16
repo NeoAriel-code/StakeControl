@@ -216,7 +216,7 @@ async function ensureLimitAlert({
       title: `Límite ${periodLabel} superado`,
       message:
         period === "monthly"
-          ? "Estás cerca de tu límite mensual. Considera revisar tu presupuesto antes de registrar nuevas apuestas."
+          ? "Superaste tu límite mensual. Considera revisar tu presupuesto antes de registrar nuevas apuestas."
           : `Superaste tu límite ${periodLabel}. Puede ser un buen momento para revisar tus límites o activar una pausa breve.`,
       metadata: {
         period,

@@ -278,7 +278,7 @@ export default async function AnalysisPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-3">
-          <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          {report.totalBets >= 20 && <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-foreground">Mayor exposición</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Categorías con mayor stake registrado durante el mes.
@@ -291,7 +291,7 @@ export default async function AnalysisPage() {
                 tone="neutral"
               />
             </div>
-          </article>
+          </article>}
 
           <article className="rounded-3xl border border-border bg-card p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-foreground">Peor desempeño histórico</h2>
