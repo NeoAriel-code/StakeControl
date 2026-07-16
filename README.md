@@ -8,188 +8,75 @@ StakeControl es una aplicación web para registrar actividad de apuestas, revisa
 - No promete rentabilidad ni recuperación de pérdidas.
 - No incentiva aumentar stake.
 - Trata apuestas, tickets, reportes y alertas como datos privados del usuario.
-- Usa lenguaje preventivo: límites, rachas, exposición, pausa y revisión.
+- Mantiene revisión humana obligatoria para tickets procesados con OCR e IA.
 
 ## Stack
 
 - Next.js 16 App Router
-- TypeScript
-- Tailwind CSS v4
-- Prisma 7
-- SQLite/libSQL local en desarrollo
-- Zod para validación
+- TypeScript, Tailwind CSS v4 y Zod
+- Prisma 7 con SQLite/libSQL en desarrollo
 - Node test runner con `tsx`
 
-## Setup Local
-
-1. Instalar dependencias:
+## Setup local
 
 ```bash
 npm install
-```
-
-2. Configurar `.env`:
-
-```bash
 cp .env.example .env
-```
-
-3. Aplicar migraciones y generar Prisma Client:
-
-```bash
 npx prisma migrate dev
-npx prisma generate
-```
-
-4. Levantar desarrollo:
-
-```bash
 npm run dev
 ```
 
-La app queda disponible en `http://localhost:3000`.
+La aplicación queda disponible en `http://localhost:3000`.
 
-## Procesamiento De Tickets En Produccion
+## Variables de entorno
 
-La carga de tickets acepta únicamente imágenes JPG, PNG y WEBP; los PDF no son aceptados. El OCR debe configurarse explícitamente: si no está disponible o no puede procesar una imagen, la carga falla de forma segura y no se genera texto de reemplazo. La revisión humana sigue siendo obligatoria: el OCR es ayuda, no fuente final de verdad.
+Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON de cuentas de servicio ni correos personales al repositorio, README o logs.
 
-Para desplegar en producción, configura estas variables sensibles:
+| Variable | Uso | Requerida |
+| --- | --- | --- |
+| `DATABASE_URL` | Conexión Prisma/libSQL. | Sí, todos los entornos. |
+| `AUTH_SECRET` | Firma de sesiones. | Sí, todos los entornos. |
+| `NEXT_PUBLIC_APP_URL` | URL pública de la aplicación. | Sí al desplegar. |
+| `NODE_ENV` | Modo de ejecución; producción bloquea proveedores mock/local. | La plataforma normalmente la define. |
+| `OCR_PROVIDER` | Proveedor OCR explícito. | Sí al usar OCR; en producción debe ser cloud. |
+| `GOOGLE_VISION_CREDENTIALS_JSON` | Credenciales del proveedor `google_vision`. | Sí cuando `OCR_PROVIDER=google_vision`. |
+| `TESSERACT_BIN`, `TESSERACT_LANG` | OCR local experimental. | Solo desarrollo; no permitido en producción. |
+| `AI_PROVIDER` | Proveedor de extracción IA. | Sí al usar IA; en producción debe ser `openai`. |
+| `OPENAI_API_KEY` | Credencial del proveedor OpenAI. | Sí cuando `AI_PROVIDER=openai`. |
+| `AI_TICKET_PRIMARY_MODEL`, `AI_TICKET_FALLBACK_MODEL` | Modelos de extracción de tickets. | Opcionales. |
+| `AI_REPORT_PRIMARY_MODEL`, `AI_REPORT_FALLBACK_MODEL` | Modelos de análisis responsable. | Opcionales. |
+| `AI_TICKET_TIMEOUT_MS` | Límite de tiempo de extracción de tickets. | Opcional. |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Almacenamiento privado Supabase. | Sí en producción con almacenamiento Supabase. |
+| `SUPABASE_STORAGE_BUCKET` | Bucket privado de tickets. | Opcional; usa el bucket predeterminado si no se define. |
+| `TURSO_AUTH_TOKEN` | Token para una conexión Turso remota. | Opcional, según `DATABASE_URL`. |
+| `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` | Entrega de recuperación de contraseña. | Requeridas solo al activar envío de correo. |
+| `PLAN_TESTER_EMAILS`, `DEMO_DATA_EMAILS` | Controles privados de QA. | Opcionales; no documentar valores personales. |
 
-```env
-AUTH_SECRET="un-secreto-largo-y-aleatorio"
-OCR_PROVIDER="google_vision"
-GOOGLE_VISION_CREDENTIALS_JSON='{"type":"service_account",...}'
-AI_PROVIDER="openai"
-OPENAI_API_KEY="sk-..."
-SUPABASE_URL="https://project.supabase.co"
-SUPABASE_SECRET_KEY="sb_secret_..."
-```
+El servicio solo acepta imágenes JPG, PNG y WEBP para tickets; PDF no está habilitado. En producción, OCR, IA y almacenamiento fallan de forma segura si la configuración no es válida.
 
-En producción, Google Vision procesa las imágenes mediante `DOCUMENT_TEXT_DETECTION`, OpenAI estructura el texto OCR y Supabase Storage almacena los archivos privados. `AUTH_SECRET` también es obligatorio en todos los entornos.
+## Rutas principales
 
-### IA Para Estructurar Tickets
+- `/dashboard`: resumen de actividad.
+- `/health`: salud de juego, score preventivo y alertas.
+- `/bets`: historial y registro manual.
+- `/tickets`: carga y revisión humana de tickets.
+- `/limits`: límites personales y pausas voluntarias.
+- `/analysis`: análisis responsable premium.
+- `/reports/export`: exportación CSV segura.
+- `/settings` y `/profile`: preferencias, seguridad y cuenta.
 
-La IA recibe solo el texto OCR saneado, no el archivo ni identificadores personales. La extracción usa salida estructurada, no guarda una apuesta automáticamente y mantiene la revisión humana como paso obligatorio. Si el proveedor no responde, el ticket queda disponible para completar manualmente.
-
-Para ajustar los modelos de IA en Vercel, configura estas variables opcionales en `Production` y `Preview`:
-
-```env
-AI_PROVIDER="openai"
-OPENAI_API_KEY="sk-..."
-AI_TICKET_PRIMARY_MODEL="gpt-4.1-mini"
-AI_TICKET_FALLBACK_MODEL="gpt-5-mini"
-AI_TICKET_TIMEOUT_MS="8000"
-AI_REPORT_PRIMARY_MODEL="gpt-5-mini"
-AI_REPORT_FALLBACK_MODEL="gpt-4.1-mini"
-```
-
-Las apuestas simples se guardan con una selección. Las múltiples y los Bet Builders conservan sus selecciones individuales con evento, mercado, elección, cuota y resultado. Antes de desplegar una versión que use esta estructura, aplica las migraciones pendientes en Turso.
-
-### Control Privado De Planes
-
-Para alternar rápidamente entre Free y Premium durante QA, define los emails autorizados en Vercel:
-
-```env
-PLAN_TESTER_EMAILS="arielalfaro.94@gmail.com"
-```
-
-Solo los correos incluidos verán el control en `/profile`; el servidor vuelve a validar el permiso antes de cambiar la suscripción. No procesa pagos.
-
-## Rutas De La Aplicación
-
-- `/`: landing publica.
-- `/register`: registro.
-- `/login`: inicio de sesion.
-- `/onboarding`: setup inicial responsable.
-- `/dashboard`: resumen principal.
-- `/health`: salud de juego y datos demo.
-- `/bets`: historial de apuestas.
-- `/bets/new`: registro manual.
-- `/tickets`: carga y revisión de tickets con OCR.
-- `/limits`: limites y pausas voluntarias.
-- `/alerts`: historial de alertas.
-- `/analysis`: analisis IA responsable premium.
-- `/reportes`: hub de reportes.
-- `/reports/export`: exportacion CSV.
-- `/settings`: preferencias y seguridad.
-- `/profile`: perfil, documentos y eliminacion de cuenta.
-- `/terms` y `/privacy`: documentacion legal basica.
-
-Rutas legacy mantenidas por compatibilidad:
-
-- `/historial` redirige a `/bets`.
-- `/registrar` redirige a `/bets/new`.
-- `/terminos` redirige a `/terms`.
-
-## Guion De Demo V1
-
-1. Abrir `/` y mostrar la propuesta: bitacora privada para apuestas deportivas.
-2. Crear cuenta en `/register`.
-3. Completar `/onboarding`:
-   - elegir deportes principales,
-   - definir limites iniciales,
-   - aceptar reglas responsables.
-4. Entrar a `/health`.
-5. Usar `Cargar datos demo` si la cuenta esta vacia.
-6. Revisar que `/dashboard` muestre metricas, exposicion y apuestas recientes.
-7. Ir a `/bets` y cambiar un resultado desde el selector rapido.
-8. Revisar `/alerts` y marcar alertas como leidas desde el navbar.
-9. Revisar `/limits` y activar o modificar limites/pausa.
-10. Descargar CSV en `/reports/export`.
-11. Probar `/analysis` con usuario Free y Premium para validar bloqueo de plan.
-12. Cerrar sesion desde el menu de usuario.
-
-## Datos Demo
-
-La pagina `/health` incluye una accion para crear datos demo del usuario autenticado:
-
-- genera mas de 30 apuestas historicas,
-- configura limites iniciales,
-- crea alertas preventivas,
-- es idempotente: no duplica si ya existen tickets demo con prefijo `DEMO-STC`.
-
-Los datos demo pertenecen solo al usuario autenticado.
-
-## Verificacion
-
-Ejecutar antes de declarar una version como estable:
+## Verificación
 
 ```bash
-npx tsc --noEmit
 npm run lint
-git diff --check
+npm run typecheck
 npm test
+npm run test:coverage
 npm run build
 ```
 
-La suite actual cubre:
+GitHub Actions ejecuta lint, typecheck, pruebas y build en cada pull request y cambio a `main`.
 
-- metricas criticas,
-- salud de juego,
-- alertas responsables,
-- permisos por `userId`,
-- validaciones Zod,
-- configuración explícita de proveedores OCR y almacenamiento,
-- bloqueo premium/free,
-- filtro de salida del analisis IA responsable,
-- exportacion CSV.
+## Seguridad
 
-## Limites Conocidos
-
-- No hay pasarela de pago real.
-- La carga de tickets no acepta PDF; solo admite JPG, PNG y WEBP.
-- No se conectan cuentas de sportsbooks.
-- No se guardan credenciales de casas de apuesta.
-- La base local es SQLite/libSQL; para produccion se debe migrar a un proveedor administrado como Supabase u otro backend elegido.
-- Las rutas legacy se mantienen solo como redirecciones.
-
-## Comandos Utiles
-
-```bash
-npm run dev
-npm test
-npm run build
-npx tsc --noEmit
-npx prisma migrate dev
-npx prisma generate
-```
+Consulta [SECURITY.md](SECURITY.md) para reportar vulnerabilidades de forma privada.
