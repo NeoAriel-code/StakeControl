@@ -106,7 +106,6 @@ export function calculateResponsibleHealth(input: ResponsibleHealthInput): Respo
   const configuredLimits = [input.dailyLimit, input.weeklyLimit, input.monthlyLimit].filter(hasConfiguredLimit).length;
 
   if (input.pauseActive) {
-    score -= 35;
     signals.push({
       id: "pause-active",
       title: "Pausa activa",
@@ -235,7 +234,7 @@ export function calculateResponsibleHealth(input: ResponsibleHealthInput): Respo
 
   const title =
     status === "controlled"
-      ? "Actividad bajo control"
+      ? "Sin señales preventivas relevantes"
       : status === "near-limit"
         ? "Conviene revisar límites"
         : status === "limit-exceeded"
@@ -246,7 +245,7 @@ export function calculateResponsibleHealth(input: ResponsibleHealthInput): Respo
 
   const summary =
     status === "controlled"
-      ? "En tus datos históricos no aparecen señales fuertes de riesgo en este momento."
+      ? "Estos indicadores no sustituyen una evaluación profesional ni garantizan resultados."
       : "En tus datos históricos aparecen señales que conviene revisar con calma antes de seguir registrando actividad.";
 
   return {

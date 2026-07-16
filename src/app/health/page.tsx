@@ -200,8 +200,8 @@ export default async function HealthPage({ searchParams }: HealthPageProps) {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-primary/20 bg-primary/10 text-3xl font-black text-primary">
-                  {health.score}
+                <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-primary/20 bg-primary/10 text-center text-xs font-bold text-primary">
+                  Indicadores<br />preventivos
                 </div>
                 <div>
                   <StatusBadge kind={health.status} />
