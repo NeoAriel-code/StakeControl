@@ -89,6 +89,12 @@ export function TicketReviewForm({
   }
 
   const fieldHelp = "Campo detectado automáticamente. Revísalo antes de confirmar.";
+  function sourceHelp(source?: string) {
+    if (source === "INFERRED") return "Valor inferido desde tu configuración; confírmalo o corrígelo.";
+    if (source === "UNKNOWN") return "No se detectó este dato en el ticket. Puedes dejarlo vacío o completarlo.";
+    if (source === "OCR") return "Valor detectado en el ticket. Revísalo antes de confirmar.";
+    return fieldHelp;
+  }
   const selectedCurrency = isSupportedCurrency(extractedBet.currency) ? extractedBet.currency : "USD";
 
   function updateLeg(index: number, field: keyof EditableLeg, value: string) {
@@ -136,13 +142,13 @@ export function TicketReviewForm({
         <div className="space-y-2">
           <label htmlFor="placedAt" className="text-sm font-medium text-foreground">Fecha y hora de la apuesta</label>
           <input id="placedAt" name="placedAt" type="datetime-local" defaultValue={toDateTimeLocal(extractedBet.placedAt)} className={inputClassName(isDoubtful("placedAt"))} />
-          {isDoubtful("placedAt") && <p className="text-xs text-warning">{fieldHelp}</p>}
+          {isDoubtful("placedAt") && <p className="text-xs text-warning">{sourceHelp(extractedBet.placedAtSource)}</p>}
         </div>
 
         <div className="space-y-2">
           <label htmlFor="eventStartAt" className="text-sm font-medium text-foreground">Inicio del evento</label>
           <input id="eventStartAt" name="eventStartAt" type="datetime-local" defaultValue={toDateTimeLocal(extractedBet.eventStartAt)} className={inputClassName(isDoubtful("eventStartAt"))} />
-          {isDoubtful("eventStartAt") && <p className="text-xs text-warning">{fieldHelp}</p>}
+          {isDoubtful("eventStartAt") && <p className="text-xs text-warning">{sourceHelp(extractedBet.eventStartAtSource)}</p>}
         </div>
 
         <div className="space-y-2">
@@ -182,6 +188,7 @@ export function TicketReviewForm({
               </option>
             ))}
           </select>
+          {isDoubtful("currency") && <p className="text-xs text-warning">{sourceHelp(extractedBet.currencySource)}</p>}
         </div>
 
         <div className="space-y-2">

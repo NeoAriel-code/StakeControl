@@ -31,7 +31,12 @@ export function structureMockBetTicket(rawText: string): ExtractedBetTicket {
   const odds = Number(readLine(rawText, "Cuota") || "2.35");
   const potentialPayout = parseCurrencyValue(readLine(rawText, "Posible retorno"));
   const confidenceScore = rawText.toLowerCase().includes("betano") ? 0.91 : 0.79;
-  const doubtfulFields = confidenceScore < 0.85 ? ["league", "selection"] : ["market"];
+  const doubtfulFields = [
+    ...(confidenceScore < 0.85 ? ["league", "selection"] : ["market"]),
+    ...(placedAt ? [] : ["placedAt"]),
+    "eventStartAt",
+    "currency",
+  ];
 
   return extractedBetTicketSchema.parse({
     sportsbook,

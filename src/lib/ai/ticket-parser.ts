@@ -125,6 +125,7 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
       ...new Set([
         ...parsed.doubtfulFields,
         ...(placedAtWasMissing ? ["placedAt"] : []),
+        ...(!parsed.eventStartAt ? ["eventStartAt"] : []),
         ...(currencyWasAssumed ? ["currency"] : []),
         ...(resultWasCorrected ? ["result"] : []),
       ]),
@@ -168,6 +169,7 @@ function buildManualReviewTicket(note?: string, context: TicketExtractionContext
       "event",
       "sportsbook",
       "placedAt",
+      "eventStartAt",
       "sport",
       "league",
       "market",
