@@ -205,18 +205,20 @@ async function ensureLimitAlert({
   currentValue,
   limitValue,
   referenceDate,
+  timezone = "UTC",
 }: {
   userId: string;
   period: "daily" | "weekly" | "monthly";
   currentValue: number;
   limitValue?: number | null;
   referenceDate: Date;
+  timezone?: string;
 }) {
   if (!limitValue || limitValue <= 0) {
     return;
   }
 
-  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate);
+  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate, timezone);
   const createdAfter =
     period === "daily" ? dailyStart : period === "weekly" ? weeklyStart : monthlyStart;
   const usageRatio = currentValue / limitValue;
@@ -271,7 +273,7 @@ async function ensureLimitAlert({
 export async function evaluateResponsibleGamingAlerts(userId: string) {
   const now = new Date();
   const canUseIntelligentAlerts = await canUseFeature(userId, "alerts_intelligent");
-  const [limits, totals, bets] = await Promise.all([
+  const [limits, totals, bets, user] = await Promise.all([
     prisma.userLimits.findUnique({
       where: { userId },
     }),
@@ -287,6 +289,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
         placedAt: true,
       },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } }),
   ]);
 
   await Promise.all([
@@ -296,6 +299,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.dailyStake,
       limitValue: limits?.dailyStakeLimit ? Number(limits.dailyStakeLimit) : null,
       referenceDate: now,
+      timezone: user?.timezone,
     }),
     ensureLimitAlert({
       userId,
@@ -303,6 +307,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.weeklyStake,
       limitValue: limits?.weeklyStakeLimit ? Number(limits.weeklyStakeLimit) : null,
       referenceDate: now,
+      timezone: user?.timezone,
     }),
     ensureLimitAlert({
       userId,
@@ -310,6 +315,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.monthlyStake,
       limitValue: limits?.monthlyStakeLimit ? Number(limits.monthlyStakeLimit) : null,
       referenceDate: now,
+      timezone: user?.timezone,
     }),
   ]);
 
@@ -404,11 +410,13 @@ export async function ensureMonthlyLimitAlerts({
   monthlyLimit,
   monthlyStakeTotal,
   referenceDate,
+  timezone,
 }: {
   userId: string;
   monthlyLimit?: number | null;
   monthlyStakeTotal: number;
   referenceDate: Date;
+  timezone?: string;
 }) {
   await ensureLimitAlert({
     userId,
@@ -416,5 +424,6 @@ export async function ensureMonthlyLimitAlerts({
     currentValue: monthlyStakeTotal,
     limitValue: monthlyLimit,
     referenceDate,
+    timezone,
   });
 }
