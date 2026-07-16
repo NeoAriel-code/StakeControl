@@ -44,3 +44,11 @@ dev.db
 next-env.d.ts
 
 /src/generated/prisma
+
+# Local agent tooling and generated review artifacts
+/.agents/
+/.claude/
+/.playwright-cli/
+/.superpowers/
+/output/
+/skills-lock.json
