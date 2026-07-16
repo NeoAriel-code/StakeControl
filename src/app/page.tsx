@@ -219,10 +219,10 @@ export default async function RootPage() {
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100/60">Dashboard</p>
-                      <h2 className="mt-2 text-xl font-black">Estado bajo control</h2>
+                      <h2 className="mt-2 text-xl font-black">Indicadores preventivos</h2>
                     </div>
                     <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
-                      Bajo control
+                      Revisar datos
                     </span>
                   </div>
 
