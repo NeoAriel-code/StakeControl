@@ -266,7 +266,8 @@ export class AiResponsibleAnalysisService {
     const totalBets = monthBets.length;
     const resolvedBets = monthBets.filter((bet) => isResolvedBetResult(bet.result));
     const totalStake = round(monthBets.reduce((sum, bet) => sum + bet.stake, 0));
-    const totalProfit = round(monthBets.reduce((sum, bet) => sum + getHistoricalProfitLoss(bet.result, bet.stake, bet.profitLoss), 0));
+    const totalProfit = round(resolvedBets.reduce((sum, bet) => sum + getHistoricalProfitLoss(bet.result, bet.stake, bet.profitLoss), 0));
+    const resolvedStake = round(resolvedBets.reduce((sum, bet) => sum + bet.stake, 0));
     const averageStake = round(safeDivide(totalStake, totalBets));
     const previousAverageStake = round(
       safeDivide(
@@ -301,7 +302,7 @@ export class AiResponsibleAnalysisService {
       resolvedBets: resolvedBets.length,
       totalStake,
       totalProfit,
-      roi: round(safeDivide(totalProfit, totalStake) * 100),
+      roi: round(safeDivide(totalProfit, resolvedStake) * 100),
       averageStake,
       stakeVariationPct,
       previousAverageStake,
