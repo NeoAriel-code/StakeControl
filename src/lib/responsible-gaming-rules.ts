@@ -71,10 +71,12 @@ export function detectStakeIncrease(
   const recentCount = options.recentCount ?? 5;
   const multiplier = options.multiplier ?? 1.4;
   const recentStakes = stakes.slice(0, recentCount);
+  const historicalStakes = stakes.slice(recentCount);
   const recentAverageStake = average(recentStakes);
-  const historicalAverageStake = average(stakes);
+  const historicalAverageStake = average(historicalStakes);
   const triggered =
     recentStakes.length >= recentCount &&
+    historicalStakes.length >= recentCount &&
     historicalAverageStake > 0 &&
     recentAverageStake > historicalAverageStake * multiplier;
 

@@ -20,9 +20,11 @@ test("detectLossStreak triggers only for consecutive recent losses", () => {
 
 test("detectStakeIncrease compares recent average against historical average", () => {
   const increase = detectStakeIncrease([50, 50, 50, 50, 50, 10, 10, 10, 10, 10]);
+  const isolatedBaselineIncrease = detectStakeIncrease([20, 20, 20, 20, 20, 10, 10, 10, 10, 10]);
   const stable = detectStakeIncrease([10, 12, 11, 10, 12, 11, 10, 12]);
 
   assert.equal(increase.triggered, true);
+  assert.equal(isolatedBaselineIncrease.triggered, true);
   assert.equal(increase.recentBetsConsidered, 5);
   assert.equal(stable.triggered, false);
 });
