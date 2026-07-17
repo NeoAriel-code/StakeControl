@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import { isPrivateStorageReference } from "@/lib/storage";
+import { getTicketFilePresentation } from "@/lib/ticket-file-presentation";
 import { formatOdds } from "@/lib/odds-format";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 import { BET_RESULT_LABELS, BET_TYPE_LABELS } from "@/lib/bet-enums";
@@ -200,16 +201,20 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
                 {bet.ticketImages.map((ticketImage) => (
                   <div key={ticketImage.id} className="space-y-2">
                     <div className="rounded-2xl border border-border bg-background p-2">
-                      {ticketImage.mimeType === "application/pdf" ? (
-                        <iframe
-                          src={
-                            isPrivateStorageReference(ticketImage.imageUrl)
-                              ? `/api/tickets/${ticketImage.id}/file`
-                              : ticketImage.imageUrl
-                          }
-                          title={ticketImage.fileName || "Ticket asociado"}
-                          className="h-[420px] w-full rounded-xl"
-                        />
+                      {getTicketFilePresentation(ticketImage.mimeType) === "download" ? (
+                        <div className="flex min-h-40 items-center justify-center rounded-xl bg-muted px-4 text-center">
+                          <a
+                            href={
+                              isPrivateStorageReference(ticketImage.imageUrl)
+                                ? `/api/tickets/${ticketImage.id}/file`
+                                : ticketImage.imageUrl
+                            }
+                            download={ticketImage.fileName || undefined}
+                            className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                          >
+                            Descargar PDF asociado
+                          </a>
+                        </div>
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
