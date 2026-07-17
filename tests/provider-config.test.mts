@@ -19,6 +19,17 @@ test("authentication requires a configured secret", () => {
   assert.equal(getAuthSecret({ AUTH_SECRET: "secret" }), "secret");
 });
 
+test("production requires an authentication secret of at least 32 characters", () => {
+  assert.throws(
+    () => getAuthSecret({ AUTH_SECRET: "too-short", NODE_ENV: "production" }),
+    /at least 32 characters/
+  );
+  assert.equal(
+    getAuthSecret({ AUTH_SECRET: "a".repeat(32), NODE_ENV: "production" }),
+    "a".repeat(32)
+  );
+});
+
 test("production rejects local and mock providers", () => {
   assert.throws(() => assertOcrProviderAllowed("mock", "production"), /OCR_PROVIDER/);
   assert.throws(() => assertOcrProviderAllowed("tesseract", "production"), /OCR_PROVIDER/);
