@@ -1,0 +1,40 @@
+export type ManagedSchemaMigration = {
+  name: string;
+  sqlPath: string;
+  requiredTables: readonly string[];
+};
+
+export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
+  {
+    name: "202607220002_add_email_notifications",
+    sqlPath: "prisma/migrations/202607220002_add_email_notifications/migration.sql",
+    requiredTables: ["EmailDelivery", "NotificationPreferences"],
+  },
+];
+
+export type SchemaMigrationPlan = {
+  action: "apply" | "baseline" | "skip" | "inconsistent";
+  name: string;
+};
+
+export function planSchemaMigration(
+  migration: ManagedSchemaMigration,
+  existingTables: ReadonlySet<string>,
+  recordedNames: ReadonlySet<string>,
+): SchemaMigrationPlan {
+  if (recordedNames.has(migration.name)) {
+    return { action: "skip", name: migration.name };
+  }
+
+  const existingRequiredTables = migration.requiredTables.filter((table) => existingTables.has(table));
+
+  if (existingRequiredTables.length === migration.requiredTables.length) {
+    return { action: "baseline", name: migration.name };
+  }
+
+  if (existingRequiredTables.length === 0) {
+    return { action: "apply", name: migration.name };
+  }
+
+  return { action: "inconsistent", name: migration.name };
+}
