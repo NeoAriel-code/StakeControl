@@ -1,6 +1,36 @@
 import { z } from "zod";
 import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
 
+const BET_TYPE_ALIASES: Record<string, (typeof BET_TYPES)[number]> = {
+  SINGLE: "SINGLE",
+  SIMPLE: "SINGLE",
+  INDIVIDUAL: "SINGLE",
+  COMBO: "COMBO",
+  MULTIPLE: "COMBO",
+  MULTIPLA: "COMBO",
+  PARLAY: "COMBO",
+  ACCUMULATOR: "COMBO",
+  BET_BUILDER: "BET_BUILDER",
+  "BET BUILDER": "BET_BUILDER",
+  SAME_GAME_PARLAY: "BET_BUILDER",
+  "SAME GAME PARLAY": "BET_BUILDER",
+  SYSTEM: "SYSTEM",
+  SISTEMA: "SYSTEM",
+};
+
+function normalizeBetType(value: unknown) {
+  if (typeof value !== "string") return value;
+
+  const normalized = value
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  return BET_TYPE_ALIASES[normalized] ?? value;
+}
+
 const aiTicketLegSchema = z.object({
   event: z.string().min(1).nullable(),
   sport: z.string().nullable(),
@@ -26,7 +56,7 @@ export const aiTicketExtractionSchema = z.object({
   league: z.string().nullable(),
   market: z.string().nullable(),
   selection: z.string().nullable(),
-  betType: z.enum(BET_TYPES).nullable(),
+  betType: z.preprocess(normalizeBetType, z.enum(BET_TYPES).nullable()),
   stake: z.number().finite().min(0).nullable(),
   odds: z.number().finite().gt(1).nullable(),
   currency: z.string().min(1).nullable(),
@@ -53,7 +83,7 @@ const aiTicketLegJsonSchema = {
     market: { type: ["string", "null"] },
     selection: { type: ["string", "null"] },
     odds: { type: ["number", "null"] },
-    result: { type: ["string", "null"] },
+    result: { type: ["string", "null"], enum: [...BET_RESULT_OPTIONS, null] },
   },
 } as const;
 
@@ -62,6 +92,6 @@ export const aiTicketExtractionJsonSchema = {
   required: ["sportsbook", "event", "placedAt", "eventStartAt", "sport", "league", "market", "selection", "betType", "stake", "odds", "currency", "potentialPayout", "result", "netProfit", "ticketCode", "notes", "confidenceScore", "doubtfulFields", "legs"],
   properties: {
     sportsbook: { type: ["string", "null"] }, event: { type: ["string", "null"] }, placedAt: { type: ["string", "null"] }, eventStartAt: { type: ["string", "null"] }, sport: { type: ["string", "null"] }, league: { type: ["string", "null"] }, market: { type: ["string", "null"] }, selection: { type: ["string", "null"] },
-    betType: { type: ["string", "null"] }, stake: { type: ["number", "null"] }, odds: { type: ["number", "null"] }, currency: { type: ["string", "null"] }, potentialPayout: { type: ["number", "null"] }, result: { type: ["string", "null"] }, netProfit: { type: ["number", "null"] }, ticketCode: { type: ["string", "null"] }, notes: { type: ["string", "null"] }, confidenceScore: { type: ["number", "null"] }, doubtfulFields: { type: ["array", "null"], items: { type: "string" } }, legs: { type: ["array", "null"], minItems: 1, maxItems: 20, items: aiTicketLegJsonSchema },
+    betType: { type: ["string", "null"], enum: [...BET_TYPES, null] }, stake: { type: ["number", "null"] }, odds: { type: ["number", "null"] }, currency: { type: ["string", "null"] }, potentialPayout: { type: ["number", "null"] }, result: { type: ["string", "null"], enum: [...BET_RESULT_OPTIONS, null] }, netProfit: { type: ["number", "null"] }, ticketCode: { type: ["string", "null"] }, notes: { type: ["string", "null"] }, confidenceScore: { type: ["number", "null"] }, doubtfulFields: { type: ["array", "null"], items: { type: "string" } }, legs: { type: ["array", "null"], minItems: 1, maxItems: 20, items: aiTicketLegJsonSchema },
   },
 } as const;

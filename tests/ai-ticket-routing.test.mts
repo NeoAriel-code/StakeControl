@@ -245,6 +245,24 @@ test("ticket routing retries with fallback after invalid structured data", async
   assert.equal(calls.length, 2);
 });
 
+test("ticket routing normalizes common AI bet type labels instead of discarding the extraction", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      return {
+        data: { ...extraction(0.9), betType: "Simple" } as T,
+        model: input.model,
+        estimatedTokens: 9,
+      };
+    },
+  };
+
+  const result = await parseTicketWithRouting("Ticket OCR", provider);
+
+  assert.equal(result.ticket.betType, BetType.SINGLE);
+  assert.equal(result.ticket.stake, 5000);
+  assert.equal(result.ticket.odds, 2.1);
+});
+
 test("ticket routing delimits untrusted OCR content", async () => {
   let prompt = "";
   const provider: AiProvider = {
