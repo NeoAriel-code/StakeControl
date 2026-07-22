@@ -21,6 +21,14 @@ function safeErrorMessage(error: unknown) {
   return message.slice(0, 500);
 }
 
+async function markSentSafely(repository: EmailDeliveryRepository, id: string, providerMessageId: string) {
+  try { await repository.markSent(id, { status: "SENT", providerMessageId }); } catch { /* delivery was accepted; ledger is best effort */ }
+}
+
+async function markFailedSafely(repository: EmailDeliveryRepository, id: string, failureReason: string) {
+  try { await repository.markFailed(id, { status: "FAILED", failureReason }); } catch { /* provider failure must not break the caller */ }
+}
+
 export class EmailDeliveryService {
   constructor(private readonly dependencies: { client: EmailClient; repository: EmailDeliveryRepository }) {}
 
@@ -36,10 +44,10 @@ export class EmailDeliveryService {
         html: `<p>Hola${recipientName ? ` ${recipientName}` : ""},</p><p>Tu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.</p>`,
         text: `Hola${name?.trim() ? ` ${name.trim()}` : ""},\n\nTu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.`,
       });
-      await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      await this.dependencies.repository.markFailed(pending.id, { status: "FAILED", failureReason: safeErrorMessage(error) });
+      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -57,10 +65,10 @@ export class EmailDeliveryService {
         html: `<p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href="${escapeHtml(resetUrl)}">Restablecer contraseña</a></p><p>Este enlace vence en una hora.</p>`,
         text: `Recibimos una solicitud para restablecer tu contraseña.\n\nRestablece tu contraseña: ${resetUrl}\n\nEste enlace vence en una hora.`,
       });
-      await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      await this.dependencies.repository.markFailed(pending.id, { status: "FAILED", failureReason: safeErrorMessage(error) });
+      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -70,10 +78,10 @@ export class EmailDeliveryService {
     if (!pending) return { delivered: false };
     try {
       const response = await this.dependencies.client.send({ to: email, subject: title, html: `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(alertsUrl)}">Ver alertas</a></p>`, text: `${message}\n\nVer alertas: ${alertsUrl}` });
-      await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      await this.dependencies.repository.markFailed(pending.id, { status: "FAILED", failureReason: safeErrorMessage(error) });
+      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
   }

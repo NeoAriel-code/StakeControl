@@ -35,3 +35,16 @@ test("a duplicate delivery key is skipped before calling the provider", async ()
   assert.deepEqual(result, { delivered: false });
   assert.equal(sent, false);
 });
+
+test("a delivery ledger outage does not prevent an already accepted email", async () => {
+  const repository: EmailDeliveryRepository = {
+    async createPending() { return { id: "untracked-1" }; },
+    async markSent() { throw new Error("no such table: EmailDelivery"); },
+    async markFailed() { throw new Error("not expected"); },
+  };
+  const service = new EmailDeliveryService({ client: { send: async () => ({ id: "email-1" }) }, repository });
+
+  const result = await service.sendWelcome({ userId: "user-1", email: "person@example.com" });
+
+  assert.equal(result.delivered, true);
+});

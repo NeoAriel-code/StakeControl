@@ -23,12 +23,15 @@ export function getEmailDeliveryService() {
       async createPending(input) {
         try {
           return await prisma.emailDelivery.create({ data: { ...input, kind: input.kind as EmailDeliveryKind, status: EmailDeliveryStatus.PENDING } });
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && /no such table: main\.EmailDelivery/i.test(error.message)) {
+            return { id: `untracked-${input.dedupeKey}` };
+          }
           return null;
         }
       },
-      async markSent(id, update) { await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, providerMessageId: update.providerMessageId, sentAt: new Date() } }); },
-      async markFailed(id, update) { await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, failureReason: update.failureReason } }); },
+      async markSent(id, update) { if (!id.startsWith("untracked-")) await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, providerMessageId: update.providerMessageId, sentAt: new Date() } }); },
+      async markFailed(id, update) { if (!id.startsWith("untracked-")) await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, failureReason: update.failureReason } }); },
     },
   });
 }
