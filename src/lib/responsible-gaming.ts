@@ -14,6 +14,8 @@ import {
   getMonthBoundsForUserTimezone,
   getPeriodStartsForUserTimezone,
 } from "@/lib/user-time-periods";
+import { getEmailDeliveryService } from "@/lib/email/email-service";
+import { isAlertEmailEnabled } from "@/lib/notification-preferences";
 
 export type { LimitStatus } from "@/lib/responsible-gaming-rules";
 
@@ -168,7 +170,7 @@ async function ensureAlertForWindow({
     return existingAlert;
   }
 
-  return prisma.responsibleGamingAlert.create({
+  const alert = await prisma.responsibleGamingAlert.create({
     data: {
       userId,
       type,
@@ -181,6 +183,20 @@ async function ensureAlertForWindow({
           : metadata,
     },
   });
+
+  void (async () => {
+    const [user, preferences] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+      prisma.notificationPreferences.findUnique({ where: { userId } }),
+    ]);
+    const service = getEmailDeliveryService();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+    if (user && service && appUrl && isAlertEmailEnabled(preferences, type)) {
+      await service.sendResponsibleGamingAlert({ userId, alertId: alert.id, email: user.email, title, message, alertsUrl: `${appUrl}/alerts` });
+    }
+  })().catch((error) => console.error("Failed to send alert email.", error));
+
+  return alert;
 }
 
 async function ensureLimitAlert({

@@ -9,6 +9,8 @@ export type EmailDeliveryRepository = {
 };
 
 type WelcomeInput = { userId: string; email: string; name?: string | null };
+type PasswordResetInput = { userId: string; email: string; resetUrl: string; token: string };
+type AlertInput = { userId: string; alertId: string; email: string; title: string; message: string; alertsUrl: string };
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
@@ -34,6 +36,40 @@ export class EmailDeliveryService {
         html: `<p>Hola${recipientName ? ` ${recipientName}` : ""},</p><p>Tu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.</p>`,
         text: `Hola${name?.trim() ? ` ${name.trim()}` : ""},\n\nTu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.`,
       });
+      await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
+      return { delivered: true, deliveryId: pending.id };
+    } catch (error) {
+      await this.dependencies.repository.markFailed(pending.id, { status: "FAILED", failureReason: safeErrorMessage(error) });
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendPasswordReset({ userId, email, resetUrl, token }: PasswordResetInput) {
+    const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    const dedupeKey = `password-reset:${Buffer.from(tokenHash).toString("hex")}`;
+    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey, kind: "PASSWORD_RESET" });
+    if (!pending) return { delivered: false };
+
+    try {
+      const response = await this.dependencies.client.send({
+        to: email,
+        subject: "Restablece tu contraseña de StakeControl",
+        html: `<p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href="${escapeHtml(resetUrl)}">Restablecer contraseña</a></p><p>Este enlace vence en una hora.</p>`,
+        text: `Recibimos una solicitud para restablecer tu contraseña.\n\nRestablece tu contraseña: ${resetUrl}\n\nEste enlace vence en una hora.`,
+      });
+      await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
+      return { delivered: true, deliveryId: pending.id };
+    } catch (error) {
+      await this.dependencies.repository.markFailed(pending.id, { status: "FAILED", failureReason: safeErrorMessage(error) });
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendResponsibleGamingAlert({ userId, alertId, email, title, message, alertsUrl }: AlertInput) {
+    const pending = await this.dependencies.repository.createPending({ userId, alertId, dedupeKey: `responsible-alert:${alertId}`, kind: "RESPONSIBLE_GAMING_ALERT" });
+    if (!pending) return { delivered: false };
+    try {
+      const response = await this.dependencies.client.send({ to: email, subject: title, html: `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(alertsUrl)}">Ver alertas</a></p>`, text: `${message}\n\nVer alertas: ${alertsUrl}` });
       await this.dependencies.repository.markSent(pending.id, { status: "SENT", providerMessageId: response.id });
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {

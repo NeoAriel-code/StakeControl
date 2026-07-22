@@ -1,5 +1,7 @@
+import { getEmailConfiguration } from "@/lib/email/email-config";
+
 type EmailEnvironment = Record<string, string | undefined>;
 
 export function isPasswordRecoveryEmailConfigured(environment: EmailEnvironment = process.env) {
-  return environment.EMAIL_PROVIDER === "resend" && Boolean(environment.RESEND_API_KEY);
+  return Boolean(getEmailConfiguration(environment));
 }

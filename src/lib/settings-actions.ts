@@ -8,6 +8,7 @@ import { COUNTRY_CODES } from "@/lib/countries";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import prisma from "@/lib/prisma";
 import { SPORT_OPTIONS } from "@/lib/sports";
+import { ALERT_EMAIL_PREFERENCES, buildNotificationPreferences } from "@/lib/notification-preferences";
 
 export type SettingsActionState = {
   error?: string;
@@ -112,4 +113,21 @@ export async function changePasswordAction(
   });
 
   return { success: "Contraseña actualizada correctamente." };
+}
+
+export async function updateEmailNotificationPreferencesAction(
+  _prevState: SettingsActionState,
+  formData: FormData
+): Promise<SettingsActionState> {
+  const user = await requireUser();
+  const emailAlertsEnabled = formData.get("emailAlertsEnabled") === "on";
+  const fields = Object.fromEntries(ALERT_EMAIL_PREFERENCES.map(({ field }) => [field, formData.get(field) === "on"]));
+
+  await prisma.notificationPreferences.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id, ...(emailAlertsEnabled ? buildNotificationPreferences(true) : { ...buildNotificationPreferences(false), ...fields }) },
+    update: { emailAlertsEnabled, ...fields },
+  });
+  revalidatePath("/settings");
+  return { success: "Preferencias de alertas guardadas." };
 }

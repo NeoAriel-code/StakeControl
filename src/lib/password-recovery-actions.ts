@@ -9,6 +9,7 @@ import {
   resetPasswordWithToken,
 } from "@/lib/password-recovery";
 import { isPasswordRecoveryEmailConfigured } from "@/lib/password-recovery-email";
+import { getEmailDeliveryService } from "@/lib/email/email-service";
 
 export type PasswordRecoveryActionState = {
   error?: string;
@@ -29,12 +30,6 @@ const passwordSchema = z
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
-}
-
-async function deliverPasswordResetEmail(_email: string, _resetUrl: string) {
-  void _email;
-  void _resetUrl;
-  throw new Error("El adaptador de envío de recuperación aún no está instalado.");
 }
 
 export async function requestPasswordResetAction(
@@ -63,10 +58,10 @@ export async function requestPasswordResetAction(
       throw new Error("NEXT_PUBLIC_APP_URL debe configurarse antes de habilitar recuperación por email.");
     }
 
-    await deliverPasswordResetEmail(
-      user.email,
-      `${appUrl}/reset-password?token=${encodeURIComponent(token)}`
-    );
+    const service = getEmailDeliveryService();
+    if (service) {
+      await service.sendPasswordReset({ userId: user.id, email: user.email, token, resetUrl: `${appUrl}/reset-password?token=${encodeURIComponent(token)}` });
+    }
   }
 
   return {

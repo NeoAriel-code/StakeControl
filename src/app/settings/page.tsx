@@ -5,6 +5,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ProfilePreferencesForm } from "@/components/settings/ProfilePreferencesForm";
+import { EmailNotificationPreferencesForm } from "@/components/settings/EmailNotificationPreferencesForm";
+import { buildNotificationPreferences } from "@/lib/notification-preferences";
+import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
 import { parsePreferredSports } from "@/lib/sports";
@@ -17,6 +20,7 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   const user = await requireUser();
   const plan = await getUserPlan(user.id);
+  const notificationPreferences = await prisma.notificationPreferences.findUnique({ where: { userId: user.id } });
 
   return (
     <AppLayout
@@ -55,6 +59,12 @@ export default async function SettingsPage() {
               }}
             />
           </div>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-foreground">Alertas por email</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Elige qué alertas preventivas quieres recibir.</p>
+          <div className="mt-6"><EmailNotificationPreferencesForm preferences={notificationPreferences ?? buildNotificationPreferences(false)} /></div>
         </section>
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">

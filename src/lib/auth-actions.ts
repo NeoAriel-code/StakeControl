@@ -15,6 +15,8 @@ import { PlanType, Prisma } from "@prisma/client";
 import { COUNTRY_CODES, getCountryRegistrationDefaults } from "@/lib/countries";
 import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
 import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
+import { getEmailDeliveryService } from "@/lib/email/email-service";
+import { buildNotificationPreferences } from "@/lib/notification-preferences";
 
 export type AuthActionState = {
   error?: string;
@@ -66,6 +68,7 @@ const onboardingSchema = z.object({
   weeklyStakeLimit: optionalOnboardingLimitSchema,
   monthlyStakeLimit: optionalOnboardingLimitSchema,
   maxStakePerBet: optionalOnboardingLimitSchema,
+  emailAlertsEnabled: z.boolean(),
 });
 
 function getString(formData: FormData, key: string) {
@@ -166,6 +169,13 @@ export async function registerAction(
     },
   });
 
+  const emailService = getEmailDeliveryService();
+  if (emailService) {
+    void emailService.sendWelcome({ userId: user.id, email: user.email, name: user.name }).catch((error) => {
+      console.error("Failed to send welcome email.", error);
+    });
+  }
+
   await createSession(user.id);
   redirect("/onboarding");
 }
@@ -185,6 +195,7 @@ export async function completeOnboardingAction(
     weeklyStakeLimit: getString(formData, "weeklyStakeLimit"),
     monthlyStakeLimit: getString(formData, "monthlyStakeLimit"),
     maxStakePerBet: getString(formData, "maxStakePerBet"),
+    emailAlertsEnabled: formData.get("emailAlertsEnabled") === "on",
   });
 
   if (!parsed.success) {
@@ -223,6 +234,12 @@ export async function completeOnboardingAction(
         monthlyStakeLimit: toDecimalOrNull(parsed.data.monthlyStakeLimit),
         maxStakePerBet: toDecimalOrNull(parsed.data.maxStakePerBet),
       },
+    });
+
+    await tx.notificationPreferences.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, ...buildNotificationPreferences(parsed.data.emailAlertsEnabled) },
+      update: buildNotificationPreferences(parsed.data.emailAlertsEnabled),
     });
   });
 

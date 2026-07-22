@@ -164,6 +164,17 @@ export function OnboardingForm({ email, currency, ageConfirmed, termsAccepted }:
 
       <OnboardingStep
         icon={ShieldCheck}
+        eyebrow="Alertas por email"
+        title="¿Quieres recibir alertas preventivas?"
+        description="Puedes cambiar esta decisión y elegir cada tipo de alerta más adelante en Configuración."
+      >
+        <OnboardingCheckbox id="emailAlertsEnabled" name="emailAlertsEnabled">
+          Quiero recibir alertas preventivas por email.
+        </OnboardingCheckbox>
+      </OnboardingStep>
+
+      <OnboardingStep
+        icon={ShieldCheck}
         eyebrow="Reglas de uso"
         title="Confirmaciones responsables"
         description="StakeControl está diseñado para registrar y revisar, no para empujarte a apostar."
