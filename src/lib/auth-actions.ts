@@ -171,7 +171,7 @@ export async function registerAction(
 
   const emailService = getEmailDeliveryService();
   if (emailService) {
-    void emailService.sendWelcome({ userId: user.id, email: user.email, name: user.name }).catch((error) => {
+    void emailService.sendWelcome({ userId: user.id, email: user.email }).catch((error) => {
       console.error("Failed to send welcome email.", error);
     });
   }

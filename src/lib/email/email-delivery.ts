@@ -1,3 +1,5 @@
+import { renderEmailTemplate } from "@/lib/email/email-templates";
+
 export type EmailClient = {
   send(input: { to: string; subject: string; html: string; text: string }): Promise<{ id: string }>;
 };
@@ -8,13 +10,9 @@ export type EmailDeliveryRepository = {
   markFailed(id: string, update: { status: "FAILED"; failureReason: string }): Promise<void>;
 };
 
-type WelcomeInput = { userId: string; email: string; name?: string | null };
+type WelcomeInput = { userId: string; email: string };
 type PasswordResetInput = { userId: string; email: string; resetUrl: string; token: string };
 type AlertInput = { userId: string; alertId: string; email: string; title: string; message: string; alertsUrl: string };
-
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
-}
 
 function safeErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "No se pudo enviar el correo.";
@@ -32,17 +30,16 @@ async function markFailedSafely(repository: EmailDeliveryRepository, id: string,
 export class EmailDeliveryService {
   constructor(private readonly dependencies: { client: EmailClient; repository: EmailDeliveryRepository }) {}
 
-  async sendWelcome({ userId, email, name }: WelcomeInput) {
+  async sendWelcome({ userId, email }: WelcomeInput) {
     const pending = await this.dependencies.repository.createPending({ userId, dedupeKey: `welcome:${userId}`, kind: "WELCOME" });
     if (!pending) return { delivered: false };
 
-    const recipientName = escapeHtml(name?.trim() || "");
     try {
+      const template = renderEmailTemplate({ eyebrow: "Cuenta lista", title: "Bienvenido a StakeControl", bodyHtml: "<p>Hola,</p><p>Tu cuenta está lista. Puedes registrar tu actividad y configurar alertas preventivas cuando quieras.</p>", bodyText: "Hola. Tu cuenta de StakeControl está lista.", ctaLabel: "Ir a StakeControl", ctaUrl: "https://app.getstakecontrol.com/dashboard", footerNote: "Este es un correo transaccional de tu cuenta." });
       const response = await this.dependencies.client.send({
         to: email,
         subject: "Bienvenido a StakeControl",
-        html: `<p>Hola${recipientName ? ` ${recipientName}` : ""},</p><p>Tu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.</p>`,
-        text: `Hola${name?.trim() ? ` ${name.trim()}` : ""},\n\nTu cuenta de StakeControl está lista. Puedes registrar tu actividad y configurar tus alertas preventivas cuando quieras.`,
+        ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
@@ -59,11 +56,11 @@ export class EmailDeliveryService {
     if (!pending) return { delivered: false };
 
     try {
+      const template = renderEmailTemplate({ eyebrow: "Seguridad", title: "Restablece tu contraseña", bodyHtml: "<p>Recibimos una solicitud para restablecer tu contraseña.</p>", bodyText: "Recibimos una solicitud para restablecer tu contraseña.", ctaLabel: "Restablecer contraseña", ctaUrl: resetUrl, footerNote: "El enlace vence en una hora. Si no hiciste esta solicitud, ignora este correo." });
       const response = await this.dependencies.client.send({
         to: email,
         subject: "Restablece tu contraseña de StakeControl",
-        html: `<p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href="${escapeHtml(resetUrl)}">Restablecer contraseña</a></p><p>Este enlace vence en una hora.</p>`,
-        text: `Recibimos una solicitud para restablecer tu contraseña.\n\nRestablece tu contraseña: ${resetUrl}\n\nEste enlace vence en una hora.`,
+        ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
@@ -77,7 +74,8 @@ export class EmailDeliveryService {
     const pending = await this.dependencies.repository.createPending({ userId, alertId, dedupeKey: `responsible-alert:${alertId}`, kind: "RESPONSIBLE_GAMING_ALERT" });
     if (!pending) return { delivered: false };
     try {
-      const response = await this.dependencies.client.send({ to: email, subject: title, html: `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(alertsUrl)}">Ver alertas</a></p>`, text: `${message}\n\nVer alertas: ${alertsUrl}` });
+      const template = renderEmailTemplate({ eyebrow: "Alerta preventiva", title, bodyHtml: `<p>${message}</p>`, bodyText: message, ctaLabel: "Ver alertas", ctaUrl: alertsUrl, footerNote: "Puedes ajustar estas alertas desde Configuración." });
+      const response = await this.dependencies.client.send({ to: email, subject: title, ...template });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
