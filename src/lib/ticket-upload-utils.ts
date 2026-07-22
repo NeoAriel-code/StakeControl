@@ -23,6 +23,38 @@ type TicketOcrService = {
   extractText(reference: string): Promise<string>;
 };
 
+export async function cleanupFailedTicketUpload({
+  ticketImageId,
+  storedReference,
+  deleteTicketImage,
+  deleteStoredObject,
+}: {
+  ticketImageId?: string;
+  storedReference?: string;
+  deleteTicketImage: (ticketImageId: string) => Promise<void>;
+  deleteStoredObject: (storedReference: string) => Promise<void>;
+}) {
+  const cleanupErrors: unknown[] = [];
+
+  if (ticketImageId) {
+    try {
+      await deleteTicketImage(ticketImageId);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  if (storedReference) {
+    try {
+      await deleteStoredObject(storedReference);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  return cleanupErrors;
+}
+
 function getFileExtension(fileName: string) {
   const index = fileName.lastIndexOf(".");
   return index >= 0 ? fileName.slice(index).toLowerCase() : "";

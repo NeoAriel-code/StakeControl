@@ -6,17 +6,11 @@ import { requireUser } from "@/lib/auth";
 import { canUseFeature, getHistoryCutoffDate, getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import { BET_RESULT_OPTIONS, BET_TYPES, type BetResultOption, type BetTypeValue } from "@/lib/bet-enums";
+import { formatDateTimeLocalForUserTimezone } from "@/lib/user-time-periods";
 
 type EditBetPageProps = {
   params: Promise<{ id: string }>;
 };
-
-function toDateTimeLocal(date: Date | null) {
-  if (!date) return "";
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-}
 
 function toEditableBetType(value: string): BetTypeValue {
   return BET_TYPES.includes(value as BetTypeValue) ? (value as BetTypeValue) : "SINGLE";
@@ -79,8 +73,12 @@ export default async function EditBetPage({ params }: EditBetPageProps) {
             maxSingleStake={limits?.maxStakePerBet?.toString() ?? null}
             defaultValues={{
               sportsbook: bet.sportsbook,
-              placedAt: toDateTimeLocal(bet.placedAt),
-              eventStartAt: toDateTimeLocal(bet.eventStartAt),
+              placedAt: bet.placedAt
+                ? formatDateTimeLocalForUserTimezone(bet.placedAt, user.timezone)
+                : "",
+              eventStartAt: bet.eventStartAt
+                ? formatDateTimeLocalForUserTimezone(bet.eventStartAt, user.timezone)
+                : "",
               event: bet.title,
               sport: bet.sport,
               league: bet.league,

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { OcrProcessingError } from "@/lib/ocr-errors";
-import { saveTicketAndExtractText } from "@/lib/ticket-upload-utils";
+import {
+  cleanupFailedTicketUpload,
+  saveTicketAndExtractText,
+} from "@/lib/ticket-upload-utils";
 
 const safeOcrMessage = "No se pudo procesar el ticket. Inténtalo de nuevo o completa los datos manualmente.";
 
@@ -46,4 +49,26 @@ test("unexpected OCR failure deletes the stored ticket", async () => {
   }), ocrError);
 
   assert.deepEqual(deletedReferences, ["private://tickets/user/image.jpg"]);
+});
+
+test("post-OCR failure compensates both the database row and private object", async () => {
+  const cleanupOrder: string[] = [];
+
+  const errors = await cleanupFailedTicketUpload({
+    ticketImageId: "ticket-1",
+    storedReference: "private://tickets/user/image.jpg",
+    deleteTicketImage: async (ticketImageId) => {
+      cleanupOrder.push(`row:${ticketImageId}`);
+      throw new Error("database cleanup unavailable");
+    },
+    deleteStoredObject: async (storedReference) => {
+      cleanupOrder.push(`object:${storedReference}`);
+    },
+  });
+
+  assert.deepEqual(cleanupOrder, [
+    "row:ticket-1",
+    "object:private://tickets/user/image.jpg",
+  ]);
+  assert.equal(errors.length, 1);
 });

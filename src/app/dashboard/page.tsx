@@ -73,7 +73,8 @@ export default async function DashboardPage() {
       odds: Number(bet.odds),
       profitLoss: bet.profitLoss ? Number(bet.profitLoss) : 0,
       placedAt: bet.placedAt,
-    }))
+    })),
+    user.timezone
   );
 
   const preferredCurrency = allBets[0]?.currency ?? user.currency;

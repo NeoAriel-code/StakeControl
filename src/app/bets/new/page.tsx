@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
+import { randomUUID } from "node:crypto";
 
 export default async function NewBetPage() {
   const user = await requireUser();
@@ -42,6 +43,7 @@ export default async function NewBetPage() {
           <div className="form-panel p-6">
             <BetForm
               action={createBetAction}
+              creationKey={randomUUID()}
               submitIdleLabel="Guardar registro"
               submitPendingLabel="Guardando registro..."
               maxSingleStake={limits?.maxStakePerBet?.toString() ?? null}

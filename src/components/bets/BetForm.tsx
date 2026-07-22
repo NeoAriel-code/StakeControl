@@ -11,6 +11,7 @@ const initialState: BetActionState = {};
 
 type BetFormProps = {
   action: (state: BetActionState, formData: FormData) => Promise<BetActionState>;
+  creationKey?: string;
   submitIdleLabel: string;
   submitPendingLabel: string;
   maxSingleStake?: string | null;
@@ -71,6 +72,7 @@ function inputClassName(hasError?: string) {
 
 export function BetForm({
   action,
+  creationKey,
   submitIdleLabel,
   submitPendingLabel,
   maxSingleStake,
@@ -93,6 +95,7 @@ export function BetForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      {creationKey && <input type="hidden" name="creationKey" value={creationKey} />}
       <div className="rounded-2xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning-foreground">
         <p className="font-semibold">Registro preventivo</p>
         <p className="mt-1">
@@ -197,7 +200,7 @@ export function BetForm({
         </Field>
 
         <Field label="Ganancia o pérdida neta" htmlFor="netProfit" error={state.fieldErrors?.netProfit}>
-          <input id="netProfit" name="netProfit" type="number" step="0.01" defaultValue={values.netProfit ?? "0"} required className={inputClassName(state.fieldErrors?.netProfit)} />
+          <input id="netProfit" name="netProfit" type="number" step="0.01" defaultValue={values.netProfit ?? ""} className={inputClassName(state.fieldErrors?.netProfit)} />
         </Field>
 
         <Field label="Código de ticket opcional" htmlFor="ticketCode" error={state.fieldErrors?.ticketCode}>

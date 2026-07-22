@@ -42,6 +42,83 @@ function calendarDate(year: number, month: number, day: number) {
   return { year: value.getUTCFullYear(), month: value.getUTCMonth() + 1, day: value.getUTCDate() };
 }
 
+function isValidCalendarDateTime(parts: ZonedParts) {
+  const candidate = new Date(
+    Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+  );
+
+  return (
+    candidate.getUTCFullYear() === parts.year &&
+    candidate.getUTCMonth() + 1 === parts.month &&
+    candidate.getUTCDate() === parts.day &&
+    candidate.getUTCHours() === parts.hour &&
+    candidate.getUTCMinutes() === parts.minute &&
+    candidate.getUTCSeconds() === parts.second
+  );
+}
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+export function parseDateTimeInUserTimezone(value: string, timezone = "UTC") {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+
+  if (!match) return null;
+
+  const requested: ZonedParts = {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    second: Number(match[6] ?? 0),
+  };
+
+  if (!isValidCalendarDateTime(requested)) return null;
+
+  const wallClock = Date.UTC(
+    requested.year,
+    requested.month - 1,
+    requested.day,
+    requested.hour,
+    requested.minute,
+    requested.second
+  );
+  let candidate = new Date(wallClock);
+
+  try {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const represented = zonedParts(candidate, timezone);
+      const representedWallClock = Date.UTC(
+        represented.year,
+        represented.month - 1,
+        represented.day,
+        represented.hour,
+        represented.minute,
+        represented.second
+      );
+      const correction = wallClock - representedWallClock;
+      if (correction === 0) break;
+      candidate = new Date(candidate.getTime() + correction);
+    }
+
+    const resolved = zonedParts(candidate, timezone);
+    return Object.entries(requested).every(
+      ([key, part]) => resolved[key as keyof ZonedParts] === part
+    )
+      ? candidate
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function formatDateTimeLocalForUserTimezone(date: Date, timezone = "UTC") {
+  const local = zonedParts(date, timezone);
+  return `${local.year}-${pad(local.month)}-${pad(local.day)}T${pad(local.hour)}:${pad(local.minute)}`;
+}
+
 export function getMonthBoundsForUserTimezone(referenceDate = new Date(), timezone = "UTC") {
   const local = zonedParts(referenceDate, timezone);
   const nextMonth = calendarDate(local.year, local.month + 1, 1);

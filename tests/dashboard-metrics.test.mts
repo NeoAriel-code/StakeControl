@@ -90,6 +90,29 @@ test("calculateDashboardMetrics handles zero divisions safely", () => {
   assert.deepEqual(metrics.marketExposure, []);
 });
 
+test("monthly totals use the supplied user timezone", () => {
+  const metrics = calculateDashboardMetrics(
+    [
+      {
+        id: "timezone-boundary",
+        title: "Boundary",
+        sport: "Football",
+        market: "1X2",
+        result: "WON",
+        stake: 10,
+        odds: 2,
+        profitLoss: 10,
+        placedAt: new Date("2026-07-01T02:30:00.000Z"),
+      },
+    ],
+    "UTC"
+  );
+
+  assert.deepEqual(metrics.monthlyProfitLoss, [
+    { month: "2026-07", profitLoss: 10 },
+  ]);
+});
+
 test("calculateDashboardMetrics excludes pending values from realized performance", () => {
   const metrics = calculateDashboardMetrics([
     {

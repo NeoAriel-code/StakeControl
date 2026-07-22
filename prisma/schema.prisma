@@ -90,6 +90,7 @@ model User {
 model Bet {
   id                String            @id @default(cuid())
   userId            String
+  creationKey       String?
   title             String
   description       String?
   sportsbook        String?
@@ -121,6 +122,7 @@ model Bet {
 
   @@index([userId, placedAt])
   @@index([userId, result])
+  @@unique([userId, creationKey])
 }
 
 model BetLeg {

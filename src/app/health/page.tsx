@@ -135,7 +135,8 @@ export default async function HealthPage({ searchParams }: HealthPageProps) {
       odds: Number(bet.odds),
       profitLoss: bet.profitLoss ? Number(bet.profitLoss) : 0,
       placedAt: bet.placedAt,
-    }))
+    })),
+    user.timezone
   );
   const monthlyLimit = limits?.monthlyStakeLimit ? Number(limits.monthlyStakeLimit) : null;
   const weeklyLimit = limits?.weeklyStakeLimit ? Number(limits.weeklyStakeLimit) : null;

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import { BET_RESULT_OPTIONS, BET_TYPES } from "@/lib/bet-enums";
+import { requiresNetProfit } from "@/lib/bet-outcomes";
 
 const optionalTrimmedString = (maxLength = 2_000) =>
   z
@@ -53,9 +54,20 @@ export const betFormSchema = z.object({
   result: z.enum(BET_RESULT_OPTIONS, {
     error: "El resultado es obligatorio.",
   }),
-  netProfit: decimalField("La ganancia o pérdida neta"),
+  netProfit: z.preprocess(
+    (value) => (value === "" || value == null ? undefined : value),
+    decimalField("La ganancia o pérdida neta").optional()
+  ),
   ticketCode: optionalTrimmedString(120),
   notes: optionalTrimmedString(2_000),
+}).superRefine((values, context) => {
+  if (requiresNetProfit(values.result) && values.netProfit === undefined) {
+    context.addIssue({
+      code: "custom",
+      path: ["netProfit"],
+      message: "La ganancia o pérdida neta es obligatoria para este resultado.",
+    });
+  }
 });
 
 export type BetFormValues = z.infer<typeof betFormSchema>;

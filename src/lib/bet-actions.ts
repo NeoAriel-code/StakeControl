@@ -14,6 +14,8 @@ import {
   isPauseActive,
 } from "@/lib/responsible-gaming";
 import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
+import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
+import { persistThenRunBestEffort } from "@/lib/post-persistence";
 
 export type BetActionState = {
   error?: string;
@@ -26,6 +28,8 @@ const quickBetResultSchema = z.object({
     error: "Selecciona un resultado válido.",
   }),
 });
+
+const creationKeySchema = z.string().uuid();
 
 function mapZodErrors(error: unknown): BetActionState {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) && !(error instanceof Error)) {
@@ -54,7 +58,7 @@ async function ensureUserOwnsBet(userId: string, betId: string) {
   return bet;
 }
 
-function parseFormData(formData: FormData) {
+function parseFormData(formData: FormData, timezone: string) {
   const parsed = betFormSchema.safeParse({
     sportsbook: formData.get("sportsbook"),
     placedAt: formData.get("placedAt"),
@@ -105,13 +109,41 @@ function parseFormData(formData: FormData) {
     };
   }
 
+  const placedAt = parsed.data.placedAt
+    ? parseDateTimeInUserTimezone(parsed.data.placedAt, timezone)
+    : null;
+  const eventStartAt = parsed.data.eventStartAt
+    ? parseDateTimeInUserTimezone(parsed.data.eventStartAt, timezone)
+    : null;
+
+  if ((parsed.data.placedAt && !placedAt) || (parsed.data.eventStartAt && !eventStartAt)) {
+    return {
+      success: false as const,
+      state: {
+        error: "Revisa los campos del formulario.",
+        fieldErrors: {
+          ...(parsed.data.placedAt && !placedAt
+            ? { placedAt: "La fecha y hora es inválida." }
+            : {}),
+          ...(parsed.data.eventStartAt && !eventStartAt
+            ? { eventStartAt: "La fecha y hora es inválida." }
+            : {}),
+        },
+      } satisfies BetActionState,
+    };
+  }
+
   return {
     success: true as const,
     values: parsed.data,
+    dates: { placedAt, eventStartAt },
   };
 }
 
-function buildBetPayload(values: BetFormValues) {
+function buildBetPayload(
+  values: BetFormValues,
+  dates: { placedAt: Date | null; eventStartAt: Date | null }
+) {
   return {
     title: values.event,
     sportsbook: values.sportsbook,
@@ -134,8 +166,8 @@ function buildBetPayload(values: BetFormValues) {
         : values.result === "VOID"
           ? toDecimal(values.stake)
           : null,
-    placedAt: values.placedAt ? new Date(values.placedAt) : null,
-    eventStartAt: values.eventStartAt ? new Date(values.eventStartAt) : null,
+    placedAt: dates.placedAt,
+    eventStartAt: dates.eventStartAt,
     placedAtSource: values.placedAt ? FieldSource.USER : null,
     eventStartAtSource: values.eventStartAt ? FieldSource.USER : null,
     currencySource: FieldSource.USER,
@@ -143,16 +175,26 @@ function buildBetPayload(values: BetFormValues) {
   };
 }
 
-function buildCreateBetData(userId: string, values: BetFormValues) {
+function buildCreateBetData(
+  userId: string,
+  creationKey: string,
+  values: BetFormValues,
+  dates: { placedAt: Date | null; eventStartAt: Date | null }
+) {
   return {
     userId,
-    ...buildBetPayload(values),
+    creationKey,
+    ...buildBetPayload(values, dates),
   };
 }
 
-function buildUpdateBetData(values: BetFormValues, existingBet: Pick<Bet, "placedAt" | "eventStartAt" | "currency" | "placedAtSource" | "eventStartAtSource" | "currencySource">) {
+function buildUpdateBetData(
+  values: BetFormValues,
+  dates: { placedAt: Date | null; eventStartAt: Date | null },
+  existingBet: Pick<Bet, "placedAt" | "eventStartAt" | "currency" | "placedAtSource" | "eventStartAtSource" | "currencySource">
+) {
   return {
-    ...buildBetPayload(values),
+    ...buildBetPayload(values, dates),
     placedAtSource: resolveFieldSourceAfterEdit(
       values.placedAt,
       existingBet.placedAt,
@@ -176,10 +218,16 @@ export async function createBetAction(
   formData: FormData
 ): Promise<BetActionState> {
   const user = await requireUser();
-  const parsed = parseFormData(formData);
+  const parsed = parseFormData(formData, user.timezone);
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  const parsedCreationKey = creationKeySchema.safeParse(formData.get("creationKey"));
+
+  if (!parsedCreationKey.success) {
+    return { error: "No se pudo validar el envío del registro." };
   }
 
   const userLimits = await prisma.userLimits.findUnique({
@@ -204,10 +252,20 @@ export async function createBetAction(
   }
 
   try {
-    await prisma.bet.create({
-      data: buildCreateBetData(user.id, parsed.values),
-    });
-    await evaluateResponsibleGamingAlerts(user.id);
+    await persistThenRunBestEffort(
+      () => prisma.bet.upsert({
+        where: {
+          userId_creationKey: {
+            userId: user.id,
+            creationKey: parsedCreationKey.data,
+          },
+        },
+        create: buildCreateBetData(user.id, parsedCreationKey.data, parsed.values, parsed.dates),
+        update: {},
+      }),
+      () => evaluateResponsibleGamingAlerts(user.id),
+      (error) => console.error("Failed to refresh alerts after creating a bet.", error)
+    );
   } catch (error) {
     return mapZodErrors(error);
   }
@@ -223,7 +281,7 @@ export async function updateBetAction(
   formData: FormData
 ): Promise<BetActionState> {
   const user = await requireUser();
-  const parsed = parseFormData(formData);
+  const parsed = parseFormData(formData, user.timezone);
 
   if (!parsed.success) {
     return parsed.state;
@@ -247,11 +305,14 @@ export async function updateBetAction(
       };
     }
 
-    await prisma.bet.update({
-      where: { id: betId },
-      data: buildUpdateBetData(parsed.values, existingBet),
-    });
-    await evaluateResponsibleGamingAlerts(user.id);
+    await persistThenRunBestEffort(
+      () => prisma.bet.update({
+        where: { id: betId },
+        data: buildUpdateBetData(parsed.values, parsed.dates, existingBet),
+      }),
+      () => evaluateResponsibleGamingAlerts(user.id),
+      (error) => console.error("Failed to refresh alerts after updating a bet.", error)
+    );
   } catch (error) {
     return mapZodErrors(error);
   }
@@ -283,16 +344,19 @@ export async function updateBetResultAction(formData: FormData) {
     settledPayout: bet.settledPayout ? Number(bet.settledPayout) : null,
   });
 
-  await prisma.bet.update({
-    where: { id: bet.id },
-    data: {
-      result: parsed.data.result,
-      profitLoss: toDecimal(financials.profitLoss),
-      settledPayout: financials.settledPayout === null ? null : toDecimal(financials.settledPayout),
-      settledAt: isResolvedBetResult(parsed.data.result) ? new Date() : null,
-    },
-  });
-  await evaluateResponsibleGamingAlerts(user.id);
+  await persistThenRunBestEffort(
+    () => prisma.bet.update({
+      where: { id: bet.id },
+      data: {
+        result: parsed.data.result,
+        profitLoss: toDecimal(financials.profitLoss),
+        settledPayout: financials.settledPayout === null ? null : toDecimal(financials.settledPayout),
+        settledAt: isResolvedBetResult(parsed.data.result) ? new Date() : null,
+      },
+    }),
+    () => evaluateResponsibleGamingAlerts(user.id),
+    (error) => console.error("Failed to refresh alerts after updating a bet result.", error)
+  );
 
   revalidatePath("/dashboard");
   revalidatePath("/bets");

@@ -53,6 +53,25 @@ test("betFormSchema accepts valid manual bet input", () => {
   assert.equal(parsed.ticketCode, undefined);
 });
 
+test("only won and cashout records require a net result", () => {
+  const baseBet = {
+    event: "Evento",
+    betType: BetType.SINGLE,
+    stake: "1000",
+    odds: "1.8",
+    currency: "CLP",
+    netProfit: "",
+  };
+
+  for (const result of [BetResult.PENDING, BetResult.LOST, BetResult.VOID]) {
+    assert.equal(betFormSchema.safeParse({ ...baseBet, result }).success, true);
+  }
+
+  for (const result of [BetResult.WON, BetResult.CASHOUT]) {
+    assert.equal(betFormSchema.safeParse({ ...baseBet, result }).success, false);
+  }
+});
+
 test("betFormSchema rejects invalid odds and negative stake", () => {
   const parsed = betFormSchema.safeParse({
     placedAt: "2026-07-13T10:00",

@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  formatDateTimeLocalForUserTimezone,
+  parseDateTimeInUserTimezone,
   getLocalDateKey,
   getMonthBoundsForUserTimezone,
   getPeriodStartsForUserTimezone,
@@ -25,4 +27,17 @@ test("daily and weekly periods begin in the user's timezone", () => {
 
   assert.equal(periods.dailyStart.toISOString(), "2026-06-30T04:00:00.000Z");
   assert.equal(periods.weeklyStart.toISOString(), "2026-06-29T04:00:00.000Z");
+});
+
+test("datetime-local values are persisted as the user's wall-clock time", () => {
+  const instant = parseDateTimeInUserTimezone(
+    "2026-07-21T21:30",
+    "America/Santiago"
+  );
+
+  assert.equal(instant?.toISOString(), "2026-07-22T01:30:00.000Z");
+  assert.equal(
+    formatDateTimeLocalForUserTimezone(instant!, "America/Santiago"),
+    "2026-07-21T21:30"
+  );
 });

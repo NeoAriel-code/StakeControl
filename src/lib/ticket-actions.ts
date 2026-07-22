@@ -12,6 +12,7 @@ import {
   OcrProcessingError,
 } from "@/lib/ocr-service";
 import {
+  cleanupFailedTicketUpload,
   saveTicketAndExtractText,
   validateFileSignature,
   validateTicketFile,
@@ -25,6 +26,7 @@ import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 import { buildUserScopedWhere } from "@/lib/security-scopes";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
+import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
 
 export type TicketUploadActionState = {
   error?: string;
@@ -83,6 +85,8 @@ export async function uploadTicketAction(
   }
 
   let ticketImageId = "";
+  let storedReference: string | undefined;
+  let storage: ReturnType<typeof getStorageService> | undefined;
 
   try {
     validateTicketFile(fileEntry);
@@ -91,7 +95,7 @@ export async function uploadTicketAction(
     validateFileSignature(buffer, fileEntry.type);
 
     const safeFileName = sanitizeUploadedFileName(fileEntry.name);
-    const storage = getStorageService();
+    storage = getStorageService();
     const ocrProviderName = getConfiguredOcrProviderName();
     const ocrService = createOcrService();
     const aiExtractionService = createAiExtractionService();
@@ -105,6 +109,7 @@ export async function uploadTicketAction(
         buffer,
       },
     });
+    storedReference = storedObject.reference;
 
     const ticketImage = await prisma.betTicketImage.create({
       data: {
@@ -115,6 +120,7 @@ export async function uploadTicketAction(
         fileSizeBytes: storedObject.byteLength,
       },
     });
+    ticketImageId = ticketImage.id;
 
     const aiResult = await aiExtractionService.structureBetTicket(rawText, {
       preferredCurrency: user.currency,
@@ -143,8 +149,20 @@ export async function uploadTicketAction(
       },
     });
 
-    ticketImageId = ticketImage.id;
   } catch (error) {
+    const cleanupErrors = await cleanupFailedTicketUpload({
+      ticketImageId,
+      storedReference,
+      deleteTicketImage: (id) => prisma.betTicketImage.deleteMany({
+        where: buildUserScopedWhere(user.id, id),
+      }).then(() => undefined),
+      deleteStoredObject: (reference) => storage?.deletePrivateObject(reference) ?? Promise.resolve(),
+    });
+
+    for (const cleanupError of cleanupErrors) {
+      console.error("Failed to clean up an incomplete ticket upload.", cleanupError);
+    }
+
     return {
       error: error instanceof OcrProcessingError ? error.message : "No se pudo subir el ticket.",
     };
@@ -254,6 +272,16 @@ export async function finalizeTicketReviewAction(
         .getAll("doubtfulFields")
       .filter((field): field is string => typeof field === "string"),
     });
+    const placedAt = parsed.placedAt
+      ? parseDateTimeInUserTimezone(parsed.placedAt, user.timezone)
+      : null;
+    const eventStartAt = parsed.eventStartAt
+      ? parseDateTimeInUserTimezone(parsed.eventStartAt, user.timezone)
+      : null;
+
+    if ((parsed.placedAt && !placedAt) || (parsed.eventStartAt && !eventStartAt)) {
+      return { error: "La fecha y hora es inválida." };
+    }
     const realizedNetProfit = getHistoricalProfitLoss(parsed.result, parsed.stake, parsed.netProfit);
     const placedAtSource = resolveFieldSourceAfterEdit(
       parsed.placedAt,
@@ -296,8 +324,8 @@ export async function finalizeTicketReviewAction(
               : parsed.result === "VOID"
                 ? toDecimal(parsed.stake)
                 : null,
-          placedAt: parsed.placedAt ? new Date(parsed.placedAt) : null,
-          eventStartAt: parsed.eventStartAt ? new Date(parsed.eventStartAt) : null,
+          placedAt,
+          eventStartAt,
           placedAtSource,
           eventStartAtSource,
           currencySource,

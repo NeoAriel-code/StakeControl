@@ -2,6 +2,10 @@ export function isResolvedBetResult(result: string) {
   return result !== "PENDING" && result !== "UNKNOWN";
 }
 
+export function requiresNetProfit(result: string) {
+  return result === "WON" || result === "CASHOUT";
+}
+
 export function getHistoricalProfitLoss(
   result: string,
   stake: number,

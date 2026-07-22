@@ -1,4 +1,5 @@
 import { getHistoricalProfitLoss, isResolvedBetResult } from "@/lib/bet-outcomes";
+import { getLocalDateKey } from "@/lib/user-time-periods";
 
 export type MetricBet = {
   id: string;
@@ -99,7 +100,7 @@ function buildExposure(
     .sort((a, b) => b.stake - a.stake);
 }
 
-function buildMonthlyProfitLoss(bets: MetricBet[]) {
+function buildMonthlyProfitLoss(bets: MetricBet[], timezone: string) {
   const grouped = new Map<string, number>();
 
   const ordered = bets
@@ -107,7 +108,7 @@ function buildMonthlyProfitLoss(bets: MetricBet[]) {
     .sort((a, b) => a.placedAt.getTime() - b.placedAt.getTime());
 
   for (const bet of ordered) {
-    const monthKey = `${bet.placedAt.getFullYear()}-${String(bet.placedAt.getMonth() + 1).padStart(2, "0")}`;
+    const monthKey = getLocalDateKey(bet.placedAt, timezone).slice(0, 7);
     grouped.set(monthKey, (grouped.get(monthKey) ?? 0) + getHistoricalProfitLoss(bet.result, bet.stake, bet.profitLoss));
   }
 
@@ -136,7 +137,7 @@ function buildCurrentStreak(bets: MetricBet[], targetResult: "WON" | "LOST") {
   return streak;
 }
 
-export function calculateDashboardMetrics(bets: MetricBet[]): DashboardMetrics {
+export function calculateDashboardMetrics(bets: MetricBet[], timezone = "UTC"): DashboardMetrics {
   const betCount = bets.length;
   const stakeTotal = round(bets.reduce((sum, bet) => sum + bet.stake, 0));
   const averageStake = calculateAverageStake(bets);
@@ -164,7 +165,7 @@ export function calculateDashboardMetrics(bets: MetricBet[]): DashboardMetrics {
     betCount,
     currentWinningStreak: buildCurrentStreak(bets, "WON"),
     currentLosingStreak: buildCurrentStreak(bets, "LOST"),
-    monthlyProfitLoss: buildMonthlyProfitLoss(bets),
+    monthlyProfitLoss: buildMonthlyProfitLoss(bets, timezone),
     sportExposure: buildExposure(bets, (bet) => bet.sport),
     marketExposure: buildExposure(bets, (bet) => bet.market),
     resolvedBetsCount: resolvedBets.length,
