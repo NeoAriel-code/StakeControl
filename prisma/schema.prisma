@@ -48,6 +48,18 @@ enum AlertSeverity {
   HIGH
 }
 
+enum EmailDeliveryKind {
+  WELCOME
+  PASSWORD_RESET
+  RESPONSIBLE_GAMING_ALERT
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 enum PlanType {
   FREE
   PREMIUM_MONTHLY
@@ -83,6 +95,8 @@ model User {
   subscriptions          Subscription[]
   monthlyReports         MonthlyReport[]
   passwordResetTokens    PasswordResetToken[]
+  notificationPreferences NotificationPreferences?
+  emailDeliveries        EmailDelivery[]
 
   @@index([createdAt])
 }
@@ -213,9 +227,44 @@ model ResponsibleGamingAlert {
   metadata       Json?
   createdAt      DateTime       @default(now())
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailDeliveries EmailDelivery[]
 
   @@index([userId, createdAt])
   @@index([userId, severity])
+}
+
+model NotificationPreferences {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  emailAlertsEnabled     Boolean  @default(false)
+  limitApproachingEnabled Boolean @default(false)
+  limitExceededEnabled   Boolean  @default(false)
+  stakeIncreaseEnabled   Boolean  @default(false)
+  lossStreakEnabled      Boolean  @default(false)
+  highFrequencyEnabled   Boolean  @default(false)
+  pauseRecommendedEnabled Boolean @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  userId            String
+  alertId           String?
+  dedupeKey         String              @unique
+  kind              EmailDeliveryKind
+  status            EmailDeliveryStatus @default(PENDING)
+  providerMessageId String?
+  failureReason     String?
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alert             ResponsibleGamingAlert? @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([alertId])
 }
 
 model Subscription {
