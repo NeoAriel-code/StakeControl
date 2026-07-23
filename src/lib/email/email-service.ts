@@ -34,6 +34,10 @@ export function getEmailDeliveryService() {
           if (error instanceof Error && /no such table: main\.EmailDelivery/i.test(error.message)) {
             return { id: `untracked-${input.dedupeKey}` };
           }
+          console.error("Failed to create email delivery ledger record.", {
+            kind: input.kind,
+            message: error instanceof Error ? error.message : "Unknown persistence error",
+          });
           return null;
         }
       },

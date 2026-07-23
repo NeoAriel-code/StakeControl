@@ -60,6 +60,7 @@ export class EmailDeliveryService {
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
+      console.error("Transactional email delivery failed.", { kind: "WELCOME", message: safeErrorMessage(error) });
       await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
@@ -82,6 +83,7 @@ export class EmailDeliveryService {
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
+      console.error("Transactional email delivery failed.", { kind: "PASSWORD_RESET", message: safeErrorMessage(error) });
       await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
@@ -104,6 +106,7 @@ export class EmailDeliveryService {
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
+      console.error("Transactional email delivery failed.", { kind: "EMAIL_VERIFICATION", message: safeErrorMessage(error) });
       await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
@@ -124,6 +127,7 @@ export class EmailDeliveryService {
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
+      console.error("Transactional email delivery failed.", { kind: "PASSWORD_CHANGED", message: safeErrorMessage(error) });
       await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
@@ -138,6 +142,7 @@ export class EmailDeliveryService {
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
+      console.error("Transactional email delivery failed.", { kind: "RESPONSIBLE_GAMING_ALERT", message: safeErrorMessage(error) });
       await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
       return { delivered: false, deliveryId: pending.id };
     }
