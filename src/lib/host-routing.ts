@@ -1,5 +1,6 @@
 const PUBLIC_HOST = "www.getstakecontrol.com";
 const APP_HOST = "app.getstakecontrol.com";
+const LEGACY_VERCEL_HOST = "stakecontrol.vercel.app";
 
 const APPLICATION_PATHS = [
   "/alerts",
@@ -37,6 +38,10 @@ function isApplicationPath(pathname: string) {
 export function getHostRedirect(host: string, pathname: string, search: string) {
   const normalizedHost = normalizeHost(host);
   const suffix = `${pathname}${search}`;
+
+  if (normalizedHost === LEGACY_VERCEL_HOST) {
+    return `https://${isApplicationPath(pathname) ? APP_HOST : PUBLIC_HOST}${suffix}`;
+  }
 
   if (
     (normalizedHost === PUBLIC_HOST || normalizedHost === "getstakecontrol.com") &&

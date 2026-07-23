@@ -33,3 +33,14 @@ test("localhost and requests already on the correct host are left unchanged", ()
   assert.equal(getHostRedirect("app.getstakecontrol.com", "/dashboard", ""), null);
   assert.equal(getHostRedirect("www.getstakecontrol.com", "/terms", ""), null);
 });
+
+test("the legacy Vercel host always redirects to a canonical StakeControl host", () => {
+  assert.equal(
+    getHostRedirect("stakecontrol.vercel.app", "/dashboard", "?view=month"),
+    "https://app.getstakecontrol.com/dashboard?view=month",
+  );
+  assert.equal(
+    getHostRedirect("stakecontrol.vercel.app", "/privacy", ""),
+    "https://www.getstakecontrol.com/privacy",
+  );
+});
