@@ -31,7 +31,11 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold">Responsable y contacto</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             StakeControl es responsable del tratamiento de los datos descritos en esta política. Para consultas o
-            solicitudes de privacidad, escríbenos a privacy@getstakecontrol.com.
+            solicitudes de privacidad, escríbenos a{" "}
+            <a className="font-semibold text-primary underline-offset-4 hover:underline" href="mailto:privacy@getstakecontrol.com">
+              privacy@getstakecontrol.com
+            </a>
+            .
           </p>
         </section>
 
@@ -89,7 +93,11 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold">Tus derechos</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Puedes solicitar acceso, rectificación, supresión o portabilidad de tus datos escribiendo a
-            privacy@getstakecontrol.com. Responderemos dentro del plazo legal aplicable.
+            {" "}
+            <a className="font-semibold text-primary underline-offset-4 hover:underline" href="mailto:privacy@getstakecontrol.com">
+              privacy@getstakecontrol.com
+            </a>
+            . Responderemos dentro del plazo legal aplicable.
           </p>
         </section>
 

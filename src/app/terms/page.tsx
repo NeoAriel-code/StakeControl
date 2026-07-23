@@ -31,7 +31,15 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold">Quién presta el servicio y contacto</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             StakeControl es una empresa chilena. Para soporte y asuntos generales, escríbenos a
-            contact@getstakecontrol.com. Para asuntos de privacidad, escríbenos a privacy@getstakecontrol.com.
+            {" "}
+            <a className="font-semibold text-primary underline-offset-4 hover:underline" href="mailto:contact@getstakecontrol.com">
+              contact@getstakecontrol.com
+            </a>
+            . Para asuntos de privacidad, escríbenos a{" "}
+            <a className="font-semibold text-primary underline-offset-4 hover:underline" href="mailto:privacy@getstakecontrol.com">
+              privacy@getstakecontrol.com
+            </a>
+            .
           </p>
         </section>
 

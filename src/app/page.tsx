@@ -464,20 +464,32 @@ export default async function RootPage() {
       </section>
 
       <footer className="border-t border-slate-200 bg-slate-50 px-4 py-8 text-slate-600 dark:border-white/10 dark:bg-[#07111f] dark:text-slate-300 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between">
-          <p className="font-semibold text-slate-800 dark:text-slate-100">StakeControl · MVP de autocontrol</p>
-          <div className="flex gap-4">
-            <Link href="/terms" className="hover:text-slate-950 dark:hover:text-white">
-              Términos
-            </Link>
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between">
+            <p className="font-semibold text-slate-800 dark:text-slate-100">StakeControl · MVP de autocontrol</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link href="/terms" className="hover:text-slate-950 dark:hover:text-white">
+                Términos
+              </Link>
             <Link href="/privacy" className="hover:text-slate-950 dark:hover:text-white">
               Privacidad
             </Link>
-            <Link href="/login" className="hover:text-slate-950 dark:hover:text-white">
-              Iniciar sesión
-            </Link>
+              <Link href="/login" className="hover:text-slate-950 dark:hover:text-white">
+                Iniciar sesión
+              </Link>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+              <span className="font-semibold text-slate-800 dark:text-slate-100">Contacto:</span>
+              <a href="mailto:support@getstakecontrol.com" className="hover:text-slate-950 dark:hover:text-white">
+                Soporte
+              </a>
+              <a href="mailto:contact@getstakecontrol.com" className="hover:text-slate-950 dark:hover:text-white">
+                General
+              </a>
+              <a href="mailto:privacy@getstakecontrol.com" className="hover:text-slate-950 dark:hover:text-white">
+                Privacidad
+              </a>
+            </div>
           </div>
-        </div>
       </footer>
     </main>
   );
