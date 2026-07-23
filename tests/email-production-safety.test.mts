@@ -23,4 +23,5 @@ test("Resend credentials remain server-only and production startup validates ema
   ]);
   assert.doesNotMatch(source.join("\n"), /NEXT_PUBLIC_RESEND_API_KEY/);
   assert.match(source[1]!, /assertProductionEmailConfiguration/);
+  assert.doesNotMatch(source[1]!, /NEXT_RUNTIME/);
 });
