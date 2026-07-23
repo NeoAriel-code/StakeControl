@@ -22,8 +22,10 @@ test("does not enable recovery delivery without a configured email provider", ()
   assert.equal(isPasswordRecoveryEmailConfigured({ EMAIL_PROVIDER: "mock", RESEND_API_KEY: "key" }), false);
 });
 
-test("password recovery is temporarily not throttled while delivery is being verified", async () => {
+test("password recovery is limited to three requests per email each hour", async () => {
   const action = await readFile(new URL("../src/lib/password-recovery-actions.ts", import.meta.url), "utf8");
 
-  assert.doesNotMatch(action, /key:\s*`password-reset:/);
+  assert.match(action, /key:\s*`password-reset:/);
+  assert.match(action, /limit:\s*3/);
+  assert.match(action, /windowMs:\s*60 \* 60 \* 1000/);
 });

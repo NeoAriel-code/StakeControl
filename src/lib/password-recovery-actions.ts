@@ -10,6 +10,7 @@ import {
 } from "@/lib/password-recovery";
 import { isPasswordRecoveryEmailConfigured } from "@/lib/password-recovery-email";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
+import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 
 export type PasswordRecoveryActionState = {
   error?: string;
@@ -40,6 +41,16 @@ export async function requestPasswordResetAction(
 
   if (!parsedEmail.success) {
     return { error: parsedEmail.error.issues[0]?.message ?? "Ingresa un email válido." };
+  }
+
+  const rateLimit = await checkRateLimit({
+    key: `password-reset:${parsedEmail.data}`,
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: formatRateLimitMessage(rateLimit.resetAt) };
   }
 
   if (!isPasswordRecoveryEmailConfigured()) {
