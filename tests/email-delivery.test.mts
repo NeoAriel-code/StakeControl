@@ -122,5 +122,5 @@ test("delivery persistence receives a recipient hash without a plaintext email f
   await service.sendPasswordReset({ userId: "user-1", email: "person@example.com", token: "token-1", resetUrl: "https://example.com/reset" });
 
   assert.equal("email" in (pendingInput ?? {}), false);
-  assert.equal(typeof pendingInput?.emailHash, "string");
+  assert.equal(typeof pendingInput?.recipientHash, "string");
 });

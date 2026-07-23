@@ -7,7 +7,7 @@ export type EmailClient = {
 };
 
 export type EmailDeliveryRepository = {
-  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; emailHash: string; alertId?: string }): Promise<{ id: string } | null>;
+  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; recipientHash: string; alertId?: string }): Promise<{ id: string } | null>;
   markSent(id: string, update: { status: "SENT"; providerMessageId: string }): Promise<void>;
   markFailed(id: string, update: { status: "FAILED"; failureReason: string }): Promise<void>;
   isRestricted?(emailHash: string): Promise<boolean>;
@@ -38,9 +38,9 @@ function hashRecipient(email: string) {
 
 async function createPendingDelivery(repository: EmailDeliveryRepository, input: { userId: string; email: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }) {
   const { email, ...deliveryInput } = input;
-  const emailHash = hashRecipient(email);
-  if (!isSecurityEmailKind(input.kind) && await repository.isRestricted?.(emailHash)) return null;
-  return repository.createPending({ ...deliveryInput, emailHash });
+  const recipientHash = hashRecipient(email);
+  if (!isSecurityEmailKind(input.kind) && await repository.isRestricted?.(recipientHash)) return null;
+  return repository.createPending({ ...deliveryInput, recipientHash });
 }
 
 export class EmailDeliveryService {
