@@ -126,9 +126,9 @@ export default async function TicketsPage() {
             </div>
 
             <div className="surface-panel p-6">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <h2 className="text-lg font-semibold text-foreground">Tickets recientes</h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="min-w-0 text-sm text-muted-foreground">
                   No se crea ninguna apuesta hasta revisar OCR o completar datos manualmente.
                 </p>
               </div>
