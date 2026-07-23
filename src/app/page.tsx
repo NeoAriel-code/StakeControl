@@ -68,19 +68,16 @@ const pricingPlans = [
     ],
   },
   {
-    name: "Premium",
-    price: "$4.990",
-    period: "CLP / mes",
-    description: "Para apostadores que quieren revisar exposición, rachas y patrones con más contexto histórico.",
-    cta: "Probar Premium",
-    href: "/register?plan=premium",
+    name: "Premium Beta",
+    price: "Sin cobro",
+    period: "durante beta",
+    description: "Disponible para participantes seleccionados durante el período de prueba.",
+    cta: "Participantes seleccionados",
+    href: "/register",
     highlighted: true,
     features: [
-      "Análisis IA responsable del mes",
-      "Categorías con mayor exposición",
-      "Mejor y peor desempeño histórico, sin recomendaciones",
-      "Exportación CSV avanzada",
-      "OCR de tickets y campos premium",
+      "Disponible para participantes seleccionados",
+      "Sin cobro durante el período de prueba",
     ],
   },
 ];
@@ -326,15 +323,15 @@ export default async function RootPage() {
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div className="max-w-2xl">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-200">
-                Precios
+                Acceso beta
               </p>
               <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-                Parte gratis. Sube a Premium si necesitas más lectura histórica.
+                Parte gratis. Premium Beta se habilita para participantes seleccionados.
               </h2>
             </div>
             <p className="max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">
-              Ningún plan incluye predicciones, picks ni promesas de rendimiento. Premium agrega contexto y análisis,
-              no recomendaciones para apostar más.
+              Ningún plan incluye predicciones, picks ni promesas de rendimiento. Durante la beta no existen cobros ni
+              compras de Premium.
             </p>
           </div>
 
@@ -351,7 +348,7 @@ export default async function RootPage() {
                 {plan.highlighted ? (
                   <div className="absolute right-5 top-5 inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-3 py-1 text-xs font-black text-cyan-100">
                     <Crown size={13} />
-                    Premium
+                    Premium Beta
                   </div>
                 ) : null}
                 <div>
@@ -391,17 +388,19 @@ export default async function RootPage() {
                     </div>
                   ))}
                 </div>
-                <Link
-                  href={plan.href}
-                  className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-black transition ${
-                    plan.highlighted
-                      ? "bg-cyan-300 text-slate-950 hover:bg-cyan-200"
-                      : "bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                  }`}
-                >
-                  {plan.cta}
-                  <ArrowRight size={16} />
-                </Link>
+                {plan.highlighted ? (
+                  <p className="mt-8 inline-flex w-full items-center justify-center rounded-2xl border border-cyan-200/30 bg-cyan-200/10 px-5 py-4 text-sm font-black text-cyan-100">
+                    {plan.cta}
+                  </p>
+                ) : (
+                  <Link
+                    href={plan.href}
+                    className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  >
+                    {plan.cta}
+                    <ArrowRight size={16} />
+                  </Link>
+                )}
               </article>
             ))}
           </div>

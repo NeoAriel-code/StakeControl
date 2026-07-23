@@ -4,6 +4,7 @@ import { EmailDeliveryService, type EmailDeliveryRepository } from "../src/lib/e
 
 test("a failed provider delivery is recorded without rejecting", async () => {
   const updates: Array<{ status: string; failureReason?: string }> = [];
+  const reported: Array<{ category: string; userId?: string }> = [];
   const repository: EmailDeliveryRepository = {
     async createPending() { return { id: "delivery-1" }; },
     async markSent() { throw new Error("not expected"); },
@@ -12,6 +13,7 @@ test("a failed provider delivery is recorded without rejecting", async () => {
   const service = new EmailDeliveryService({
     client: { send: async () => { throw new Error("provider unavailable"); } },
     repository,
+    onOperationalError(category, userId) { reported.push({ category, userId }); },
   });
 
   const result = await service.sendWelcome({ userId: "user-1", email: "person@example.com" });
@@ -19,6 +21,7 @@ test("a failed provider delivery is recorded without rejecting", async () => {
   assert.equal(result.delivered, false);
   assert.equal(updates[0]?.status, "FAILED");
   assert.equal(updates[0]?.failureReason, "provider_send_failed");
+  assert.deepEqual(reported, [{ category: "email.delivery_failed", userId: "user-1" }]);
 });
 
 test("a duplicate delivery key is skipped before calling the provider", async () => {

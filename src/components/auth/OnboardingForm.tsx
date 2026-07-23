@@ -213,6 +213,12 @@ export function OnboardingForm({ email, currency, ageConfirmed, termsAccepted }:
               .
             </OnboardingCheckbox>
           )}
+
+          <OnboardingCheckbox id="betaTermsAccepted" name="betaTermsAccepted">
+            <span className="font-semibold text-foreground">Acepto las condiciones de StakeControl Beta.</span>{" "}
+            Estás accediendo a una versión de prueba: el OCR puede equivocarse, los datos extraídos pueden requerir corrección y la IA no realiza diagnósticos. No existe garantía de disponibilidad. Puedo comunicar errores y solicitar la eliminación de mis datos mediante{" "}
+            <a href="mailto:contact@getstakecontrol.com" className="font-semibold text-primary underline-offset-4 hover:underline">contact@getstakecontrol.com</a>.
+          </OnboardingCheckbox>
         </div>
       </OnboardingStep>
 

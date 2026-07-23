@@ -71,6 +71,40 @@ test("registers account email delivery kinds for the production runner", () => {
   });
 });
 
+test("applies a column migration when its required columns are absent", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260723130000_add_beta_terms",
+  );
+
+  assert.ok(migration);
+  assert.deepEqual(
+    planSchemaMigration(
+      migration,
+      new Set(["User"]),
+      new Set(),
+      new Map([["User", new Set(["id", "email"])]])
+    ),
+    { action: "apply", name: "20260723130000_add_beta_terms" },
+  );
+});
+
+test("baselines a column migration only when all required columns already exist", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260723130000_add_beta_terms",
+  );
+
+  assert.ok(migration);
+  assert.deepEqual(
+    planSchemaMigration(
+      migration,
+      new Set(["User"]),
+      new Set(),
+      new Map([["User", new Set(["id", "email", "betaTermsAcceptedAt", "betaTermsVersion"])]])
+    ),
+    { action: "baseline", name: "20260723130000_add_beta_terms" },
+  );
+});
+
 test("the build command runs the production migration runner before Next", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 

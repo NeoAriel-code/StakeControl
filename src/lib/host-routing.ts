@@ -6,6 +6,7 @@ const APPLICATION_PATHS = [
   "/alerts",
   "/analysis",
   "/bets",
+  "/beta-terms",
   "/dashboard",
   "/forgot-password",
   "/health",

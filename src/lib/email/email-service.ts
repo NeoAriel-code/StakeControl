@@ -6,6 +6,7 @@ import { getEmailConfiguration } from "@/lib/email/email-config";
 import { EmailDeliveryService } from "@/lib/email/email-delivery";
 import { type EmailWebhookRepository } from "@/lib/email/email-webhook";
 import { ResendEmailProvider } from "@/lib/email/resend-provider";
+import { reportOperationalError } from "@/lib/observability/sentry";
 
 function withDisplayName(configuredFrom: string, displayName?: string) {
   if (!displayName) return configuredFrom;
@@ -51,6 +52,7 @@ export function getEmailDeliveryService() {
       async markFailed(id, update) { if (!id.startsWith("untracked-")) await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, failureReason: update.failureReason } }); },
       async isRestricted(emailHash) { return Boolean(await prisma.restrictedEmailAddress.findUnique({ where: { emailHash }, select: { id: true } })); },
     },
+    onOperationalError: reportOperationalError,
   });
 }
 

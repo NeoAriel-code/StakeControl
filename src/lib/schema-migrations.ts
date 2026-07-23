@@ -2,6 +2,7 @@ export type ManagedSchemaMigration = {
   name: string;
   sqlPath: string;
   requiredTables: readonly string[];
+  requiredColumns?: readonly { table: string; column: string }[];
 };
 
 export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
@@ -25,6 +26,15 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
     sqlPath: "prisma/migrations/20260723120000_add_account_email_delivery_kinds/migration.sql",
     requiredTables: ["EmailDelivery"],
   },
+  {
+    name: "20260723130000_add_beta_terms",
+    sqlPath: "prisma/migrations/20260723130000_add_beta_terms/migration.sql",
+    requiredTables: ["User"],
+    requiredColumns: [
+      { table: "User", column: "betaTermsAcceptedAt" },
+      { table: "User", column: "betaTermsVersion" },
+    ],
+  },
 ];
 
 export type SchemaMigrationPlan = {
@@ -36,12 +46,33 @@ export function planSchemaMigration(
   migration: ManagedSchemaMigration,
   existingTables: ReadonlySet<string>,
   recordedNames: ReadonlySet<string>,
+  existingColumns: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
 ): SchemaMigrationPlan {
   if (recordedNames.has(migration.name)) {
     return { action: "skip", name: migration.name };
   }
 
   const existingRequiredTables = migration.requiredTables.filter((table) => existingTables.has(table));
+
+  if (migration.requiredColumns && migration.requiredColumns.length > 0) {
+    if (existingRequiredTables.length !== migration.requiredTables.length) {
+      return { action: "inconsistent", name: migration.name };
+    }
+
+    const existingRequiredColumns = migration.requiredColumns.filter(({ table, column }) =>
+      existingColumns.get(table)?.has(column),
+    );
+
+    if (existingRequiredColumns.length === migration.requiredColumns.length) {
+      return { action: "baseline", name: migration.name };
+    }
+
+    if (existingRequiredColumns.length === 0) {
+      return { action: "apply", name: migration.name };
+    }
+
+    return { action: "inconsistent", name: migration.name };
+  }
 
   if (existingRequiredTables.length === migration.requiredTables.length) {
     return { action: "baseline", name: migration.name };

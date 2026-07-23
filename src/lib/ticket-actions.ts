@@ -27,6 +27,7 @@ import { buildUserScopedWhere } from "@/lib/security-scopes";
 import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
+import { reportOperationalError } from "@/lib/observability/sentry";
 
 export type TicketUploadActionState = {
   error?: string;
@@ -150,6 +151,7 @@ export async function uploadTicketAction(
     });
 
   } catch (error) {
+    reportOperationalError(error instanceof OcrProcessingError ? "ocr.failed" : "ai.failed", user.id);
     const cleanupErrors = await cleanupFailedTicketUpload({
       ticketImageId,
       storedReference,
@@ -370,6 +372,7 @@ export async function finalizeTicketReviewAction(
 
     await evaluateResponsibleGamingAlerts(user.id);
   } catch (error) {
+    reportOperationalError("bet.persistence_failed", user.id);
     return {
       error: error instanceof Error ? error.message : "No se pudo guardar la apuesta final.",
     };

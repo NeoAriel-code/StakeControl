@@ -47,7 +47,20 @@ async function run() {
         const ledger = new Map(
           ledgerResult.rows.map((row) => [String(row.name), String(row.checksum)] as const),
         );
-        const plan = planSchemaMigration(migration, existingTables, new Set(ledger.keys()));
+        const columnTables = [...new Set(migration.requiredColumns?.map(({ table }) => table) ?? [])];
+        const columnResults = await Promise.all(
+          columnTables.map(async (table) => [
+            table,
+            await transaction.execute(`PRAGMA table_info("${table.replaceAll('"', '""')}")`),
+          ] as const),
+        );
+        const existingColumns = new Map(
+          columnResults.map(([table, result]) => [
+            table,
+            new Set(result.rows.map((row) => String(row.name))),
+          ] as const),
+        );
+        const plan = planSchemaMigration(migration, existingTables, new Set(ledger.keys()), existingColumns);
 
         if (plan.action === "inconsistent") {
           throw new Error(

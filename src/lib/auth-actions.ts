@@ -18,6 +18,7 @@ import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
 import { buildNotificationPreferences } from "@/lib/notification-preferences";
 import { sendEmailVerification } from "@/lib/email-verification-actions";
+import { BETA_TERMS_VERSION } from "@/lib/beta-terms";
 
 export type AuthActionState = {
   error?: string;
@@ -64,6 +65,9 @@ const onboardingSchema = z.object({
   }),
   performanceDisclaimerAccepted: z.literal(true, {
     error: "Debes confirmar que el rendimiento pasado no garantiza resultados futuros.",
+  }),
+  betaTermsAccepted: z.literal(true, {
+    error: "Debes aceptar las condiciones de la versión beta para continuar.",
   }),
   termsAccepted: z.boolean(),
   preferredSports: z.array(z.string().trim().min(1)).max(6).default([]),
@@ -204,6 +208,7 @@ export async function completeOnboardingAction(
     ageConfirmed: user.ageConfirmed || formData.get("ageConfirmed") === "on",
     platformDisclaimerAccepted: formData.get("platformDisclaimerAccepted") === "on",
     performanceDisclaimerAccepted: formData.get("performanceDisclaimerAccepted") === "on",
+    betaTermsAccepted: formData.get("betaTermsAccepted") === "on",
     termsAccepted: Boolean(user.termsAcceptedAt) || formData.get("termsAccepted") === "on",
     preferredSports: formData.getAll("preferredSports").map((value) => String(value)),
     weeklyStakeLimit: getString(formData, "weeklyStakeLimit"),
@@ -216,7 +221,7 @@ export async function completeOnboardingAction(
     return { error: parsed.error.issues[0]?.message ?? "Debes completar el onboarding para continuar." };
   }
 
-  if (!parsed.data.ageConfirmed || !parsed.data.termsAccepted) {
+  if (!parsed.data.ageConfirmed || !parsed.data.termsAccepted || !parsed.data.betaTermsAccepted) {
     return { error: "Debes aceptar todas las confirmaciones para continuar." };
   }
 
@@ -231,6 +236,8 @@ export async function completeOnboardingAction(
         responsibleGamingAcceptedAt: now,
         termsAcceptedAt: user.termsAcceptedAt ?? now,
         onboardingCompletedAt: now,
+        betaTermsAcceptedAt: now,
+        betaTermsVersion: BETA_TERMS_VERSION,
         preferredSports:
           parsed.data.preferredSports.length > 0 ? parsed.data.preferredSports.join(",") : null,
       },
@@ -264,6 +271,21 @@ export async function completeOnboardingAction(
   }
 
   redirect("/health");
+}
+
+export async function acceptBetaTermsAction(
+  _prevState: AuthActionState,
+  _formData: FormData,
+): Promise<AuthActionState> {
+  const user = await requireUser({ allowUnacceptedBetaTerms: true });
+  const now = new Date();
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { betaTermsAcceptedAt: now, betaTermsVersion: BETA_TERMS_VERSION },
+  });
+
+  redirect("/dashboard");
 }
 
 export async function logoutAction() {

@@ -16,6 +16,7 @@ import {
 import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
 import { persistThenRunBestEffort } from "@/lib/post-persistence";
+import { reportOperationalError } from "@/lib/observability/sentry";
 
 export type BetActionState = {
   error?: string;
@@ -267,6 +268,7 @@ export async function createBetAction(
       (error) => console.error("Failed to refresh alerts after creating a bet.", error)
     );
   } catch (error) {
+    reportOperationalError("bet.persistence_failed", user.id);
     return mapZodErrors(error);
   }
 
@@ -314,6 +316,7 @@ export async function updateBetAction(
       (error) => console.error("Failed to refresh alerts after updating a bet.", error)
     );
   } catch (error) {
+    reportOperationalError("bet.persistence_failed", user.id);
     return mapZodErrors(error);
   }
 

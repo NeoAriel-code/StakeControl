@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { User } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { hasAcceptedCurrentBetaTerms } from "@/lib/beta-terms";
 export { getAuthSecret } from "./auth-secret-config";
 import { getAuthSecret } from "./auth-secret-config";
 
@@ -100,8 +101,9 @@ export function isOnboardingComplete(user: Pick<User, "ageConfirmed" | "termsAcc
   );
 }
 
-export function getPostAuthRedirect(user: Pick<User, "ageConfirmed" | "termsAcceptedAt" | "responsibleGamingAcceptedAt">) {
-  return isOnboardingComplete(user) ? "/dashboard" : "/onboarding";
+export function getPostAuthRedirect(user: Pick<User, "ageConfirmed" | "termsAcceptedAt" | "responsibleGamingAcceptedAt" | "betaTermsAcceptedAt" | "betaTermsVersion">) {
+  if (!isOnboardingComplete(user)) return "/onboarding";
+  return hasAcceptedCurrentBetaTerms(user) ? "/dashboard" : "/beta-terms";
 }
 
 export async function createSession(userId: string) {
@@ -149,10 +151,11 @@ export async function getCurrentUser() {
 
 type RequireUserOptions = {
   allowIncompleteOnboarding?: boolean;
+  allowUnacceptedBetaTerms?: boolean;
 };
 
 export async function requireUser(options: RequireUserOptions = {}) {
-  const { allowIncompleteOnboarding = false } = options;
+  const { allowIncompleteOnboarding = false, allowUnacceptedBetaTerms = false } = options;
   const user = await getCurrentUser();
 
   if (!user) {
@@ -165,6 +168,10 @@ export async function requireUser(options: RequireUserOptions = {}) {
 
   if (!allowIncompleteOnboarding && !isOnboardingComplete(user)) {
     redirect("/onboarding");
+  }
+
+  if (!allowIncompleteOnboarding && !allowUnacceptedBetaTerms && !hasAcceptedCurrentBetaTerms(user)) {
+    redirect("/beta-terms");
   }
 
   return user;

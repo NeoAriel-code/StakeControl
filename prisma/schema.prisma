@@ -86,6 +86,8 @@ model User {
   termsAcceptedAt        DateTime?
   responsibleGamingAcceptedAt DateTime?
   onboardingCompletedAt  DateTime?
+  betaTermsAcceptedAt   DateTime?
+  betaTermsVersion      String?
   bankroll               Decimal?
   currency               String                   @default("USD")
   timezone               String                   @default("America/Santiago")

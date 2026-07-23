@@ -45,7 +45,15 @@ async function createPendingDelivery(repository: EmailDeliveryRepository, input:
 }
 
 export class EmailDeliveryService {
-  constructor(private readonly dependencies: { client: EmailClient; repository: EmailDeliveryRepository }) {}
+  constructor(private readonly dependencies: {
+    client: EmailClient;
+    repository: EmailDeliveryRepository;
+    onOperationalError?: (category: "email.delivery_failed", userId: string) => void;
+  }) {}
+
+  private reportDeliveryFailure(userId: string) {
+    this.dependencies.onOperationalError?.("email.delivery_failed", userId);
+  }
 
   async sendWelcome({ userId, email }: WelcomeInput) {
     const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey: `welcome:${userId}`, kind: "WELCOME" });
@@ -63,6 +71,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
       console.error("Transactional email delivery failed.", { kind: "WELCOME" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -88,6 +97,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
       console.error("Transactional email delivery failed.", { kind: "PASSWORD_RESET" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -113,6 +123,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
       console.error("Transactional email delivery failed.", { kind: "EMAIL_VERIFICATION" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -136,6 +147,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
       console.error("Transactional email delivery failed.", { kind: "PASSWORD_CHANGED" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -153,6 +165,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch {
       console.error("Transactional email delivery failed.", { kind: "EMAIL_CHANGED" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -170,6 +183,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch {
       console.error("Transactional email delivery failed.", { kind: "ACCOUNT_DELETED" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
@@ -185,6 +199,7 @@ export class EmailDeliveryService {
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
       console.error("Transactional email delivery failed.", { kind: "RESPONSIBLE_GAMING_ALERT" });
+      this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }

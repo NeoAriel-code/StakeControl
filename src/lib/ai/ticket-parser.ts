@@ -7,6 +7,7 @@ import { aiTicketExtractionJsonSchema, aiTicketExtractionSchema } from "@/lib/ai
 import { CURRENCY_CODES, isSupportedCurrency } from "@/lib/currencies";
 import { extractedBetTicketSchema, type ExtractedBetTicket } from "@/lib/ticket-extraction";
 import { structureMockBetTicket } from "@/lib/mock-ticket-parser";
+import { reportOperationalError } from "@/lib/observability/sentry";
 
 const MIN_CONFIDENCE = 0.85;
 const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha de colocación, usa null en placedAt, y si no está el inicio del evento, usa null en eventStartAt; baja confidenceScore y agrega el campo ausente en doubtfulFields. Para betType usa exactamente uno de estos valores: SINGLE, COMBO, BET_BUILDER o SYSTEM. Para result usa exactamente: PENDING, WON, LOST, VOID o CASHOUT. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Un botón u oferta que diga CASH OUT no prueba que se haya realizado un cashout: usa CASHOUT solo cuando el OCR confirma una operación completada. Si el evento programado aún no comienza, el resultado debe ser PENDING. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
@@ -289,6 +290,7 @@ export async function parseTicketWithRouting(
       return { ticket, model: response.model, estimatedTokens: response.estimatedTokens, fallbackUsed };
     } catch (error) {
       console.error("AI ticket extraction failed", { model, fallbackUsed, elapsedMs: Date.now() - startedAt, error: getErrorMessage(error) });
+      reportOperationalError(error instanceof TicketExtractionTimeoutError ? "timeout" : "ai.failed");
     }
   }
 
