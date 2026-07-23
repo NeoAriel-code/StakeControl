@@ -18,11 +18,11 @@
 
 ### Task 1: Verification data and tokens
 
-**Files:** `prisma/schema.prisma`, `prisma/migrations/20260723090000_add_email_verification/migration.sql`, `src/lib/email-verification.ts`, `tests/email-verification.test.mts`.
+**Files:** `prisma/schema.prisma`, `prisma/migrations/20260723090000_add_email_verification/migration.sql`, `src/lib/schema-migrations.ts`, `tests/schema-migrations.test.mts`, `src/lib/email-verification.ts`, `tests/email-verification.test.mts`.
 
 - [ ] Write tests that assert the token hash differs from plaintext; future unused tokens are usable; expired or used tokens are not usable.
 - [ ] Run `node --import tsx --test tests/email-verification.test.mts`; expect failure because the module is absent.
-- [ ] Add `User.emailVerifiedAt` and `EmailVerificationToken` with unique `tokenHash`, user relation, expiry, used timestamp, and user/expiry index. The migration must backfill existing `emailVerifiedAt` with `CURRENT_TIMESTAMP`.
+- [ ] Add `User.emailVerifiedAt` and `EmailVerificationToken` with unique `tokenHash`, user relation, expiry, used timestamp, and user/expiry index. The migration must backfill existing `emailVerifiedAt` with `CURRENT_TIMESTAMP`. Register this migration in `MANAGED_SCHEMA_MIGRATIONS` with `EmailVerificationToken` as the required table and test it as a complete migration unit.
 - [ ] Implement creation with `randomBytes(32).toString("base64url")`, SHA-256, 24-hour expiry, and transactional invalidation of prior unused tokens. Implement atomic consumption using `usedAt: null` and `expiresAt: { gt: now }` conditions.
 - [ ] Run `node --import tsx --test tests/email-verification.test.mts` and `npx prisma validate`; expect success.
 - [ ] Commit with `git commit -m "Add email verification tokens"`.
