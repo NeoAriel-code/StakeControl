@@ -61,3 +61,33 @@ test("a delivery ledger outage does not prevent an already accepted email", asyn
 
   assert.equal(result.delivered, true);
 });
+
+test("verification emails use a security sender and include a 24-hour confirmation CTA", async () => {
+  let sent: { subject: string; fromName?: string; html: string; text: string } | undefined;
+  const repository: EmailDeliveryRepository = { async createPending() { return { id: "delivery-1" }; }, async markSent() {}, async markFailed() {} };
+  const service = new EmailDeliveryService({ client: { send: async (input) => { sent = input; return { id: "email-1" }; } }, repository });
+
+  await service.sendEmailVerification({
+    userId: "user-1",
+    email: "person@example.com",
+    verificationUrl: "https://app.getstakecontrol.com/verify-email?token=token-1",
+    token: "token-1",
+  });
+
+  assert.equal(sent?.subject, "Confirma tu correo de StakeControl");
+  assert.equal(sent?.fromName, "StakeControl Seguridad");
+  assert.match(sent?.html ?? "", /Confirmar correo/);
+  assert.match(sent?.text ?? "", /24 horas/);
+});
+
+test("password change notices use the security sender and direct replies to support", async () => {
+  let sent: { subject: string; fromName?: string; text: string } | undefined;
+  const repository: EmailDeliveryRepository = { async createPending() { return { id: "delivery-1" }; }, async markSent() {}, async markFailed() {} };
+  const service = new EmailDeliveryService({ client: { send: async (input) => { sent = input; return { id: "email-1" }; } }, repository });
+
+  await service.sendPasswordChanged({ userId: "user-1", email: "person@example.com", changedAt: new Date("2026-07-23T12:00:00.000Z") });
+
+  assert.equal(sent?.subject, "Tu contraseña de StakeControl fue modificada");
+  assert.equal(sent?.fromName, "StakeControl Seguridad");
+  assert.match(sent?.text ?? "", /support@getstakecontrol.com/);
+});

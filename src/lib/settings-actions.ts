@@ -9,6 +9,7 @@ import { CURRENCY_CODES } from "@/lib/currencies";
 import prisma from "@/lib/prisma";
 import { SPORT_OPTIONS } from "@/lib/sports";
 import { ALERT_EMAIL_PREFERENCES, buildNotificationPreferences } from "@/lib/notification-preferences";
+import { getEmailDeliveryService } from "@/lib/email/email-service";
 
 export type SettingsActionState = {
   error?: string;
@@ -111,6 +112,11 @@ export async function changePasswordAction(
       passwordHash: hashPassword(parsed.data.newPassword),
     },
   });
+
+  const service = getEmailDeliveryService();
+  if (service) {
+    await service.sendPasswordChanged({ userId: user.id, email: user.email, changedAt: new Date() });
+  }
 
   return { success: "Contraseña actualizada correctamente." };
 }

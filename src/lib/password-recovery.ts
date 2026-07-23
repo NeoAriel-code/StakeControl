@@ -70,7 +70,7 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
     });
 
     if (!record || !isPasswordResetTokenUsable(record, now)) {
-      return false;
+      return null;
     }
 
     const consumed = await tx.passwordResetToken.updateMany({
@@ -83,7 +83,7 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
     });
 
     if (consumed.count !== 1) {
-      return false;
+      return null;
     }
 
     await tx.user.update({
@@ -91,6 +91,6 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
       data: { passwordHash },
     });
 
-    return true;
+    return record.userId;
   });
 }

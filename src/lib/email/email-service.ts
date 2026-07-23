@@ -6,6 +6,12 @@ import prisma from "@/lib/prisma";
 import { getEmailConfiguration } from "@/lib/email/email-config";
 import { EmailDeliveryService } from "@/lib/email/email-delivery";
 
+function withDisplayName(configuredFrom: string, displayName?: string) {
+  if (!displayName) return configuredFrom;
+  const address = configuredFrom.match(/<([^>]+)>/)?.[1] ?? configuredFrom;
+  return `${displayName} <${address}>`;
+}
+
 export function getEmailDeliveryService() {
   const config = getEmailConfiguration();
   if (!config) return null;
@@ -14,7 +20,7 @@ export function getEmailDeliveryService() {
   return new EmailDeliveryService({
     client: {
       async send(input) {
-        const { data, error } = await resend.emails.send({ from: config.from, to: [input.to], subject: input.subject, html: input.html, text: input.text, ...(config.replyTo ? { replyTo: config.replyTo } : {}) });
+        const { data, error } = await resend.emails.send({ from: withDisplayName(config.from, input.fromName), to: [input.to], subject: input.subject, html: input.html, text: input.text, ...(config.replyTo ? { replyTo: config.replyTo } : {}) });
         if (error || !data?.id) throw new Error(error?.message || "Resend no devolvió un identificador de entrega.");
         return { id: data.id };
       },

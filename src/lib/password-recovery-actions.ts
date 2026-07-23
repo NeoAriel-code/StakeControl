@@ -87,10 +87,16 @@ export async function resetPasswordAction(
     return { error: parsedPassword.error.issues[0]?.message ?? "Revisa la nueva contraseña." };
   }
 
-  const updated = await resetPasswordWithToken(token, hashPassword(parsedPassword.data.password));
+  const userId = await resetPasswordWithToken(token, hashPassword(parsedPassword.data.password));
 
-  if (!updated) {
+  if (!userId) {
     return { error: "El enlace de recuperación venció o ya fue utilizado. Solicita uno nuevo." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  const service = getEmailDeliveryService();
+  if (user && service) {
+    await service.sendPasswordChanged({ userId, email: user.email, changedAt: new Date() });
   }
 
   redirect("/login?reset=success");

@@ -1,17 +1,19 @@
 import { renderEmailTemplate } from "@/lib/email/email-templates";
 
 export type EmailClient = {
-  send(input: { to: string; subject: string; html: string; text: string }): Promise<{ id: string }>;
+  send(input: { to: string; subject: string; html: string; text: string; fromName?: string }): Promise<{ id: string }>;
 };
 
 export type EmailDeliveryRepository = {
-  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "PASSWORD_RESET" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }): Promise<{ id: string } | null>;
+  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }): Promise<{ id: string } | null>;
   markSent(id: string, update: { status: "SENT"; providerMessageId: string }): Promise<void>;
   markFailed(id: string, update: { status: "FAILED"; failureReason: string }): Promise<void>;
 };
 
 type WelcomeInput = { userId: string; email: string };
+type EmailVerificationInput = { userId: string; email: string; verificationUrl: string; token: string };
 type PasswordResetInput = { userId: string; email: string; resetUrl: string; token: string };
+type PasswordChangedInput = { userId: string; email: string; changedAt: Date };
 type AlertInput = { userId: string; alertId: string; email: string; title: string; message: string; alertsUrl: string };
 
 function safeErrorMessage(error: unknown) {
@@ -60,6 +62,49 @@ export class EmailDeliveryService {
       const response = await this.dependencies.client.send({
         to: email,
         subject: "Restablece tu contraseña de StakeControl",
+        fromName: "StakeControl Seguridad",
+        ...template,
+      });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
+      return { delivered: true, deliveryId: pending.id };
+    } catch (error) {
+      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendEmailVerification({ userId, email, verificationUrl, token }: EmailVerificationInput) {
+    const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    const dedupeKey = `email-verification:${Buffer.from(tokenHash).toString("hex")}`;
+    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey, kind: "EMAIL_VERIFICATION" });
+    if (!pending) return { delivered: false };
+
+    try {
+      const template = renderEmailTemplate({ eyebrow: "Verifica tu cuenta", title: "Confirma tu correo", bodyHtml: "<p>Confirma tu correo para activar tu cuenta de StakeControl y proteger el acceso a tus tickets.</p>", bodyText: "Confirma tu correo para activar tu cuenta de StakeControl y proteger el acceso a tus tickets.", ctaLabel: "Confirmar correo", ctaUrl: verificationUrl, footerNote: "El enlace vence en 24 horas. Si no creaste esta cuenta, puedes ignorar este correo." });
+      const response = await this.dependencies.client.send({
+        to: email,
+        subject: "Confirma tu correo de StakeControl",
+        fromName: "StakeControl Seguridad",
+        ...template,
+      });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
+      return { delivered: true, deliveryId: pending.id };
+    } catch (error) {
+      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendPasswordChanged({ userId, email, changedAt }: PasswordChangedInput) {
+    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey: `password-changed:${userId}:${changedAt.toISOString()}`, kind: "PASSWORD_CHANGED" });
+    if (!pending) return { delivered: false };
+
+    try {
+      const template = renderEmailTemplate({ eyebrow: "Seguridad", title: "Tu contraseña fue modificada", bodyHtml: "<p>La contraseña de tu cuenta fue modificada correctamente.</p><p>Si no realizaste este cambio, responde a este correo o contacta de inmediato a support@getstakecontrol.com.</p>", bodyText: "La contraseña de tu cuenta fue modificada correctamente. Si no realizaste este cambio, responde a este correo o contacta de inmediato a support@getstakecontrol.com.", ctaLabel: "Contactar soporte", ctaUrl: "mailto:support@getstakecontrol.com", footerNote: "Este es un aviso de seguridad de tu cuenta." });
+      const response = await this.dependencies.client.send({
+        to: email,
+        subject: "Tu contraseña de StakeControl fue modificada",
+        fromName: "StakeControl Seguridad",
         ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);

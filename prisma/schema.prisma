@@ -50,7 +50,9 @@ enum AlertSeverity {
 
 enum EmailDeliveryKind {
   WELCOME
+  EMAIL_VERIFICATION
   PASSWORD_RESET
+  PASSWORD_CHANGED
   RESPONSIBLE_GAMING_ALERT
 }
 
