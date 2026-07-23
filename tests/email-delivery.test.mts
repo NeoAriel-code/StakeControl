@@ -109,3 +109,18 @@ test("restricted recipients skip non-security deliveries but still receive passw
   assert.equal(reset.delivered, true);
   assert.deepEqual(sent, ["Restablece tu contraseña de StakeControl"]);
 });
+
+test("delivery persistence receives a recipient hash without a plaintext email field", async () => {
+  let pendingInput: Record<string, unknown> | undefined;
+  const repository: EmailDeliveryRepository = {
+    async createPending(input) { pendingInput = input; return { id: "delivery-1" }; },
+    async markSent() {},
+    async markFailed() {},
+  };
+  const service = new EmailDeliveryService({ client: { send: async () => ({ id: "email-1" }) }, repository });
+
+  await service.sendPasswordReset({ userId: "user-1", email: "person@example.com", token: "token-1", resetUrl: "https://example.com/reset" });
+
+  assert.equal("email" in (pendingInput ?? {}), false);
+  assert.equal(typeof pendingInput?.emailHash, "string");
+});

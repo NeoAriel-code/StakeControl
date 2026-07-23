@@ -37,9 +37,10 @@ function hashRecipient(email: string) {
 }
 
 async function createPendingDelivery(repository: EmailDeliveryRepository, input: { userId: string; email: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }) {
-  const emailHash = hashRecipient(input.email);
+  const { email, ...deliveryInput } = input;
+  const emailHash = hashRecipient(email);
   if (!isSecurityEmailKind(input.kind) && await repository.isRestricted?.(emailHash)) return null;
-  return repository.createPending({ ...input, emailHash });
+  return repository.createPending({ ...deliveryInput, emailHash });
 }
 
 export class EmailDeliveryService {
