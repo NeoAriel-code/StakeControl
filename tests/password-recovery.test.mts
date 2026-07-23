@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { hashPasswordResetToken, isPasswordResetTokenUsable } from "../src/lib/password-recovery";
 import { isPasswordRecoveryEmailConfigured } from "../src/lib/password-recovery-email";
+import { readFile } from "node:fs/promises";
 
 test("hashes reset tokens without retaining their plaintext value", () => {
   assert.equal(hashPasswordResetToken("secret-token"), hashPasswordResetToken("secret-token"));
@@ -19,4 +20,10 @@ test("accepts only unused, unexpired reset tokens", () => {
 test("does not enable recovery delivery without a configured email provider", () => {
   assert.equal(isPasswordRecoveryEmailConfigured({ EMAIL_PROVIDER: "resend", RESEND_API_KEY: "" }), false);
   assert.equal(isPasswordRecoveryEmailConfigured({ EMAIL_PROVIDER: "mock", RESEND_API_KEY: "key" }), false);
+});
+
+test("password recovery is temporarily not throttled while delivery is being verified", async () => {
+  const action = await readFile(new URL("../src/lib/password-recovery-actions.ts", import.meta.url), "utf8");
+
+  assert.doesNotMatch(action, /key:\s*`password-reset:/);
 });
