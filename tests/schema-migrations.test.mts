@@ -51,6 +51,14 @@ test("registers the email verification migration for the production runner", () 
   });
 });
 
+test("registers the Resend webhook migration for the production runner", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260723110000_add_resend_webhooks",
+  );
+
+  assert.deepEqual(migration?.requiredTables, ["EmailWebhookEvent", "RestrictedEmailAddress", "AccountSecurityAlert"]);
+});
+
 test("the build command runs the production migration runner before Next", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 

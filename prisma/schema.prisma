@@ -101,6 +101,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   notificationPreferences NotificationPreferences?
   emailDeliveries        EmailDelivery[]
+  accountSecurityAlerts  AccountSecurityAlert[]
 
   @@index([createdAt])
 }
@@ -259,16 +260,56 @@ model EmailDelivery {
   dedupeKey         String              @unique
   kind              EmailDeliveryKind
   status            EmailDeliveryStatus @default(PENDING)
-  providerMessageId String?
+  providerMessageId String?             @unique
+  recipientHash     String?
+  lastEvent         String?
+  deliveredAt       DateTime?
+  bouncedAt         DateTime?
+  complainedAt      DateTime?
+  failedAt          DateTime?
+  delayedAt         DateTime?
   failureReason     String?
   sentAt            DateTime?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   alert             ResponsibleGamingAlert? @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  securityAlert     AccountSecurityAlert?
 
   @@index([userId, createdAt])
   @@index([alertId])
+  @@index([recipientHash])
+}
+
+model EmailWebhookEvent {
+  id                String   @id @default(cuid())
+  providerEventId   String   @unique
+  eventType         String
+  providerMessageId String?
+  createdAt         DateTime @default(now())
+
+  @@index([providerMessageId])
+}
+
+model RestrictedEmailAddress {
+  id        String   @id @default(cuid())
+  emailHash String   @unique
+  reason    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AccountSecurityAlert {
+  id         String        @id @default(cuid())
+  userId     String
+  deliveryId String        @unique
+  kind       String
+  occurredAt DateTime
+  createdAt  DateTime      @default(now())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delivery   EmailDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
 }
 
 model Subscription {
