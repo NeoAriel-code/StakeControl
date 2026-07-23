@@ -17,8 +17,9 @@ export type EmailWebhookRepository = {
   createSecurityAlert(input: { userId: string; deliveryId: string; kind: string; occurredAt: Date }): Promise<void>;
 };
 
-const SECURITY_DELIVERY_KINDS = new Set(["EMAIL_VERIFICATION", "PASSWORD_RESET", "PASSWORD_CHANGED"]);
+const SECURITY_DELIVERY_KINDS = new Set(["EMAIL_VERIFICATION", "PASSWORD_RESET", "PASSWORD_CHANGED", "EMAIL_CHANGED", "ACCOUNT_DELETED"]);
 const RESTRICTION_REASONS = { "email.bounced": "BOUNCED", "email.complained": "COMPLAINED" } as const;
+const SECURITY_ALERT_EVENTS = new Set(["email.delivery_delayed", "email.bounced", "email.complained", "email.failed"]);
 
 export function hashEmailAddress(email: string) {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
@@ -44,7 +45,7 @@ export async function processEmailWebhookEvent(event: VerifiedEmailWebhookEvent,
   const recipient = event.data.to?.[0];
   if (reason && recipient) await repository.restrictEmail({ emailHash: hashEmailAddress(recipient), reason });
 
-  if (event.type !== "email.delivered" && isSecurityEmailKind(delivery.kind)) {
+  if (SECURITY_ALERT_EVENTS.has(event.type) && isSecurityEmailKind(delivery.kind)) {
     await repository.createSecurityAlert({ userId: delivery.userId, deliveryId: delivery.id, kind: event.type, occurredAt });
   }
 

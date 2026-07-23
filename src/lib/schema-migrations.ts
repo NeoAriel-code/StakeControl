@@ -20,6 +20,11 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
     sqlPath: "prisma/migrations/20260723110000_add_resend_webhooks/migration.sql",
     requiredTables: ["EmailWebhookEvent", "RestrictedEmailAddress", "AccountSecurityAlert"],
   },
+  {
+    name: "20260723120000_add_account_email_delivery_kinds",
+    sqlPath: "prisma/migrations/20260723120000_add_account_email_delivery_kinds/migration.sql",
+    requiredTables: ["EmailDelivery"],
+  },
 ];
 
 export type SchemaMigrationPlan = {

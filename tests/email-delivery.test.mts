@@ -18,7 +18,7 @@ test("a failed provider delivery is recorded without rejecting", async () => {
 
   assert.equal(result.delivered, false);
   assert.equal(updates[0]?.status, "FAILED");
-  assert.match(updates[0]?.failureReason ?? "", /provider unavailable/);
+  assert.equal(updates[0]?.failureReason, "provider_send_failed");
 });
 
 test("a duplicate delivery key is skipped before calling the provider", async () => {
@@ -123,4 +123,26 @@ test("delivery persistence receives a recipient hash without a plaintext email f
 
   assert.equal("email" in (pendingInput ?? {}), false);
   assert.equal(typeof pendingInput?.recipientHash, "string");
+});
+
+test("email change and account deletion notices are security messages with distinct idempotency keys", async () => {
+  const sent: Array<{ subject: string; idempotencyKey: string; fromName?: string }> = [];
+  const repository: EmailDeliveryRepository = {
+    async createPending() { return { id: "delivery-1" }; },
+    async markSent() {},
+    async markFailed() {},
+    async isRestricted() { return true; },
+  };
+  const service = new EmailDeliveryService({
+    client: { send: async (input) => { sent.push(input); return { id: `email-${sent.length}` }; } },
+    repository,
+  });
+
+  await service.sendEmailChanged({ userId: "user-1", email: "person@example.com", previousEmail: "old@example.com", changedAt: new Date("2026-07-23T12:00:00.000Z") });
+  await service.sendAccountDeleted({ userId: "user-1", email: "person@example.com", deletedAt: new Date("2026-07-23T12:01:00.000Z") });
+
+  assert.deepEqual(sent.map(({ subject, idempotencyKey, fromName }) => ({ subject, idempotencyKey, fromName })), [
+    { subject: "Tu correo de StakeControl fue modificado", idempotencyKey: "email-changed:user-1:2026-07-23T12:00:00.000Z", fromName: "StakeControl Seguridad" },
+    { subject: "Tu cuenta de StakeControl fue eliminada", idempotencyKey: "account-deleted:user-1:2026-07-23T12:01:00.000Z", fromName: "StakeControl Seguridad" },
+  ]);
 });

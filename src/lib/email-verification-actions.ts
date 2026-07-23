@@ -14,7 +14,7 @@ export type EmailVerificationActionState = {
 const emailSchema = z.string().trim().toLowerCase().email("Ingresa un email válido.");
 
 function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+  return process.env.APP_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
 }
 
 export async function sendEmailVerification(user: { id: string; email: string }) {

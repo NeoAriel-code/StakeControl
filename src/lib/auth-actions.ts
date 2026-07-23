@@ -151,7 +151,7 @@ export async function registerAction(
     return { error: formatRateLimitMessage(rateLimit.resetAt) };
   }
 
-  if (!process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || !getEmailDeliveryService()) {
+  if (!(process.env.APP_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")) || !getEmailDeliveryService()) {
     return { error: "El registro por email no está disponible en este momento. Intenta nuevamente más tarde." };
   }
 
@@ -221,6 +221,7 @@ export async function completeOnboardingAction(
   }
 
   const now = new Date();
+  const shouldSendWelcome = !user.onboardingCompletedAt;
 
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
@@ -257,6 +258,11 @@ export async function completeOnboardingAction(
     });
   });
 
+  if (shouldSendWelcome) {
+    const service = getEmailDeliveryService();
+    if (service) await service.sendWelcome({ userId: user.id, email: user.email });
+  }
+
   redirect("/health");
 }
 
@@ -287,6 +293,9 @@ export async function deleteAccountAction(
       await storage.deletePrivateObject(ticketImage.imageUrl);
     }
   }
+
+  const service = getEmailDeliveryService();
+  if (service) await service.sendAccountDeleted({ userId: user.id, email: user.email, deletedAt: new Date() });
 
   await prisma.user.delete({
     where: { id: user.id },

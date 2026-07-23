@@ -3,11 +3,11 @@ import { renderEmailTemplate } from "@/lib/email/email-templates";
 import { isSecurityEmailKind } from "@/lib/email/email-webhook";
 
 export type EmailClient = {
-  send(input: { to: string; subject: string; html: string; text: string; fromName?: string }): Promise<{ id: string }>;
+  send(input: { to: string; subject: string; html: string; text: string; fromName?: string; sender?: "default" | "security" | "alerts" | "reports"; idempotencyKey: string }): Promise<{ id: string }>;
 };
 
 export type EmailDeliveryRepository = {
-  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; recipientHash: string; alertId?: string }): Promise<{ id: string } | null>;
+  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "EMAIL_CHANGED" | "ACCOUNT_DELETED" | "RESPONSIBLE_GAMING_ALERT"; recipientHash: string; alertId?: string }): Promise<{ id: string } | null>;
   markSent(id: string, update: { status: "SENT"; providerMessageId: string }): Promise<void>;
   markFailed(id: string, update: { status: "FAILED"; failureReason: string }): Promise<void>;
   isRestricted?(emailHash: string): Promise<boolean>;
@@ -17,11 +17,12 @@ type WelcomeInput = { userId: string; email: string };
 type EmailVerificationInput = { userId: string; email: string; verificationUrl: string; token: string };
 type PasswordResetInput = { userId: string; email: string; resetUrl: string; token: string };
 type PasswordChangedInput = { userId: string; email: string; changedAt: Date };
+type EmailChangedInput = { userId: string; email: string; previousEmail: string; changedAt: Date };
+type AccountDeletedInput = { userId: string; email: string; deletedAt: Date };
 type AlertInput = { userId: string; alertId: string; email: string; title: string; message: string; alertsUrl: string };
 
-function safeErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : "No se pudo enviar el correo.";
-  return message.slice(0, 500);
+function deliveryFailureReason() {
+  return "provider_send_failed";
 }
 
 async function markSentSafely(repository: EmailDeliveryRepository, id: string, providerMessageId: string) {
@@ -36,7 +37,7 @@ function hashRecipient(email: string) {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
-async function createPendingDelivery(repository: EmailDeliveryRepository, input: { userId: string; email: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }) {
+async function createPendingDelivery(repository: EmailDeliveryRepository, input: { userId: string; email: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "EMAIL_CHANGED" | "ACCOUNT_DELETED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }) {
   const { email, ...deliveryInput } = input;
   const recipientHash = hashRecipient(email);
   if (!isSecurityEmailKind(input.kind) && await repository.isRestricted?.(recipientHash)) return null;
@@ -55,13 +56,14 @@ export class EmailDeliveryService {
       const response = await this.dependencies.client.send({
         to: email,
         subject: "Bienvenido a StakeControl",
+        idempotencyKey: `welcome:${userId}`,
         ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      console.error("Transactional email delivery failed.", { kind: "WELCOME", message: safeErrorMessage(error) });
-      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      console.error("Transactional email delivery failed.", { kind: "WELCOME" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -78,13 +80,15 @@ export class EmailDeliveryService {
         to: email,
         subject: "Restablece tu contraseña de StakeControl",
         fromName: "StakeControl Seguridad",
+        sender: "security",
+        idempotencyKey: dedupeKey,
         ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      console.error("Transactional email delivery failed.", { kind: "PASSWORD_RESET", message: safeErrorMessage(error) });
-      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      console.error("Transactional email delivery failed.", { kind: "PASSWORD_RESET" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -101,13 +105,15 @@ export class EmailDeliveryService {
         to: email,
         subject: "Confirma tu correo de StakeControl",
         fromName: "StakeControl Seguridad",
+        sender: "security",
+        idempotencyKey: dedupeKey,
         ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      console.error("Transactional email delivery failed.", { kind: "EMAIL_VERIFICATION", message: safeErrorMessage(error) });
-      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      console.error("Transactional email delivery failed.", { kind: "EMAIL_VERIFICATION" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -122,13 +128,49 @@ export class EmailDeliveryService {
         to: email,
         subject: "Tu contraseña de StakeControl fue modificada",
         fromName: "StakeControl Seguridad",
+        sender: "security",
+        idempotencyKey: `password-changed:${userId}:${changedAt.toISOString()}`,
         ...template,
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      console.error("Transactional email delivery failed.", { kind: "PASSWORD_CHANGED", message: safeErrorMessage(error) });
-      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      console.error("Transactional email delivery failed.", { kind: "PASSWORD_CHANGED" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendEmailChanged({ userId, email, previousEmail, changedAt }: EmailChangedInput) {
+    const dedupeKey = `email-changed:${userId}:${changedAt.toISOString()}`;
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey, kind: "EMAIL_CHANGED" });
+    if (!pending) return { delivered: false };
+
+    try {
+      const template = renderEmailTemplate({ eyebrow: "Seguridad", title: "Tu correo fue modificado", bodyHtml: `<p>El correo de tu cuenta fue cambiado desde ${previousEmail}.</p><p>Si no autorizaste este cambio, responde a este correo o contacta de inmediato a support@getstakecontrol.com.</p>`, bodyText: `El correo de tu cuenta fue cambiado desde ${previousEmail}. Si no autorizaste este cambio, responde a este correo o contacta de inmediato a support@getstakecontrol.com.`, ctaLabel: "Contactar soporte", ctaUrl: "mailto:support@getstakecontrol.com", footerNote: "Este es un aviso de seguridad de tu cuenta." });
+      const response = await this.dependencies.client.send({ to: email, subject: "Tu correo de StakeControl fue modificado", fromName: "StakeControl Seguridad", sender: "security", idempotencyKey: dedupeKey, ...template });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
+      return { delivered: true, deliveryId: pending.id };
+    } catch {
+      console.error("Transactional email delivery failed.", { kind: "EMAIL_CHANGED" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
+      return { delivered: false, deliveryId: pending.id };
+    }
+  }
+
+  async sendAccountDeleted({ userId, email, deletedAt }: AccountDeletedInput) {
+    const dedupeKey = `account-deleted:${userId}:${deletedAt.toISOString()}`;
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey, kind: "ACCOUNT_DELETED" });
+    if (!pending) return { delivered: false };
+
+    try {
+      const template = renderEmailTemplate({ eyebrow: "Seguridad", title: "Tu cuenta fue eliminada", bodyHtml: "<p>Tu cuenta de StakeControl y sus datos asociados fueron eliminados según tu solicitud.</p><p>Si no realizaste esta acción, contacta de inmediato a support@getstakecontrol.com.</p>", bodyText: "Tu cuenta de StakeControl y sus datos asociados fueron eliminados según tu solicitud. Si no realizaste esta acción, contacta de inmediato a support@getstakecontrol.com.", ctaLabel: "Contactar soporte", ctaUrl: "mailto:support@getstakecontrol.com", footerNote: "Este es un aviso de seguridad de tu cuenta." });
+      const response = await this.dependencies.client.send({ to: email, subject: "Tu cuenta de StakeControl fue eliminada", fromName: "StakeControl Seguridad", sender: "security", idempotencyKey: dedupeKey, ...template });
+      await markSentSafely(this.dependencies.repository, pending.id, response.id);
+      return { delivered: true, deliveryId: pending.id };
+    } catch {
+      console.error("Transactional email delivery failed.", { kind: "ACCOUNT_DELETED" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
   }
@@ -138,12 +180,12 @@ export class EmailDeliveryService {
     if (!pending) return { delivered: false };
     try {
       const template = renderEmailTemplate({ eyebrow: "Alerta preventiva", title, bodyHtml: `<p>${message}</p>`, bodyText: message, ctaLabel: "Ver alertas", ctaUrl: alertsUrl, footerNote: "Puedes ajustar estas alertas desde Configuración." });
-      const response = await this.dependencies.client.send({ to: email, subject: title, ...template });
+      const response = await this.dependencies.client.send({ to: email, subject: title, sender: "alerts", idempotencyKey: `responsible-alert:${alertId}`, ...template });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
     } catch (error) {
-      console.error("Transactional email delivery failed.", { kind: "RESPONSIBLE_GAMING_ALERT", message: safeErrorMessage(error) });
-      await markFailedSafely(this.dependencies.repository, pending.id, safeErrorMessage(error));
+      console.error("Transactional email delivery failed.", { kind: "RESPONSIBLE_GAMING_ALERT" });
+      await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
       return { delivered: false, deliveryId: pending.id };
     }
   }

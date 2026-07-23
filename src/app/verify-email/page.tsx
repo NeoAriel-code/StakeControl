@@ -1,22 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
 import { verifyEmailToken } from "@/lib/email-verification";
-import { getEmailDeliveryService } from "@/lib/email/email-service";
 
 type VerifyEmailPageProps = { searchParams: Promise<{ token?: string }> };
 
 export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
   const { token } = await searchParams;
   const userId = token ? await verifyEmailToken(token) : null;
-
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
-    const service = getEmailDeliveryService();
-    if (user && service) {
-      await service.sendWelcome({ userId: user.id, email: user.email });
-    }
-  }
 
   const verified = Boolean(userId);
 

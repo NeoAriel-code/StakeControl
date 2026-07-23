@@ -1,0 +1,2 @@
+-- SQLite stores Prisma enum values as text, so no table alteration is required.
+-- This managed migration records the deployment of EMAIL_CHANGED and ACCOUNT_DELETED delivery kinds.

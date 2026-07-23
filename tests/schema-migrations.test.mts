@@ -59,6 +59,18 @@ test("registers the Resend webhook migration for the production runner", () => {
   assert.deepEqual(migration?.requiredTables, ["EmailWebhookEvent", "RestrictedEmailAddress", "AccountSecurityAlert"]);
 });
 
+test("registers account email delivery kinds for the production runner", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260723120000_add_account_email_delivery_kinds",
+  );
+
+  assert.deepEqual(migration, {
+    name: "20260723120000_add_account_email_delivery_kinds",
+    sqlPath: "prisma/migrations/20260723120000_add_account_email_delivery_kinds/migration.sql",
+    requiredTables: ["EmailDelivery"],
+  });
+});
+
 test("the build command runs the production migration runner before Next", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 

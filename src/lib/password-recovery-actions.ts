@@ -63,7 +63,7 @@ export async function requestPasswordResetAction(
 
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+    const appUrl = process.env.APP_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
 
     if (!appUrl) {
       throw new Error("NEXT_PUBLIC_APP_URL debe configurarse antes de habilitar recuperación por email.");
