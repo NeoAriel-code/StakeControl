@@ -14,7 +14,7 @@ export function getEmailDeliveryService() {
   return new EmailDeliveryService({
     client: {
       async send(input) {
-        const { data, error } = await resend.emails.send({ from: config.from, to: [input.to], subject: input.subject, html: input.html, text: input.text });
+        const { data, error } = await resend.emails.send({ from: config.from, to: [input.to], subject: input.subject, html: input.html, text: input.text, ...(config.replyTo ? { replyTo: config.replyTo } : {}) });
         if (error || !data?.id) throw new Error(error?.message || "Resend no devolvió un identificador de entrega.");
         return { id: data.id };
       },
