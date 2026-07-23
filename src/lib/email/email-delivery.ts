@@ -1,13 +1,16 @@
+import { createHash } from "node:crypto";
 import { renderEmailTemplate } from "@/lib/email/email-templates";
+import { isSecurityEmailKind } from "@/lib/email/email-webhook";
 
 export type EmailClient = {
   send(input: { to: string; subject: string; html: string; text: string; fromName?: string }): Promise<{ id: string }>;
 };
 
 export type EmailDeliveryRepository = {
-  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }): Promise<{ id: string } | null>;
+  createPending(input: { userId: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; emailHash: string; alertId?: string }): Promise<{ id: string } | null>;
   markSent(id: string, update: { status: "SENT"; providerMessageId: string }): Promise<void>;
   markFailed(id: string, update: { status: "FAILED"; failureReason: string }): Promise<void>;
+  isRestricted?(emailHash: string): Promise<boolean>;
 };
 
 type WelcomeInput = { userId: string; email: string };
@@ -29,11 +32,21 @@ async function markFailedSafely(repository: EmailDeliveryRepository, id: string,
   try { await repository.markFailed(id, { status: "FAILED", failureReason }); } catch { /* provider failure must not break the caller */ }
 }
 
+function hashRecipient(email: string) {
+  return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+}
+
+async function createPendingDelivery(repository: EmailDeliveryRepository, input: { userId: string; email: string; dedupeKey: string; kind: "WELCOME" | "EMAIL_VERIFICATION" | "PASSWORD_RESET" | "PASSWORD_CHANGED" | "RESPONSIBLE_GAMING_ALERT"; alertId?: string }) {
+  const emailHash = hashRecipient(input.email);
+  if (!isSecurityEmailKind(input.kind) && await repository.isRestricted?.(emailHash)) return null;
+  return repository.createPending({ ...input, emailHash });
+}
+
 export class EmailDeliveryService {
   constructor(private readonly dependencies: { client: EmailClient; repository: EmailDeliveryRepository }) {}
 
   async sendWelcome({ userId, email }: WelcomeInput) {
-    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey: `welcome:${userId}`, kind: "WELCOME" });
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey: `welcome:${userId}`, kind: "WELCOME" });
     if (!pending) return { delivered: false };
 
     try {
@@ -54,7 +67,7 @@ export class EmailDeliveryService {
   async sendPasswordReset({ userId, email, resetUrl, token }: PasswordResetInput) {
     const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
     const dedupeKey = `password-reset:${Buffer.from(tokenHash).toString("hex")}`;
-    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey, kind: "PASSWORD_RESET" });
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey, kind: "PASSWORD_RESET" });
     if (!pending) return { delivered: false };
 
     try {
@@ -76,7 +89,7 @@ export class EmailDeliveryService {
   async sendEmailVerification({ userId, email, verificationUrl, token }: EmailVerificationInput) {
     const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
     const dedupeKey = `email-verification:${Buffer.from(tokenHash).toString("hex")}`;
-    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey, kind: "EMAIL_VERIFICATION" });
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey, kind: "EMAIL_VERIFICATION" });
     if (!pending) return { delivered: false };
 
     try {
@@ -96,7 +109,7 @@ export class EmailDeliveryService {
   }
 
   async sendPasswordChanged({ userId, email, changedAt }: PasswordChangedInput) {
-    const pending = await this.dependencies.repository.createPending({ userId, dedupeKey: `password-changed:${userId}:${changedAt.toISOString()}`, kind: "PASSWORD_CHANGED" });
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, dedupeKey: `password-changed:${userId}:${changedAt.toISOString()}`, kind: "PASSWORD_CHANGED" });
     if (!pending) return { delivered: false };
 
     try {
@@ -116,7 +129,7 @@ export class EmailDeliveryService {
   }
 
   async sendResponsibleGamingAlert({ userId, alertId, email, title, message, alertsUrl }: AlertInput) {
-    const pending = await this.dependencies.repository.createPending({ userId, alertId, dedupeKey: `responsible-alert:${alertId}`, kind: "RESPONSIBLE_GAMING_ALERT" });
+    const pending = await createPendingDelivery(this.dependencies.repository, { userId, email, alertId, dedupeKey: `responsible-alert:${alertId}`, kind: "RESPONSIBLE_GAMING_ALERT" });
     if (!pending) return { delivered: false };
     try {
       const template = renderEmailTemplate({ eyebrow: "Alerta preventiva", title, bodyHtml: `<p>${message}</p>`, bodyText: message, ctaLabel: "Ver alertas", ctaUrl: alertsUrl, footerNote: "Puedes ajustar estas alertas desde Configuración." });

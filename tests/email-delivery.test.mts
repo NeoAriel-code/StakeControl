@@ -91,3 +91,21 @@ test("password change notices use the security sender and direct replies to supp
   assert.equal(sent?.fromName, "StakeControl Seguridad");
   assert.match(sent?.text ?? "", /support@getstakecontrol.com/);
 });
+
+test("restricted recipients skip non-security deliveries but still receive password resets", async () => {
+  const sent: string[] = [];
+  const repository: EmailDeliveryRepository = {
+    async createPending() { return { id: "delivery-1" }; },
+    async markSent() {},
+    async markFailed() {},
+    async isRestricted() { return true; },
+  };
+  const service = new EmailDeliveryService({ client: { send: async (input) => { sent.push(input.subject); return { id: "email-1" }; } }, repository });
+
+  const welcome = await service.sendWelcome({ userId: "user-1", email: "person@example.com" });
+  const reset = await service.sendPasswordReset({ userId: "user-1", email: "person@example.com", token: "token-1", resetUrl: "https://example.com/reset" });
+
+  assert.equal(welcome.delivered, false);
+  assert.equal(reset.delivered, true);
+  assert.deepEqual(sent, ["Restablece tu contraseña de StakeControl"]);
+});

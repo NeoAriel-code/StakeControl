@@ -5,6 +5,7 @@ import { EmailDeliveryKind, EmailDeliveryStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { getEmailConfiguration } from "@/lib/email/email-config";
 import { EmailDeliveryService } from "@/lib/email/email-delivery";
+import { type EmailWebhookRepository } from "@/lib/email/email-webhook";
 
 function withDisplayName(configuredFrom: string, displayName?: string) {
   if (!displayName) return configuredFrom;
@@ -38,6 +39,20 @@ export function getEmailDeliveryService() {
       },
       async markSent(id, update) { if (!id.startsWith("untracked-")) await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, providerMessageId: update.providerMessageId, sentAt: new Date() } }); },
       async markFailed(id, update) { if (!id.startsWith("untracked-")) await prisma.emailDelivery.update({ where: { id }, data: { status: update.status as EmailDeliveryStatus, failureReason: update.failureReason } }); },
+      async isRestricted(emailHash) { return Boolean(await prisma.restrictedEmailAddress.findUnique({ where: { emailHash }, select: { id: true } })); },
     },
   });
 }
+
+export const emailWebhookRepository: EmailWebhookRepository = {
+  async recordEvent(input) {
+    try { await prisma.emailWebhookEvent.create({ data: input }); return true; } catch { return false; }
+  },
+  async findDelivery(providerMessageId) { return prisma.emailDelivery.findUnique({ where: { providerMessageId }, select: { id: true, userId: true, kind: true } }); },
+  async updateDelivery(id, { lastEvent, occurredAt }) {
+    const timestampField = ({ "email.delivered": "deliveredAt", "email.bounced": "bouncedAt", "email.complained": "complainedAt", "email.failed": "failedAt", "email.delivery_delayed": "delayedAt" } as const)[lastEvent];
+    await prisma.emailDelivery.update({ where: { id }, data: { lastEvent, ...(timestampField ? { [timestampField]: occurredAt } : {}) } });
+  },
+  async restrictEmail(input) { await prisma.restrictedEmailAddress.upsert({ where: { emailHash: input.emailHash }, create: input, update: { reason: input.reason } }); },
+  async createSecurityAlert(input) { await prisma.accountSecurityAlert.upsert({ where: { deliveryId: input.deliveryId }, create: input, update: {} }); },
+};
