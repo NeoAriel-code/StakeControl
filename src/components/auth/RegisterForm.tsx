@@ -146,6 +146,11 @@ export function RegisterForm() {
           {state.error}
         </p>
       )}
+      {state.success && (
+        <p className="rounded-xl border border-success/30 bg-success-soft px-4 py-3 text-sm text-success">
+          {state.success} <Link href="/verify-email/resend" className="font-semibold underline underline-offset-2">Reenviar enlace</Link>
+        </p>
+      )}
 
       <SubmitButton idleLabel="Crear cuenta" pendingLabel="Creando cuenta..." />
 

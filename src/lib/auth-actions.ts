@@ -17,9 +17,11 @@ import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
 import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
 import { buildNotificationPreferences } from "@/lib/notification-preferences";
+import { sendEmailVerification } from "@/lib/email-verification-actions";
 
 export type AuthActionState = {
   error?: string;
+  success?: string;
 };
 
 const loginSchema = z.object({
@@ -112,6 +114,10 @@ export async function loginAction(
     return { error: "Credenciales incorrectas." };
   }
 
+  if (!user.emailVerifiedAt) {
+    return { error: "Confirma tu correo antes de iniciar sesión. Puedes solicitar un nuevo enlace si lo necesitas." };
+  }
+
   await createSession(user.id);
   redirect(getPostAuthRedirect(user));
 }
@@ -135,6 +141,20 @@ export async function registerAction(
   }
 
   const { email, name, password } = parsed.data;
+  const rateLimit = await checkRateLimit({
+    key: `registration:${email}`,
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: formatRateLimitMessage(rateLimit.resetAt) };
+  }
+
+  if (!process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || !getEmailDeliveryService()) {
+    return { error: "El registro por email no está disponible en este momento. Intenta nuevamente más tarde." };
+  }
+
   const registrationDefaults = getCountryRegistrationDefaults(parsed.data.country);
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -169,15 +189,9 @@ export async function registerAction(
     },
   });
 
-  const emailService = getEmailDeliveryService();
-  if (emailService) {
-    void emailService.sendWelcome({ userId: user.id, email: user.email }).catch((error) => {
-      console.error("Failed to send welcome email.", error);
-    });
-  }
+  await sendEmailVerification(user);
 
-  await createSession(user.id);
-  redirect("/onboarding");
+  return { success: "Revisa tu correo para confirmar tu cuenta. Debes verificarlo antes de iniciar sesión." };
 }
 
 export async function completeOnboardingAction(

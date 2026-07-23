@@ -19,6 +19,7 @@ const APPLICATION_PATHS = [
   "/settings",
   "/tickets",
   "/upgrade",
+  "/verify-email",
 ];
 
 const PUBLIC_PATHS = new Set(["/", "/privacy", "/terms", "/terminos"]);

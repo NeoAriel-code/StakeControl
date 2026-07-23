@@ -159,6 +159,10 @@ export async function requireUser(options: RequireUserOptions = {}) {
     redirect("/login");
   }
 
+  if (!user.emailVerifiedAt) {
+    redirect("/verify-email/resend");
+  }
+
   if (!allowIncompleteOnboarding && !isOnboardingComplete(user)) {
     redirect("/onboarding");
   }
@@ -171,6 +175,10 @@ export async function redirectAuthenticatedUser() {
 
   if (!user) {
     return;
+  }
+
+  if (!user.emailVerifiedAt) {
+    redirect("/verify-email/resend");
   }
 
   redirect(getPostAuthRedirect(user));

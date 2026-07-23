@@ -8,6 +8,10 @@ test("system routes on the public host move to the application subdomain", () =>
     "https://app.getstakecontrol.com/login?next=%2Fdashboard"
   );
   assert.equal(
+    getHostRedirect("www.getstakecontrol.com", "/verify-email", "?token=abc"),
+    "https://app.getstakecontrol.com/verify-email?token=abc"
+  );
+  assert.equal(
     getHostRedirect("getstakecontrol.com", "/bets/abc", ""),
     "https://app.getstakecontrol.com/bets/abc"
   );

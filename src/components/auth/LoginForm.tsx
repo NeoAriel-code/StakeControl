@@ -46,6 +46,12 @@ export function LoginForm() {
         </p>
       )}
 
+      <p className="text-right text-sm">
+        <Link href="/verify-email/resend" className="font-semibold text-primary hover:text-primary-hover">
+          Reenviar verificación
+        </Link>
+      </p>
+
       <SubmitButton idleLabel="Iniciar sesión" pendingLabel="Ingresando..." />
 
       <p className="text-right text-sm">
