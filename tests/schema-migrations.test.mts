@@ -39,6 +39,18 @@ test("skips a migration that is already recorded in the schema ledger", () => {
   );
 });
 
+test("registers the email verification migration for the production runner", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260723090000_add_email_verification",
+  );
+
+  assert.deepEqual(migration, {
+    name: "20260723090000_add_email_verification",
+    sqlPath: "prisma/migrations/20260723090000_add_email_verification/migration.sql",
+    requiredTables: ["EmailVerificationToken"],
+  });
+});
+
 test("the build command runs the production migration runner before Next", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 
