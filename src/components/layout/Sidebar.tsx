@@ -104,12 +104,21 @@ const NAV_ITEMS: NavItem[] = [
     icon: User,
     group: "cuenta",
   },
+  {
+    id: "admin",
+    label: "Panel Admin",
+    href: "/admin",
+    icon: ShieldCheck,
+    badge: "ADMIN",
+    group: "admin",
+  },
 ];
 
 const NAV_GROUPS: { id: string; label: string }[] = [
   { id: "principal", label: "Principal" },
   { id: "control", label: "Control y Alertas" },
   { id: "cuenta", label: "Mi Cuenta" },
+  { id: "admin", label: "Administración" },
 ];
 
 /* ─────────────────────────────────────────────────────
@@ -118,6 +127,7 @@ const NAV_GROUPS: { id: string; label: string }[] = [
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
 }
 
 function isNavItemActive(pathname: string, item: NavItem) {

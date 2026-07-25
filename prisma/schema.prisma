@@ -82,6 +82,7 @@ model User {
   name                   String?
   country                String?
   preferredSports        String?
+  isAdmin                Boolean                  @default(false)
   ageConfirmed           Boolean                  @default(false)
   termsAcceptedAt        DateTime?
   responsibleGamingAcceptedAt DateTime?
