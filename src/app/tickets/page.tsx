@@ -154,7 +154,7 @@ export default async function TicketsPage() {
                     <Link
                       key={ticket.id}
                       href={`/tickets/${ticket.id}/review`}
-                      className="rounded-2xl border border-border bg-background p-4 transition hover:border-primary/25 hover:bg-accent/40"
+                      className="min-w-0 rounded-2xl border border-border bg-background p-4 transition hover:border-primary/25 hover:bg-accent/40"
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-primary">
