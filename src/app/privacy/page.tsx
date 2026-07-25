@@ -64,8 +64,10 @@ export default function PrivacyPage() {
             StakeControl no vende datos personales. Para prestar el servicio podemos utilizar proveedores tecnológicos
             que procesan información por cuenta de StakeControl: Vercel para hosting y despliegue; Turso/libSQL para la
             base de datos; Supabase Storage para archivos privados de tickets cuando está configurado; Google Cloud
-            Vision para OCR cuando está configurado; y OpenAI para extracción estructurada y análisis de IA cuando está
-            configurado. Estos proveedores pueden procesar datos fuera de Chile, de acuerdo con sus regiones operativas
+            Vision para OCR cuando está configurado; OpenAI para extracción estructurada y análisis de IA cuando está
+            configurado; y PostHog para analítica opcional de producto cuando das tu consentimiento. PostHog recibe
+            únicamente nombres de eventos de uso y categorías técnicas acotadas. No enviamos apuestas, tickets,
+            valores financieros ni identificadores directos de cuenta para analítica. Estos proveedores pueden procesar datos fuera de Chile, de acuerdo con sus regiones operativas
             y los acuerdos aplicables.
           </p>
         </section>
@@ -112,8 +114,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold">Cookies y almacenamiento local</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Usamos cookies y almacenamiento local esenciales para recordar preferencias y mantener el funcionamiento
-            del servicio. Si incorporamos analítica u otras tecnologías no esenciales, actualizaremos esta política y
-            solicitaremos el aviso o consentimiento que corresponda.
+            del servicio. La analítica de producto es opcional: solicitamos tu consentimiento antes de activarla y
+            puedes retirarlo en Configuración cuando quieras.
           </p>
         </section>
 

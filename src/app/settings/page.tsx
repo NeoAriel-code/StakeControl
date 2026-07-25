@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ProfilePreferencesForm } from "@/components/settings/ProfilePreferencesForm";
 import { EmailNotificationPreferencesForm } from "@/components/settings/EmailNotificationPreferencesForm";
+import { AnalyticsPreferences } from "@/components/settings/AnalyticsPreferences";
 import { buildNotificationPreferences } from "@/lib/notification-preferences";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -60,6 +61,8 @@ export default async function SettingsPage() {
             />
           </div>
         </section>
+
+        <AnalyticsPreferences />
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">Alertas por email</h2>

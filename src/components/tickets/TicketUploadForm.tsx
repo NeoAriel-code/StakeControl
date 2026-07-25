@@ -7,6 +7,7 @@ import {
   uploadTicketAction,
   type TicketUploadActionState,
 } from "@/lib/ticket-actions";
+import { captureProductEvent } from "@/lib/analytics/product-analytics";
 
 const initialState: TicketUploadActionState = {};
 
@@ -91,7 +92,11 @@ export function TicketUploadForm() {
   }
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={action} onSubmit={() => {
+      const type = selectedFile?.type;
+      const file_type = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+      if (selectedFile) captureProductEvent("ticket_upload_started", { file_type });
+    }} className="space-y-6">
       <div
         role="button"
         tabIndex={0}

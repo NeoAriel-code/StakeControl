@@ -51,6 +51,12 @@ Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON
 | `TURSO_AUTH_TOKEN` | Token para una conexión Turso remota. | Opcional, según `DATABASE_URL`. |
 | `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` | Entrega de recuperación de contraseña. | Requeridas solo al activar envío de correo. |
 | `PLAN_TESTER_EMAILS`, `DEMO_DATA_EMAILS` | Controles privados de QA. | Opcionales; no documentar valores personales. |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Clave pública para analítica de producto opcional. | Opcional; sin ella no se inicializa analítica. |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Host de ingesta PostHog. | Opcional; usa PostHog Cloud de EE. UU. por defecto. |
+
+### Analítica de producto
+
+StakeControl solicita consentimiento antes de inicializar PostHog. La integración usa solamente eventos de uso con un catálogo cerrado; no envía apuestas, tickets, texto OCR, importes, identificadores de cuenta ni URLs. En el proyecto de PostHog deben permanecer desactivados Autocapture, Session Replay, perfiles de personas, feature flags y error tracking.
 
 El servicio solo acepta imágenes JPG, PNG y WEBP para tickets; PDF no está habilitado. En producción, OCR, IA y almacenamiento fallan de forma segura si la configuración no es válida.
 
