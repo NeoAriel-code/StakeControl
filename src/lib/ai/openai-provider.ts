@@ -1,6 +1,14 @@
 import type { AiProvider, AiStructuredResponse } from "@/lib/ai/ai-provider";
 
-type OpenAiResponse = {
+type OpenAiChatCompletionResponse = {
+  id?: string;
+  choices?: Array<{
+    message?: {
+      role?: string;
+      content?: string | null;
+    };
+    finish_reason?: string;
+  }>;
   output_text?: string;
   output?: Array<{
     content?: Array<{
@@ -12,11 +20,11 @@ type OpenAiResponse = {
 };
 
 type OpenAiErrorResponse = {
-  error?: { message?: string };
+  error?: { message?: string; type?: string; code?: string };
 };
 
 function getRequestTimeoutMs(task: Parameters<AiProvider["generateStructured"]>[0]["task"]) {
-  const defaultTimeout = task === "ticket_extraction" ? 8000 : 15000;
+  const defaultTimeout = task === "ticket_extraction" ? 15000 : 25000;
   const configuredTimeout = task === "ticket_extraction" ? Number(process.env.AI_TICKET_TIMEOUT_MS) : NaN;
 
   return Number.isFinite(configuredTimeout) && configuredTimeout >= 1000 && configuredTimeout <= 30000
@@ -24,7 +32,11 @@ function getRequestTimeoutMs(task: Parameters<AiProvider["generateStructured"]>[
     : defaultTimeout;
 }
 
-export function getStructuredOutputText(payload: OpenAiResponse) {
+export function getStructuredOutputText(payload: OpenAiChatCompletionResponse): string | null {
+  if (payload.choices?.[0]?.message?.content?.trim()) {
+    return payload.choices[0].message.content;
+  }
+
   if (payload.output_text?.trim()) {
     return payload.output_text;
   }
@@ -48,27 +60,30 @@ export class OpenAiProvider implements AiProvider {
       throw new Error("OPENAI_API_KEY no está configurada.");
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const requestBody = {
+      model: input.model,
+      messages: [
+        { role: "system", content: input.system },
+        { role: "user", content: input.prompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: input.schemaName,
+          strict: true,
+          schema: input.jsonSchema,
+        },
+      },
+    };
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
       signal: AbortSignal.timeout(getRequestTimeoutMs(input.task)),
-      body: JSON.stringify({
-        model: input.model,
-        instructions: input.system,
-        input: input.prompt,
-        store: false,
-        text: {
-          format: {
-            type: "json_schema",
-            name: input.schemaName,
-            strict: true,
-            schema: input.jsonSchema,
-          },
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -79,7 +94,7 @@ export class OpenAiProvider implements AiProvider {
       );
     }
 
-    const payload = (await response.json()) as OpenAiResponse;
+    const payload = (await response.json()) as OpenAiChatCompletionResponse;
     const outputText = getStructuredOutputText(payload);
     if (!outputText) {
       throw new Error("OpenAI no devolvió una salida estructurada.");
