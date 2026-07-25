@@ -10,5 +10,7 @@ test("application routes send the required security headers", async () => {
   assert.match(config, /frame-ancestors 'none'/);
   assert.match(config, /object-src 'none'/);
   assert.match(config, /script-src[^;]*https:\/\/us\.i\.posthog\.com/);
+  assert.match(config, /script-src[^;]*https:\/\/us-assets\.i\.posthog\.com/);
   assert.match(config, /connect-src[^;]*https:\/\/us\.i\.posthog\.com/);
+  assert.match(config, /connect-src[^;]*https:\/\/us-assets\.i\.posthog\.com/);
 });
