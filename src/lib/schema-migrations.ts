@@ -35,6 +35,12 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
       { table: "User", column: "betaTermsVersion" },
     ],
   },
+  {
+    name: "20260724233000_add_user_is_admin",
+    sqlPath: "prisma/migrations/20260724233000_add_user_is_admin/migration.sql",
+    requiredTables: ["User"],
+    requiredColumns: [{ table: "User", column: "isAdmin" }],
+  },
 ];
 
 export type SchemaMigrationPlan = {
