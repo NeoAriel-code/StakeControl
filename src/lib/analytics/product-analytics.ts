@@ -18,6 +18,9 @@ export type ProductAnalyticsProperties = Partial<{
   manual_corrections_count: number;
   confidence_band: "low" | "medium" | "high";
   file_type: "png" | "jpg" | "webp";
+  feedback_category: "error" | "confusing_feature" | "suggestion";
+  technical_data_authorized: boolean;
+  contact_authorized: boolean;
 }>;
 
 let initialized = false;

@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import { ProductFeedbackWidget } from "@/components/feedback/ProductFeedbackWidget";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -57,6 +58,7 @@ export function AppLayout({
       >
         {children}
       </main>
+      <ProductFeedbackWidget />
     </div>
   );
 }

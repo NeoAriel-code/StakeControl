@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminFeedbackPanels } from "@/components/admin/AdminFeedbackPanels";
 import {
   Users,
   Crown,
@@ -58,7 +60,7 @@ interface UserTicketDetail {
   aiExtraction: {
     status: string;
     rawText?: string;
-    extractedData?: any;
+    extractedData?: unknown;
   } | null;
   bet: {
     id: string;
@@ -154,11 +156,13 @@ export default function AdminDashboardClient({
   };
 
   useEffect(() => {
-    fetchStats();
+    const timer = window.setTimeout(() => { void fetchStats(); }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    fetchUsers();
+    const timer = window.setTimeout(() => { void fetchUsers(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchUsers]);
 
   const handleChangePlan = async (userId: string, newPlan: "FREE" | "PREMIUM_MONTHLY" | "PREMIUM_ANNUAL") => {
@@ -382,6 +386,8 @@ export default function AdminDashboardClient({
             </div>
           </div>
         )}
+
+        <AdminFeedbackPanels />
 
         {/* Search, Filter & Users Table Container */}
         <div className="bg-slate-900/70 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
@@ -708,9 +714,12 @@ export default function AdminDashboardClient({
                         >
                           <div className="h-16 w-16 bg-slate-800 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 flex items-center justify-center text-slate-500">
                             {ticket.imageUrl ? (
-                              <img
+                              <Image
                                 src={ticket.imageUrl}
                                 alt="Ticket"
+                                width={64}
+                                height={64}
+                                unoptimized
                                 className="h-full w-full object-cover"
                               />
                             ) : (

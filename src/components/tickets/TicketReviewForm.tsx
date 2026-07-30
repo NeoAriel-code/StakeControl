@@ -320,6 +320,18 @@ export function TicketReviewForm({
         </p>
       </div>
 
+      <fieldset className="rounded-2xl border border-border bg-card p-4">
+        <legend className="px-1 text-sm font-semibold text-foreground">¿La extracción fue correcta? <span className="font-normal text-muted-foreground">(opcional)</span></legend>
+        <div className="mt-3 flex flex-col gap-2 text-sm sm:flex-row sm:gap-5">
+          <label className="flex items-center gap-2"><input type="radio" name="ocrRating" value="COMPLETELY_CORRECT" /> Sí, completamente</label>
+          <label className="flex items-center gap-2"><input type="radio" name="ocrRating" value="PARTIALLY_CORRECT" /> Parcialmente</label>
+          <label className="flex items-center gap-2"><input type="radio" name="ocrRating" value="INCORRECT" /> No</label>
+        </div>
+        <label className="mt-3 block text-sm font-medium text-foreground">Comentario opcional
+          <textarea name="ocrFeedbackComment" maxLength={1000} rows={2} className="mt-2 w-full rounded-xl border border-border-strong bg-background px-3 py-2 text-sm" placeholder="Qué dato necesitó corrección (sin copiar el ticket)." />
+        </label>
+      </fieldset>
+
       {state.error && (
         <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">
           {state.error}

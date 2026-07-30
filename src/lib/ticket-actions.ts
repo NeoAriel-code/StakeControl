@@ -29,6 +29,8 @@ import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
 import { reportOperationalError } from "@/lib/observability/sentry";
 
+const ocrRatings = ["COMPLETELY_CORRECT", "PARTIALLY_CORRECT", "INCORRECT"] as const;
+
 export type TicketUploadActionState = {
   error?: string;
 };
@@ -229,6 +231,7 @@ export async function finalizeTicketReviewAction(
       error: "No se encontró la extracción asociada al ticket.",
     };
   }
+  const aiExtractionId = ticketImage.aiExtraction.id;
 
   const limits = await prisma.userLimits.findUnique({
     where: { userId: user.id },
@@ -242,6 +245,12 @@ export async function finalizeTicketReviewAction(
 
   try {
     const legs = parseTicketLegs(formData);
+    const rawRating = formData.get("ocrRating");
+    const ocrRating = typeof rawRating === "string" && ocrRatings.includes(rawRating as typeof ocrRatings[number])
+      ? rawRating as typeof ocrRatings[number]
+      : undefined;
+    const rawOcrComment = formData.get("ocrFeedbackComment");
+    const ocrFeedbackComment = typeof rawOcrComment === "string" && rawOcrComment.trim() ? rawOcrComment.trim().slice(0, 1000) : null;
     const primaryLeg = legs[0];
 
     if (!primaryLeg) {
@@ -368,6 +377,14 @@ export async function finalizeTicketReviewAction(
           }),
         },
       });
+
+      if (ocrRating) {
+        await transaction.ocrExtractionFeedback.upsert({
+          where: { aiExtractionId },
+          create: { aiExtractionId, rating: ocrRating, comment: ocrFeedbackComment },
+          update: { rating: ocrRating, comment: ocrFeedbackComment },
+        });
+      }
     });
 
     await evaluateResponsibleGamingAlerts(user.id);

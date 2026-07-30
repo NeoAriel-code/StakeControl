@@ -13,9 +13,12 @@ export function AnalyticsConsent() {
   const enabled = Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY);
 
   useEffect(() => {
-    const stored = getAnalyticsConsent();
-    setConsent(stored);
-    if (stored === "granted") enableProductAnalytics();
+    const timer = window.setTimeout(() => {
+      const stored = getAnalyticsConsent();
+      setConsent(stored);
+      if (stored === "granted") enableProductAnalytics();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (!enabled || consent !== null) return null;

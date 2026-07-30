@@ -69,7 +69,7 @@ export class EmailDeliveryService {
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
-    } catch (error) {
+    } catch {
       console.error("Transactional email delivery failed.", { kind: "WELCOME" });
       this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
@@ -95,7 +95,7 @@ export class EmailDeliveryService {
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
-    } catch (error) {
+    } catch {
       console.error("Transactional email delivery failed.", { kind: "PASSWORD_RESET" });
       this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
@@ -121,7 +121,7 @@ export class EmailDeliveryService {
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
-    } catch (error) {
+    } catch {
       console.error("Transactional email delivery failed.", { kind: "EMAIL_VERIFICATION" });
       this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
@@ -145,7 +145,7 @@ export class EmailDeliveryService {
       });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
-    } catch (error) {
+    } catch {
       console.error("Transactional email delivery failed.", { kind: "PASSWORD_CHANGED" });
       this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());
@@ -197,7 +197,7 @@ export class EmailDeliveryService {
       const response = await this.dependencies.client.send({ to: email, subject: title, sender: "alerts", idempotencyKey: `responsible-alert:${alertId}`, ...template });
       await markSentSafely(this.dependencies.repository, pending.id, response.id);
       return { delivered: true, deliveryId: pending.id };
-    } catch (error) {
+    } catch {
       console.error("Transactional email delivery failed.", { kind: "RESPONSIBLE_GAMING_ALERT" });
       this.reportDeliveryFailure(userId);
       await markFailedSafely(this.dependencies.repository, pending.id, deliveryFailureReason());

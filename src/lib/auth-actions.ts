@@ -277,6 +277,8 @@ export async function acceptBetaTermsAction(
   _prevState: AuthActionState,
   _formData: FormData,
 ): Promise<AuthActionState> {
+  void _prevState;
+  void _formData;
   const user = await requireUser({ allowUnacceptedBetaTerms: true });
   const now = new Date();
 

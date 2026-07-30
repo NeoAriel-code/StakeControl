@@ -59,6 +59,13 @@ export default function PrivacyPage() {
         </section>
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold">Feedback y evaluación de OCR</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Puedes enviar feedback dentro de la aplicación. Guardamos su categoría, descripción y pantalla actual; los datos técnicos mínimos (familia de navegador, sistema operativo y versión) y la posibilidad de contactarte son consentimientos independientes. Sin consentimiento de contacto, el feedback no conserva tu usuario ni email. La evaluación opcional de OCR se guarda sólo al confirmar una apuesta y se asocia a la extracción para medir calidad agregada; no incorpora ni muestra el ticket, texto OCR, apuestas, importes o selecciones.
+          </p>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Proveedores y transferencias</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             StakeControl no vende datos personales. Para prestar el servicio podemos utilizar proveedores tecnológicos
@@ -115,7 +122,7 @@ export default function PrivacyPage() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Usamos cookies y almacenamiento local esenciales para recordar preferencias y mantener el funcionamiento
             del servicio. La analítica de producto es opcional: solicitamos tu consentimiento antes de activarla y
-            puedes retirarlo en Configuración cuando quieras.
+            puedes retirarlo en Configuración cuando quieras. El feedback se guarda aunque no aceptes analítica; sólo entonces se registra el evento técnico `feedback_submitted`, sin descripciones ni datos sensibles.
           </p>
         </section>
 

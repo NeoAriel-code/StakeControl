@@ -75,6 +75,24 @@ enum OddsFormat {
   AMERICAN
 }
 
+enum ProductFeedbackCategory {
+  ERROR
+  CONFUSING_FEATURE
+  SUGGESTION
+}
+
+enum ProductFeedbackReviewStatus {
+  NEW
+  IN_REVIEW
+  RESOLVED
+}
+
+enum OcrExtractionRating {
+  COMPLETELY_CORRECT
+  PARTIALLY_CORRECT
+  INCORRECT
+}
+
 model User {
   id                     String                   @id @default(cuid())
   email                  String                   @unique
@@ -107,6 +125,7 @@ model User {
   notificationPreferences NotificationPreferences?
   emailDeliveries        EmailDelivery[]
   accountSecurityAlerts  AccountSecurityAlert[]
+  productFeedback        ProductFeedback[]
 
   @@index([createdAt])
 }
@@ -208,6 +227,34 @@ model AIExtraction {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   betTicketImage    BetTicketImage @relation(fields: [betTicketImageId], references: [id], onDelete: Cascade)
+  feedback          OcrExtractionFeedback?
+}
+
+model ProductFeedback {
+  id                String                      @id @default(cuid())
+  category          ProductFeedbackCategory
+  description       String
+  currentPath       String
+  technicalData     Json?
+  contactUserId     String?
+  reviewStatus      ProductFeedbackReviewStatus @default(NEW)
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  contactUser       User?                       @relation(fields: [contactUserId], references: [id], onDelete: SetNull)
+
+  @@index([category, reviewStatus, createdAt])
+  @@index([contactUserId])
+}
+
+model OcrExtractionFeedback {
+  id             String              @id @default(cuid())
+  aiExtractionId String              @unique
+  rating         OcrExtractionRating
+  comment        String?
+  createdAt      DateTime            @default(now())
+  aiExtraction   AIExtraction        @relation(fields: [aiExtractionId], references: [id], onDelete: Cascade)
+
+  @@index([rating, createdAt])
 }
 
 model UserLimits {

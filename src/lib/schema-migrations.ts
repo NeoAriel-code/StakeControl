@@ -41,6 +41,11 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
     requiredTables: ["User"],
     requiredColumns: [{ table: "User", column: "isAdmin" }],
   },
+  {
+    name: "20260730090000_add_product_feedback",
+    sqlPath: "prisma/migrations/20260730090000_add_product_feedback/migration.sql",
+    requiredTables: ["ProductFeedback", "OcrExtractionFeedback"],
+  },
 ];
 
 export type SchemaMigrationPlan = {
