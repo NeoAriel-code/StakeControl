@@ -123,6 +123,37 @@ test("ticket routing keeps future events pending when a cash out offer is visibl
   assert.ok(result.ticket.doubtfulFields.includes("result"));
 });
 
+test("ticket routing recovers every Betano bet builder leg when the AI returns a single leg", async () => {
+  const provider: AiProvider = {
+    async generateStructured<T>(input: Parameters<AiProvider["generateStructured"]>[0]) {
+      return { data: extraction(0.9) as T, model: input.model, estimatedTokens: 9 };
+    },
+  };
+
+  const result = await parseTicketWithRouting(
+    [
+      "Betano",
+      "Creador de Apuestas",
+      "Independiente Rivadavia vs CA Huracan",
+      "3+",
+      "Juan Bisanz Remates totales",
+      "3+",
+      "Oscar Cortes Remates totales",
+      "3+",
+      "Lucas Blondel Remates totales",
+    ].join("\n"),
+    provider
+  );
+
+  assert.equal(result.ticket.betType, BetType.BET_BUILDER);
+  assert.equal(result.ticket.legs.length, 3);
+  assert.deepEqual(
+    result.ticket.legs.map((leg) => leg.selection),
+    ["Juan Bisanz 3+", "Oscar Cortes 3+", "Lucas Blondel 3+"]
+  );
+  assert.ok(result.ticket.doubtfulFields.includes("legs"));
+});
+
 test("mock AI does not invent ticket fields from real OCR text", async () => {
   const result = await parseTicketWithRouting(
     "Betano\nSimple $50.000,00\nNoruega\nInglaterra",

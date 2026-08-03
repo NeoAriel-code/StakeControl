@@ -12,6 +12,44 @@ import { reportOperationalError } from "@/lib/observability/sentry";
 const MIN_CONFIDENCE = 0.85;
 const TICKET_SYSTEM_PROMPT = "Extrae exclusivamente datos ya presentes en el texto OCR. No inventes valores: usa null para campos opcionales desconocidos; si no está la fecha de colocación, usa null en placedAt, y si no está el inicio del evento, usa null en eventStartAt; baja confidenceScore y agrega el campo ausente en doubtfulFields. Para betType usa exactamente uno de estos valores: SINGLE, COMBO, BET_BUILDER o SYSTEM. Para result usa exactamente: PENDING, WON, LOST, VOID o CASHOUT. Si un icono o un mercado inequívoco identifica el deporte, úsalo; de lo contrario usa null. Un botón u oferta que diga CASH OUT no prueba que se haya realizado un cashout: usa CASHOUT solo cuando el OCR confirma una operación completada. Si el evento programado aún no comienza, el resultado debe ser PENDING. Incluye cada selección en legs: una simple tiene una; una múltiple tiene dos o más, normalmente de eventos distintos; un Bet Builder tiene dos o más del mismo evento y usa betType BET_BUILDER. La cuota principal es la cuota total del ticket; cada pierna puede no tener cuota. Esto solo prepara una revisión humana; nunca recomienda apuestas ni decisiones.";
 
+const BET_BUILDER_MARKER = /\b(?:creador\s+de\s+apuestas|bet\s*builder|same\s*game\s*parlay)\b/i;
+const PLAYER_STAT_MARKET = /^(.*?)\s+(remates\s+totales)$/i;
+
+function normalizeSelectionLine(value: string) {
+  const match = value.match(/\b(\d+(?:[.,]\d+)?\s*[+\-])(?=\s|$)/);
+  return match?.[1]?.replace(/\s+/g, "") ?? undefined;
+}
+
+function getBetBuilderLegsFromOcr(rawText: string, event: string, result: BetResult, sport?: string) {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return lines.flatMap((line, index) => {
+    const marketMatch = line.match(PLAYER_STAT_MARKET);
+    if (!marketMatch?.[1]) return [];
+
+    const player = marketMatch[1].replace(/^[^\p{L}\p{N}]+/u, "").trim();
+    if (player.length < 3) return [];
+
+    const selection = [lines[index - 1], lines[index - 2], lines[index - 3]]
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .map(normalizeSelectionLine)
+      .find(Boolean);
+
+    return [{
+      event,
+      sport,
+      league: undefined,
+      market: marketMatch[2],
+      selection: selection ? `${player} ${selection}` : player,
+      odds: undefined,
+      result,
+    }];
+  });
+}
+
 export type TicketRoutingResult = { ticket: ExtractedBetTicket; model: string; estimatedTokens: number; fallbackUsed: boolean };
 export type TicketExtractionContext = {
   preferredCurrency?: string;
@@ -114,13 +152,12 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
   const inferredSport = inferSportFromTicket(rawText);
   const resultWasCorrected = isFutureScheduledEvent(rawText, context) && parsed.result !== BetResult.PENDING;
   const event = parsed.event ?? "Evento por confirmar";
-  const betType = parsed.betType ?? BetType.SINGLE;
   const stake = parsed.stake ?? 0;
   const odds = parsed.odds ?? 1.01;
   const currency = currencyWasAssumed ? preferredCurrency ?? "CLP" : parsed.currency;
   const result = resultWasCorrected || !parsed.result ? BetResult.PENDING : parsed.result;
   const netProfit = parsed.netProfit ?? 0;
-  const legs = parsed.legs ?? [{
+  const aiLegs = parsed.legs ?? [{
     event: parsed.event,
     sport: parsed.sport,
     league: parsed.league,
@@ -129,6 +166,12 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
     odds: parsed.odds,
     result: parsed.result,
   }];
+  const ocrBetBuilderLegs = BET_BUILDER_MARKER.test(rawText)
+    ? getBetBuilderLegsFromOcr(rawText, event, result, parsed.sport ?? inferredSport)
+    : [];
+  const recoveredBetBuilderLegs = ocrBetBuilderLegs.length > aiLegs.length ? ocrBetBuilderLegs : undefined;
+  const legs = recoveredBetBuilderLegs ?? aiLegs;
+  const betType = recoveredBetBuilderLegs ? BetType.BET_BUILDER : parsed.betType ?? BetType.SINGLE;
   const missingFields = [
     ...(parsed.sportsbook ? [] : ["sportsbook"]),
     ...(parsed.event ? [] : ["event"]),
@@ -139,6 +182,7 @@ function toExtractedTicket(value: unknown, rawText: string, context: TicketExtra
     ...(parsed.result ? [] : ["result"]),
     ...(parsed.netProfit === null ? ["netProfit"] : []),
     ...(parsed.legs ? [] : ["legs"]),
+    ...(recoveredBetBuilderLegs ? ["betType", "legs"] : []),
   ];
   return extractedBetTicketSchema.parse({
     ...parsed,
