@@ -3,6 +3,7 @@ export type ManagedSchemaMigration = {
   sqlPath: string;
   requiredTables: readonly string[];
   requiredColumns?: readonly { table: string; column: string }[];
+  requiredIndexes?: readonly string[];
 };
 
 export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
@@ -46,6 +47,17 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
     sqlPath: "prisma/migrations/20260730090000_add_product_feedback/migration.sql",
     requiredTables: ["ProductFeedback", "OcrExtractionFeedback"],
   },
+  {
+    name: "20260803090000_add_production_performance_indexes",
+    sqlPath: "prisma/migrations/20260803090000_add_production_performance_indexes/migration.sql",
+    requiredTables: ["Bet", "ResponsibleGamingAlert", "Subscription", "ProductFeedback"],
+    requiredIndexes: [
+      "Bet_userId_result_placedAt_idx",
+      "ResponsibleGamingAlert_userId_acknowledgedAt_createdAt_idx",
+      "Subscription_userId_status_createdAt_idx",
+      "ProductFeedback_reviewStatus_createdAt_idx",
+    ],
+  },
 ];
 
 export type SchemaMigrationPlan = {
@@ -58,12 +70,35 @@ export function planSchemaMigration(
   existingTables: ReadonlySet<string>,
   recordedNames: ReadonlySet<string>,
   existingColumns: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
+  existingIndexes: ReadonlySet<string> = new Set(),
 ): SchemaMigrationPlan {
+  const requiredIndexes = migration.requiredIndexes ?? [];
+  const existingRequiredIndexes = requiredIndexes.filter((index) => existingIndexes.has(index));
+
   if (recordedNames.has(migration.name)) {
+    if (requiredIndexes.length > 0 && existingRequiredIndexes.length !== requiredIndexes.length) {
+      return { action: "inconsistent", name: migration.name };
+    }
     return { action: "skip", name: migration.name };
   }
 
   const existingRequiredTables = migration.requiredTables.filter((table) => existingTables.has(table));
+
+  if (requiredIndexes.length > 0) {
+    if (existingRequiredTables.length !== migration.requiredTables.length) {
+      return { action: "inconsistent", name: migration.name };
+    }
+
+    if (existingRequiredIndexes.length === requiredIndexes.length) {
+      return { action: "baseline", name: migration.name };
+    }
+
+    if (existingRequiredIndexes.length === 0) {
+      return { action: "apply", name: migration.name };
+    }
+
+    return { action: "inconsistent", name: migration.name };
+  }
 
   if (migration.requiredColumns && migration.requiredColumns.length > 0) {
     if (existingRequiredTables.length !== migration.requiredTables.length) {

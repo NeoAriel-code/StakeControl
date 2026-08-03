@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createClient } from "@libsql/client";
+import { assertProductionDatabaseConfiguration } from "../src/lib/database-config";
 import { MANAGED_SCHEMA_MIGRATIONS, planSchemaMigration } from "../src/lib/schema-migrations";
 
 function checksumFor(sql: string) {
@@ -13,6 +14,8 @@ async function run() {
     console.info("[schema-migrations] skipped outside Vercel Production");
     return;
   }
+
+  assertProductionDatabaseConfiguration();
 
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -39,11 +42,13 @@ async function run() {
       const transaction = await client.transaction();
 
       try {
-        const [tableResult, ledgerResult] = await Promise.all([
+        const [tableResult, indexResult, ledgerResult] = await Promise.all([
           transaction.execute("SELECT name FROM sqlite_master WHERE type = 'table'"),
+          transaction.execute("SELECT name FROM sqlite_master WHERE type = 'index'"),
           transaction.execute('SELECT name, checksum FROM "AppSchemaMigration"'),
         ]);
         const existingTables = new Set(tableResult.rows.map((row) => String(row.name)));
+        const existingIndexes = new Set(indexResult.rows.map((row) => String(row.name)));
         const ledger = new Map(
           ledgerResult.rows.map((row) => [String(row.name), String(row.checksum)] as const),
         );
@@ -60,7 +65,13 @@ async function run() {
             new Set(result.rows.map((row) => String(row.name))),
           ] as const),
         );
-        const plan = planSchemaMigration(migration, existingTables, new Set(ledger.keys()), existingColumns);
+        const plan = planSchemaMigration(
+          migration,
+          existingTables,
+          new Set(ledger.keys()),
+          existingColumns,
+          existingIndexes,
+        );
 
         if (plan.action === "inconsistent") {
           throw new Error(

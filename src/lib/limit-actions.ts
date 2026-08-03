@@ -116,7 +116,7 @@ export async function updateLimitsAction(
         pauseAllBetting: Boolean(pauseUntil),
       },
     });
-    await evaluateResponsibleGamingAlerts(user.id);
+    await evaluateResponsibleGamingAlerts(user.id, user.timezone);
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "No se pudieron guardar los límites.",

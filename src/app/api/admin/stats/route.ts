@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { isAdminUser } from "@/lib/admin";
+import { withDatabaseSpan } from "@/lib/observability/database-spans";
 import prisma from "@/lib/prisma";
+
+type PlanCountRow = {
+  totalUsers: number | bigint;
+  freeUsers: number | bigint;
+  premiumMonthlyUsers: number | bigint;
+  premiumAnnualUsers: number | bigint;
+};
 
 export async function GET() {
   try {
@@ -14,14 +23,43 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [
-      totalUsers,
+      planCountRows,
       newUsersThisMonth,
       totalTicketsUploaded,
       totalBetsCreated,
       ticketsThisMonth,
-      allUsersWithSub,
     ] = await Promise.all([
-      prisma.user.count(),
+      withDatabaseSpan(
+        "admin.stats.plan-counts",
+        "aggregate",
+        () => prisma.$queryRaw<PlanCountRow[]>(Prisma.sql`
+          WITH "activeSubscriptions" AS (
+            SELECT
+              "userId",
+              "planType",
+              ROW_NUMBER() OVER (
+                PARTITION BY "userId" ORDER BY "createdAt" DESC, "id" DESC
+              ) AS "position"
+            FROM "Subscription"
+            WHERE "status" = 'active'
+          )
+          SELECT
+            COUNT(*) AS "totalUsers",
+            SUM(CASE
+              WHEN "activeSubscriptions"."planType" IS NULL
+                OR "activeSubscriptions"."planType" = 'FREE' THEN 1 ELSE 0 END
+            ) AS "freeUsers",
+            SUM(CASE WHEN "activeSubscriptions"."planType" = 'PREMIUM_MONTHLY' THEN 1 ELSE 0 END)
+              AS "premiumMonthlyUsers",
+            SUM(CASE WHEN "activeSubscriptions"."planType" = 'PREMIUM_ANNUAL' THEN 1 ELSE 0 END)
+              AS "premiumAnnualUsers"
+          FROM "User"
+          LEFT JOIN "activeSubscriptions"
+            ON "activeSubscriptions"."userId" = "User"."id"
+            AND "activeSubscriptions"."position" = 1
+        `),
+        () => 1,
+      ),
       prisma.user.count({
         where: { createdAt: { gte: startOfMonth } },
       }),
@@ -30,34 +68,12 @@ export async function GET() {
       prisma.betTicketImage.count({
         where: { uploadedAt: { gte: startOfMonth } },
       }),
-      prisma.user.findMany({
-        select: {
-          id: true,
-          subscriptions: {
-            where: { status: "active" },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            select: { planType: true },
-          },
-        },
-      }),
     ]);
-
-    // Calculate plan counts
-    let freeUsers = 0;
-    let premiumMonthlyUsers = 0;
-    let premiumAnnualUsers = 0;
-
-    for (const u of allUsersWithSub) {
-      const activeSub = u.subscriptions[0];
-      if (!activeSub || activeSub.planType === "FREE") {
-        freeUsers++;
-      } else if (activeSub.planType === "PREMIUM_MONTHLY") {
-        premiumMonthlyUsers++;
-      } else if (activeSub.planType === "PREMIUM_ANNUAL") {
-        premiumAnnualUsers++;
-      }
-    }
+    const planCounts = planCountRows[0];
+    const totalUsers = Number(planCounts?.totalUsers ?? 0);
+    const freeUsers = Number(planCounts?.freeUsers ?? 0);
+    const premiumMonthlyUsers = Number(planCounts?.premiumMonthlyUsers ?? 0);
+    const premiumAnnualUsers = Number(planCounts?.premiumAnnualUsers ?? 0);
 
     const totalPremiumUsers = premiumMonthlyUsers + premiumAnnualUsers;
     const conversionRate = totalUsers > 0 ? ((totalPremiumUsers / totalUsers) * 100).toFixed(1) : "0";

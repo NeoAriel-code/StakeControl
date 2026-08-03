@@ -50,7 +50,7 @@ export default async function LimitsPage() {
     prisma.userLimits.findUnique({
       where: { userId: user.id },
     }),
-    getCurrentStakeTotals(user.id),
+    getCurrentStakeTotals(user.id, new Date(), user.timezone),
     prisma.responsibleGamingAlert.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },

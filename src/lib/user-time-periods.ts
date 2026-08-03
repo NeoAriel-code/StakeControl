@@ -151,3 +151,32 @@ export function getPeriodStartsForUserTimezone(referenceDate = new Date(), timez
     monthlyStart: zonedMidnight(local.year, local.month, 1, timezone),
   };
 }
+
+export type UserTimezoneMonth = {
+  month: string;
+  start: Date;
+  end: Date;
+};
+
+export function getTrailingMonthBoundsForUserTimezone(
+  referenceDate = new Date(),
+  timezone = "UTC",
+  monthCount = 12,
+): UserTimezoneMonth[] {
+  if (!Number.isInteger(monthCount) || monthCount < 1) {
+    return [];
+  }
+
+  const local = zonedParts(referenceDate, timezone);
+
+  return Array.from({ length: monthCount }, (_, index) => {
+    const monthDate = calendarDate(local.year, local.month - (monthCount - index - 1), 1);
+    const nextMonthDate = calendarDate(monthDate.year, monthDate.month + 1, 1);
+
+    return {
+      month: `${monthDate.year}-${pad(monthDate.month)}`,
+      start: zonedMidnight(monthDate.year, monthDate.month, 1, timezone),
+      end: zonedMidnight(nextMonthDate.year, nextMonthDate.month, 1, timezone),
+    };
+  });
+}

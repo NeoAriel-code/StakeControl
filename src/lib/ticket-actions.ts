@@ -387,7 +387,7 @@ export async function finalizeTicketReviewAction(
       }
     });
 
-    await evaluateResponsibleGamingAlerts(user.id);
+    await evaluateResponsibleGamingAlerts(user.id, user.timezone);
   } catch (error) {
     reportOperationalError("bet.persistence_failed", user.id);
     return {

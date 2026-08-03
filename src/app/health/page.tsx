@@ -21,7 +21,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { createDemoDataAction } from "@/lib/demo-actions";
 import { canUseDemoData } from "@/lib/demo-access";
 import { requireUser } from "@/lib/auth";
-import { calculateDashboardMetrics } from "@/lib/dashboard-metrics";
+import { getDashboardSnapshot } from "@/lib/dashboard-snapshot";
 import { formatMoney } from "@/lib/currency-format";
 import {
   calculateResponsibleHealth,
@@ -90,16 +90,13 @@ function DemoDataForm({ disabled }: { disabled: boolean }) {
 export default async function HealthPage({ searchParams }: HealthPageProps) {
   const [user, resolvedSearchParams] = await Promise.all([requireUser(), searchParams]);
   const canLoadDemoData = canUseDemoData(user.email);
-  const [plan, bets, limits, totals, unreadAlerts, highSeverityAlerts, existingDemoBet] = await Promise.all([
+  const [plan, snapshot, limits, totals, unreadAlerts, highSeverityAlerts, existingDemoBet] = await Promise.all([
     getUserPlan(user.id),
-    prisma.bet.findMany({
-      where: { userId: user.id },
-      orderBy: { placedAt: "desc" },
-    }),
+    getDashboardSnapshot(user.id, user.timezone, user.currency),
     prisma.userLimits.findUnique({
       where: { userId: user.id },
     }),
-    getCurrentStakeTotals(user.id),
+    getCurrentStakeTotals(user.id, new Date(), user.timezone),
     prisma.responsibleGamingAlert.count({
       where: {
         userId: user.id,
@@ -123,21 +120,7 @@ export default async function HealthPage({ searchParams }: HealthPageProps) {
       select: { id: true },
     }),
   ]);
-
-  const metrics = calculateDashboardMetrics(
-    bets.map((bet) => ({
-      id: bet.id,
-      title: bet.title,
-      sport: bet.sport,
-      market: bet.market,
-      result: bet.result,
-      stake: Number(bet.stake),
-      odds: Number(bet.odds),
-      profitLoss: bet.profitLoss ? Number(bet.profitLoss) : 0,
-      placedAt: bet.placedAt,
-    })),
-    user.timezone
-  );
+  const { metrics } = snapshot;
   const monthlyLimit = limits?.monthlyStakeLimit ? Number(limits.monthlyStakeLimit) : null;
   const weeklyLimit = limits?.weeklyStakeLimit ? Number(limits.weeklyStakeLimit) : null;
   const dailyLimit = limits?.dailyStakeLimit ? Number(limits.dailyStakeLimit) : null;

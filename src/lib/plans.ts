@@ -1,6 +1,7 @@
 import "server-only";
 
 import { PlanType } from "@prisma/client";
+import { cache } from "react";
 import prisma from "@/lib/prisma";
 import { canUseFeatureForPlan } from "@/lib/plan-rules";
 
@@ -34,7 +35,7 @@ function getMonthStart(referenceDate = new Date()) {
   return new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
 }
 
-export async function getUserPlan(userId: string): Promise<UserPlan> {
+const getUserPlanForRequest = cache(async (userId: string): Promise<UserPlan> => {
   const subscription = await prisma.subscription.findFirst({
     where: {
       userId,
@@ -51,6 +52,10 @@ export async function getUserPlan(userId: string): Promise<UserPlan> {
   }
 
   return "FREE";
+});
+
+export async function getUserPlan(userId: string): Promise<UserPlan> {
+  return getUserPlanForRequest(userId);
 }
 
 export async function getMonthlyOcrTicketUsage(userId: string, referenceDate = new Date()) {

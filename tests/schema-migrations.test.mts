@@ -110,3 +110,39 @@ test("the build command runs the production migration runner before Next", async
 
   assert.match(packageJson.scripts.build, /^node --import tsx scripts\/migrate-production\.mts && next build$/);
 });
+
+test("plans application, baseline, repetition and partial-index rejection", () => {
+  const migration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260803090000_add_production_performance_indexes",
+  );
+  assert.ok(migration);
+  const tables = new Set(["Bet", "ResponsibleGamingAlert", "Subscription", "ProductFeedback"]);
+  const indexes = new Set(migration.requiredIndexes);
+
+  assert.deepEqual(
+    planSchemaMigration(migration, tables, new Set(), new Map(), new Set()),
+    { action: "apply", name: migration.name },
+  );
+  assert.deepEqual(
+    planSchemaMigration(migration, tables, new Set(), new Map(), indexes),
+    { action: "baseline", name: migration.name },
+  );
+  assert.deepEqual(
+    planSchemaMigration(migration, tables, new Set([migration.name]), new Map(), indexes),
+    { action: "skip", name: migration.name },
+  );
+  assert.deepEqual(
+    planSchemaMigration(
+      migration,
+      tables,
+      new Set(),
+      new Map(),
+      new Set([migration.requiredIndexes![0]]),
+    ),
+    { action: "inconsistent", name: migration.name },
+  );
+  assert.deepEqual(
+    planSchemaMigration(migration, tables, new Set([migration.name]), new Map(), new Set()),
+    { action: "inconsistent", name: migration.name },
+  );
+});

@@ -16,6 +16,7 @@ import {
 } from "@/lib/user-time-periods";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
 import { isAlertEmailEnabled } from "@/lib/notification-preferences";
+import { withDatabaseSpan } from "@/lib/observability/database-spans";
 
 export type { LimitStatus } from "@/lib/responsible-gaming-rules";
 
@@ -58,38 +59,50 @@ export function getLimitStatus({
   return evaluateLimits({ currentValue, limitValue, pauseUntil });
 }
 
-export async function getCurrentStakeTotals(userId: string, referenceDate = new Date()): Promise<LimitTotals> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
-  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate, user?.timezone || "UTC");
-
-  const [daily, weekly, monthly] = await Promise.all([
-    prisma.bet.aggregate({
-      where: {
-        userId,
-        placedAt: { gte: dailyStart, lte: referenceDate },
-      },
-      _sum: { stake: true },
-    }),
-    prisma.bet.aggregate({
-      where: {
-        userId,
-        placedAt: { gte: weeklyStart, lte: referenceDate },
-      },
-      _sum: { stake: true },
-    }),
-    prisma.bet.aggregate({
-      where: {
-        userId,
-        placedAt: { gte: monthlyStart, lte: referenceDate },
-      },
-      _sum: { stake: true },
-    }),
-  ]);
+export async function getCurrentStakeTotals(
+  userId: string,
+  referenceDate = new Date(),
+  timezone?: string,
+): Promise<LimitTotals> {
+  const resolvedTimezone = timezone ?? (
+    await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
+  )?.timezone ?? "UTC";
+  const { dailyStart, weeklyStart, monthlyStart } = getPeriodStarts(referenceDate, resolvedTimezone);
+  const earliestStart = new Date(Math.min(
+    dailyStart.getTime(),
+    weeklyStart.getTime(),
+    monthlyStart.getTime(),
+  ));
+  type StakeTotalsRow = {
+    dailyStake: number | null;
+    weeklyStake: number | null;
+    monthlyStake: number | null;
+  };
+  const rows = await withDatabaseSpan(
+    "responsible-gaming.current-stake-totals",
+    "aggregate",
+    () => prisma.$queryRaw<StakeTotalsRow[]>(Prisma.sql`
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN "placedAt" >= ${dailyStart} AND "placedAt" <= ${referenceDate}
+          THEN CAST("stake" AS REAL) ELSE 0 END), 0) AS "dailyStake",
+        COALESCE(SUM(CASE
+          WHEN "placedAt" >= ${weeklyStart} AND "placedAt" <= ${referenceDate}
+          THEN CAST("stake" AS REAL) ELSE 0 END), 0) AS "weeklyStake",
+        COALESCE(SUM(CASE
+          WHEN "placedAt" >= ${monthlyStart} AND "placedAt" <= ${referenceDate}
+          THEN CAST("stake" AS REAL) ELSE 0 END), 0) AS "monthlyStake"
+      FROM "Bet"
+      WHERE "userId" = ${userId} AND "placedAt" >= ${earliestStart} AND "placedAt" <= ${referenceDate}
+    `),
+    () => 1,
+  );
+  const totals = rows[0];
 
   return {
-    dailyStake: decimalToNumber(daily._sum.stake),
-    weeklyStake: decimalToNumber(weekly._sum.stake),
-    monthlyStake: decimalToNumber(monthly._sum.stake),
+    dailyStake: Number(totals?.dailyStake ?? 0),
+    weeklyStake: Number(totals?.weeklyStake ?? 0),
+    monthlyStake: Number(totals?.monthlyStake ?? 0),
   };
 }
 
@@ -270,14 +283,17 @@ async function ensureLimitAlert({
   }
 }
 
-export async function evaluateResponsibleGamingAlerts(userId: string) {
+export async function evaluateResponsibleGamingAlerts(userId: string, timezone?: string) {
   const now = new Date();
   const canUseIntelligentAlerts = await canUseFeature(userId, "alerts_intelligent");
-  const [limits, totals, bets, user] = await Promise.all([
+  const resolvedTimezone = timezone ?? (
+    await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } })
+  )?.timezone ?? "UTC";
+  const [limits, totals, bets] = await Promise.all([
     prisma.userLimits.findUnique({
       where: { userId },
     }),
-    getCurrentStakeTotals(userId, now),
+    getCurrentStakeTotals(userId, now, resolvedTimezone),
     prisma.bet.findMany({
       where: { userId },
       orderBy: { placedAt: "desc" },
@@ -289,7 +305,6 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
         placedAt: true,
       },
     }),
-    prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } }),
   ]);
 
   await Promise.all([
@@ -299,7 +314,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.dailyStake,
       limitValue: limits?.dailyStakeLimit ? Number(limits.dailyStakeLimit) : null,
       referenceDate: now,
-      timezone: user?.timezone,
+      timezone: resolvedTimezone,
     }),
     ensureLimitAlert({
       userId,
@@ -307,7 +322,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.weeklyStake,
       limitValue: limits?.weeklyStakeLimit ? Number(limits.weeklyStakeLimit) : null,
       referenceDate: now,
-      timezone: user?.timezone,
+      timezone: resolvedTimezone,
     }),
     ensureLimitAlert({
       userId,
@@ -315,7 +330,7 @@ export async function evaluateResponsibleGamingAlerts(userId: string) {
       currentValue: totals.monthlyStake,
       limitValue: limits?.monthlyStakeLimit ? Number(limits.monthlyStakeLimit) : null,
       referenceDate: now,
-      timezone: user?.timezone,
+      timezone: resolvedTimezone,
     }),
   ]);
 

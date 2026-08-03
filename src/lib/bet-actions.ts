@@ -264,7 +264,7 @@ export async function createBetAction(
         create: buildCreateBetData(user.id, parsedCreationKey.data, parsed.values, parsed.dates),
         update: {},
       }),
-      () => evaluateResponsibleGamingAlerts(user.id),
+      () => evaluateResponsibleGamingAlerts(user.id, user.timezone),
       (error) => console.error("Failed to refresh alerts after creating a bet.", error)
     );
   } catch (error) {
@@ -312,7 +312,7 @@ export async function updateBetAction(
         where: { id: betId },
         data: buildUpdateBetData(parsed.values, parsed.dates, existingBet),
       }),
-      () => evaluateResponsibleGamingAlerts(user.id),
+      () => evaluateResponsibleGamingAlerts(user.id, user.timezone),
       (error) => console.error("Failed to refresh alerts after updating a bet.", error)
     );
   } catch (error) {
@@ -357,7 +357,7 @@ export async function updateBetResultAction(formData: FormData) {
         settledAt: isResolvedBetResult(parsed.data.result) ? new Date() : null,
       },
     }),
-    () => evaluateResponsibleGamingAlerts(user.id),
+    () => evaluateResponsibleGamingAlerts(user.id, user.timezone),
     (error) => console.error("Failed to refresh alerts after updating a bet result.", error)
   );
 

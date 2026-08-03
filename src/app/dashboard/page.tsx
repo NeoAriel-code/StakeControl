@@ -27,7 +27,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { requireUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { calculateDashboardMetrics } from "@/lib/dashboard-metrics";
+import { getDashboardSnapshot } from "@/lib/dashboard-snapshot";
 import { formatMoney } from "@/lib/currency-format";
 import { isPauseActive } from "@/lib/responsible-gaming";
 import { formatOdds } from "@/lib/odds-format";
@@ -47,37 +47,13 @@ function formatPercent(value: number) {
 export default async function DashboardPage() {
   const user = await requireUser();
   const canLoadDemoData = canUseDemoData(user.email);
-  const [bets, allBets, limits] = await Promise.all([
-    prisma.bet.findMany({
-      where: { userId: user.id },
-      orderBy: { placedAt: "desc" },
-      take: 5,
-    }),
-    prisma.bet.findMany({
-      where: { userId: user.id },
-      orderBy: { placedAt: "desc" },
-    }),
+  const [snapshot, limits] = await Promise.all([
+    getDashboardSnapshot(user.id, user.timezone, user.currency),
     prisma.userLimits.findUnique({
       where: { userId: user.id },
     }),
   ]);
-
-  const metrics = calculateDashboardMetrics(
-    allBets.map((bet) => ({
-      id: bet.id,
-      title: bet.title,
-      sport: bet.sport,
-      market: bet.market,
-      result: bet.result,
-      stake: Number(bet.stake),
-      odds: Number(bet.odds),
-      profitLoss: bet.profitLoss ? Number(bet.profitLoss) : 0,
-      placedAt: bet.placedAt,
-    })),
-    user.timezone
-  );
-
-  const preferredCurrency = allBets[0]?.currency ?? user.currency;
+  const { metrics, recentBets: bets, preferredCurrency } = snapshot;
 
   const metricCards = [
     {
@@ -216,7 +192,7 @@ export default async function DashboardPage() {
             <HeartPulse size={16} />
             Ver salud de juego
           </Link>
-          {canLoadDemoData && allBets.length === 0 && (
+          {canLoadDemoData && metrics.betCount === 0 && (
             <form action={createDemoDataAction}>
               <button
                 type="submit"

@@ -224,6 +224,10 @@ export default async function BetDetailPage({ params }: BetDetailPageProps) {
                               : ticketImage.imageUrl
                           }
                           alt={ticketImage.fileName || "Ticket asociado"}
+                          width={1200}
+                          height={900}
+                          loading="lazy"
+                          decoding="async"
                           className="h-auto w-full rounded-xl object-cover"
                         />
                       )}

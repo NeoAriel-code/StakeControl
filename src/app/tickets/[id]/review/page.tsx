@@ -88,6 +88,10 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
                 <img
                   src={fileUrl}
                   alt={ticketImage.fileName || "Vista previa del ticket"}
+                  width={1200}
+                  height={900}
+                  loading="lazy"
+                  decoding="async"
                   className="h-auto max-h-[720px] w-full rounded-xl object-contain"
                 />
               )}

@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -94,78 +94,79 @@ enum OcrExtractionRating {
 }
 
 model User {
-  id                     String                   @id @default(cuid())
-  email                  String                   @unique
-  passwordHash           String                   @default("")
-  name                   String?
-  country                String?
-  preferredSports        String?
-  isAdmin                Boolean                  @default(false)
-  ageConfirmed           Boolean                  @default(false)
-  termsAcceptedAt        DateTime?
+  id                          String                   @id @default(cuid())
+  email                       String                   @unique
+  passwordHash                String                   @default("")
+  name                        String?
+  country                     String?
+  preferredSports             String?
+  isAdmin                     Boolean                  @default(false)
+  ageConfirmed                Boolean                  @default(false)
+  termsAcceptedAt             DateTime?
   responsibleGamingAcceptedAt DateTime?
-  onboardingCompletedAt  DateTime?
-  betaTermsAcceptedAt   DateTime?
-  betaTermsVersion      String?
-  bankroll               Decimal?
-  currency               String                   @default("USD")
-  timezone               String                   @default("America/Santiago")
-  oddsFormat             OddsFormat               @default(DECIMAL)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  emailVerifiedAt        DateTime?
-  bets                   Bet[]
-  betTicketImages        BetTicketImage[]
-  limits                 UserLimits?
-  alerts                 ResponsibleGamingAlert[]
-  subscriptions          Subscription[]
-  monthlyReports         MonthlyReport[]
-  passwordResetTokens    PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
-  notificationPreferences NotificationPreferences?
-  emailDeliveries        EmailDelivery[]
-  accountSecurityAlerts  AccountSecurityAlert[]
-  productFeedback        ProductFeedback[]
+  onboardingCompletedAt       DateTime?
+  betaTermsAcceptedAt         DateTime?
+  betaTermsVersion            String?
+  bankroll                    Decimal?
+  currency                    String                   @default("USD")
+  timezone                    String                   @default("America/Santiago")
+  oddsFormat                  OddsFormat               @default(DECIMAL)
+  createdAt                   DateTime                 @default(now())
+  updatedAt                   DateTime                 @updatedAt
+  emailVerifiedAt             DateTime?
+  bets                        Bet[]
+  betTicketImages             BetTicketImage[]
+  limits                      UserLimits?
+  alerts                      ResponsibleGamingAlert[]
+  subscriptions               Subscription[]
+  monthlyReports              MonthlyReport[]
+  passwordResetTokens         PasswordResetToken[]
+  emailVerificationTokens     EmailVerificationToken[]
+  notificationPreferences     NotificationPreferences?
+  emailDeliveries             EmailDelivery[]
+  accountSecurityAlerts       AccountSecurityAlert[]
+  productFeedback             ProductFeedback[]
 
   @@index([createdAt])
 }
 
 model Bet {
-  id                String            @id @default(cuid())
-  userId            String
-  creationKey       String?
-  title             String
-  description       String?
-  sportsbook        String?
-  ticketCode        String?
-  sport             String?
-  league            String?
-  market            String?
-  selection         String?
-  currency          String            @default("USD")
-  betType           BetType           @default(UNKNOWN)
-  result            BetResult         @default(PENDING)
-  stake             Decimal
-  odds              Decimal
-  potentialPayout   Decimal?
-  settledPayout     Decimal?
-  profitLoss        Decimal?
-  placedAt          DateTime?
-  eventStartAt      DateTime?
-  placedAtSource    FieldSource?
+  id                 String           @id @default(cuid())
+  userId             String
+  creationKey        String?
+  title              String
+  description        String?
+  sportsbook         String?
+  ticketCode         String?
+  sport              String?
+  league             String?
+  market             String?
+  selection          String?
+  currency           String           @default("USD")
+  betType            BetType          @default(UNKNOWN)
+  result             BetResult        @default(PENDING)
+  stake              Decimal
+  odds               Decimal
+  potentialPayout    Decimal?
+  settledPayout      Decimal?
+  profitLoss         Decimal?
+  placedAt           DateTime?
+  eventStartAt       DateTime?
+  placedAtSource     FieldSource?
   eventStartAtSource FieldSource?
-  currencySource    FieldSource?
-  settledAt         DateTime?
-  notes             String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticketImages      BetTicketImage[]
-  legs              BetLeg[]
+  currencySource     FieldSource?
+  settledAt          DateTime?
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketImages       BetTicketImage[]
+  legs               BetLeg[]
 
+  @@unique([userId, creationKey])
   @@index([userId, placedAt])
   @@index([userId, result])
-  @@unique([userId, creationKey])
+  @@index([userId, result, placedAt(sort: Desc)])
 }
 
 model BetLeg {
@@ -197,52 +198,53 @@ model RateLimitBucket {
 }
 
 model BetTicketImage {
-  id              String        @id @default(cuid())
-  userId          String
-  betId           String?
-  imageUrl        String
-  fileName        String?
-  mimeType        String?
-  fileSizeBytes   Int?
-  uploadedAt      DateTime      @default(now())
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bet             Bet?          @relation(fields: [betId], references: [id], onDelete: SetNull)
-  aiExtraction    AIExtraction?
+  id            String        @id @default(cuid())
+  userId        String
+  betId         String?
+  imageUrl      String
+  fileName      String?
+  mimeType      String?
+  fileSizeBytes Int?
+  uploadedAt    DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bet           Bet?          @relation(fields: [betId], references: [id], onDelete: SetNull)
+  aiExtraction  AIExtraction?
 
   @@index([userId, uploadedAt])
   @@index([betId])
 }
 
 model AIExtraction {
-  id                String         @id @default(cuid())
-  betTicketImageId  String         @unique
-  provider          String?
-  model             String?
-  status            String         @default("completed")
-  confidence        Decimal?
-  rawText           String?
-  extractedData     Json?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  betTicketImage    BetTicketImage @relation(fields: [betTicketImageId], references: [id], onDelete: Cascade)
-  feedback          OcrExtractionFeedback?
+  id               String                 @id @default(cuid())
+  betTicketImageId String                 @unique
+  provider         String?
+  model            String?
+  status           String                 @default("completed")
+  confidence       Decimal?
+  rawText          String?
+  extractedData    Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  betTicketImage   BetTicketImage         @relation(fields: [betTicketImageId], references: [id], onDelete: Cascade)
+  feedback         OcrExtractionFeedback?
 }
 
 model ProductFeedback {
-  id                String                      @id @default(cuid())
-  category          ProductFeedbackCategory
-  description       String
-  currentPath       String
-  technicalData     Json?
-  contactUserId     String?
-  reviewStatus      ProductFeedbackReviewStatus @default(NEW)
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  contactUser       User?                       @relation(fields: [contactUserId], references: [id], onDelete: SetNull)
+  id            String                      @id @default(cuid())
+  category      ProductFeedbackCategory
+  description   String
+  currentPath   String
+  technicalData Json?
+  contactUserId String?
+  reviewStatus  ProductFeedbackReviewStatus @default(NEW)
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+  contactUser   User?                       @relation(fields: [contactUserId], references: [id], onDelete: SetNull)
 
   @@index([category, reviewStatus, createdAt])
+  @@index([reviewStatus, createdAt(sort: Desc)])
   @@index([contactUserId])
 }
 
@@ -258,61 +260,62 @@ model OcrExtractionFeedback {
 }
 
 model UserLimits {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  dailyStakeLimit      Decimal?
-  weeklyStakeLimit     Decimal?
-  monthlyStakeLimit    Decimal?
-  maxStakePerBet       Decimal?
-  monthlyLossLimit     Decimal?
-  pauseUntil           DateTime?
-  coolingOffUntil      DateTime?
-  pauseAllBetting      Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  dailyStakeLimit   Decimal?
+  weeklyStakeLimit  Decimal?
+  monthlyStakeLimit Decimal?
+  maxStakePerBet    Decimal?
+  monthlyLossLimit  Decimal?
+  pauseUntil        DateTime?
+  coolingOffUntil   DateTime?
+  pauseAllBetting   Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ResponsibleGamingAlert {
-  id             String         @id @default(cuid())
-  userId         String
-  type           AlertType
-  severity       AlertSeverity
-  title          String
-  message        String
-  acknowledgedAt DateTime?
-  metadata       Json?
-  createdAt      DateTime       @default(now())
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  userId          String
+  type            AlertType
+  severity        AlertSeverity
+  title           String
+  message         String
+  acknowledgedAt  DateTime?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   emailDeliveries EmailDelivery[]
 
   @@index([userId, createdAt])
   @@index([userId, severity])
+  @@index([userId, acknowledgedAt, createdAt(sort: Desc)])
 }
 
 model NotificationPreferences {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
-  emailAlertsEnabled     Boolean  @default(false)
-  limitApproachingEnabled Boolean @default(false)
-  limitExceededEnabled   Boolean  @default(false)
-  stakeIncreaseEnabled   Boolean  @default(false)
-  lossStreakEnabled      Boolean  @default(false)
-  highFrequencyEnabled   Boolean  @default(false)
-  pauseRecommendedEnabled Boolean @default(false)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  emailAlertsEnabled      Boolean  @default(false)
+  limitApproachingEnabled Boolean  @default(false)
+  limitExceededEnabled    Boolean  @default(false)
+  stakeIncreaseEnabled    Boolean  @default(false)
+  lossStreakEnabled       Boolean  @default(false)
+  highFrequencyEnabled    Boolean  @default(false)
+  pauseRecommendedEnabled Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EmailDelivery {
-  id                String              @id @default(cuid())
+  id                String                  @id @default(cuid())
   userId            String
   alertId           String?
-  dedupeKey         String              @unique
+  dedupeKey         String                  @unique
   kind              EmailDeliveryKind
-  status            EmailDeliveryStatus @default(PENDING)
-  providerMessageId String?             @unique
+  status            EmailDeliveryStatus     @default(PENDING)
+  providerMessageId String?                 @unique
   recipientHash     String?
   lastEvent         String?
   deliveredAt       DateTime?
@@ -322,9 +325,9 @@ model EmailDelivery {
   delayedAt         DateTime?
   failureReason     String?
   sentAt            DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   alert             ResponsibleGamingAlert? @relation(fields: [alertId], references: [id], onDelete: Cascade)
   securityAlert     AccountSecurityAlert?
 
@@ -380,51 +383,52 @@ model Subscription {
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([userId, status, createdAt(sort: Desc)])
 }
 
 model MonthlyReport {
-  id             String    @id @default(cuid())
-  userId         String
-  year           Int
-  month          Int
-  totalBets      Int       @default(0)
-  totalStake     Decimal   @default(0)
-  totalProfit    Decimal   @default(0)
-  roi            Decimal   @default(0)
-  hitRate        Decimal?
-  netUnits       Decimal?
-  analysisData   Json?
-  safePromptVersion String?
+  id                  String    @id @default(cuid())
+  userId              String
+  year                Int
+  month               Int
+  totalBets           Int       @default(0)
+  totalStake          Decimal   @default(0)
+  totalProfit         Decimal   @default(0)
+  roi                 Decimal   @default(0)
+  hitRate             Decimal?
+  netUnits            Decimal?
+  analysisData        Json?
+  safePromptVersion   String?
   analysisGeneratedAt DateTime?
-  generatedAt    DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatedAt         DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year, month])
   @@index([userId, year, month])
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }

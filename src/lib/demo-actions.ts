@@ -173,7 +173,7 @@ export async function createDemoDataAction() {
     });
   });
 
-  await evaluateResponsibleGamingAlerts(user.id);
+  await evaluateResponsibleGamingAlerts(user.id, user.timezone);
 
   revalidatePath("/dashboard");
   revalidatePath("/health");

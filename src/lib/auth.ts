@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { cache } from "react";
 import type { User } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { hasAcceptedCurrentBetaTerms } from "@/lib/beta-terms";
@@ -137,7 +138,7 @@ export async function getSessionUserId() {
   return payload?.userId ?? null;
 }
 
-export async function getCurrentUser() {
+const getCurrentUserForRequest = cache(async () => {
   const userId = await getSessionUserId();
 
   if (!userId) {
@@ -147,6 +148,10 @@ export async function getCurrentUser() {
   return prisma.user.findUnique({
     where: { id: userId },
   });
+});
+
+export async function getCurrentUser() {
+  return getCurrentUserForRequest();
 }
 
 type RequireUserOptions = {

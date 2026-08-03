@@ -172,6 +172,10 @@ export function TicketUploadForm() {
               <img
                 src={previewUrl}
                 alt="Vista previa del ticket"
+                width={1200}
+                height={800}
+                loading="lazy"
+                decoding="async"
                 className="h-auto max-h-[420px] w-full rounded-xl object-contain"
               />
             </div>
