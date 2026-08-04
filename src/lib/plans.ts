@@ -2,6 +2,7 @@ import "server-only";
 
 import { PlanType } from "@prisma/client";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import prisma from "@/lib/prisma";
 import { canUseFeatureForPlan } from "@/lib/plan-rules";
 
@@ -35,24 +36,32 @@ function getMonthStart(referenceDate = new Date()) {
   return new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
 }
 
-const getUserPlanForRequest = cache(async (userId: string): Promise<UserPlan> => {
-  const subscription = await prisma.subscription.findFirst({
-    where: {
-      userId,
-      status: "active",
+function loadUserPlan(userId: string) {
+  return unstable_cache(
+    async (): Promise<UserPlan> => {
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId,
+          status: "active",
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (
+        subscription?.planType === PlanType.PREMIUM_MONTHLY ||
+        subscription?.planType === PlanType.PREMIUM_ANNUAL
+      ) {
+        return "PREMIUM";
+      }
+
+      return "FREE";
     },
-    orderBy: { createdAt: "desc" },
-  });
+    ["user-plan", userId],
+    { revalidate: 5, tags: [`user-plan:${userId}`] },
+  )();
+}
 
-  if (
-    subscription?.planType === PlanType.PREMIUM_MONTHLY ||
-    subscription?.planType === PlanType.PREMIUM_ANNUAL
-  ) {
-    return "PREMIUM";
-  }
-
-  return "FREE";
-});
+const getUserPlanForRequest = cache(async (userId: string) => loadUserPlan(userId));
 
 export async function getUserPlan(userId: string): Promise<UserPlan> {
   return getUserPlanForRequest(userId);

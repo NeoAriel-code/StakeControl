@@ -1,17 +1,39 @@
 import http from "k6/http";
-import { check } from "k6";
+import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
 const applicationErrors = new Rate("application_errors");
 const connectionErrors = new Rate("connection_errors");
 const databaseDuration = new Trend("db_operation_duration", true);
 
-export const options = {
-  stages: [
+const loadProfile = __ENV.LOAD_PROFILE || "saturation-250";
+
+const profiles = {
+  "beta-200": [
+    { duration: "2m", target: 15 },
+    { duration: "10m", target: 30 },
+    { duration: "3m", target: 60 },
+    { duration: "1m", target: 0 },
+  ],
+  "beta-500": [
+    { duration: "2m", target: 30 },
+    { duration: "10m", target: 75 },
+    { duration: "3m", target: 125 },
+    { duration: "1m", target: 0 },
+  ],
+  "saturation-250": [
     { duration: "2m", target: 250 },
     { duration: "10m", target: 250 },
     { duration: "30s", target: 0 },
   ],
+};
+
+if (!profiles[loadProfile]) {
+  throw new Error(`Unknown LOAD_PROFILE: ${loadProfile}`);
+}
+
+export const options = {
+  stages: profiles[loadProfile],
   thresholds: {
     http_req_duration: ["p(95)<500", "p(99)<1000"],
     application_errors: ["rate<0.01"],
@@ -59,4 +81,6 @@ export default function runScenario() {
   connectionErrors.add(!connected);
   applicationErrors.add(!succeeded);
   recordDatabaseTiming(response);
+
+  if (loadProfile !== "saturation-250") sleep(5 + Math.random() * 15);
 }
