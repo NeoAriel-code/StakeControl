@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { getPlanLabel, getUserPlan } from "@/lib/plans";
 import prisma from "@/lib/prisma";
 import { extractedBetTicketSchema } from "@/lib/ticket-extraction";
+import { TicketProcessingPanel } from "@/components/tickets/TicketProcessingPanel";
 
 export const metadata: Metadata = {
   title: "Revisión de ticket | StakeControl",
@@ -38,8 +39,23 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
     notFound();
   }
 
-  if (!ticketImage.aiExtraction?.rawText || !ticketImage.aiExtraction.extractedData) {
-    notFound();
+  if (!ticketImage.aiExtraction) notFound();
+
+  if (!ticketImage.aiExtraction.extractedData) {
+    return (
+      <AppLayout pageTitle="Procesando ticket" userName={user.name || user.email} planLabel={getPlanLabel(plan)} plan={plan}>
+        <section className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+          <PageHeader
+            title="Procesando ticket"
+            description="La carga terminó y el procesamiento continúa en segundo plano."
+            icon={ScanSearch}
+            breadcrumb="StakeControl"
+          />
+          <TicketProcessingPanel ticketId={ticketImage.id} initialStatus={ticketImage.aiExtraction.status} />
+          <Link href="/tickets" className="inline-flex rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold">Volver a tickets</Link>
+        </section>
+      </AppLayout>
+    );
   }
 
   const fileUrl = `/api/tickets/${ticketImage.id}/file`;
@@ -115,7 +131,7 @@ export default async function TicketReviewPage({ params }: TicketReviewPageProps
               <h2 className="text-lg font-semibold text-foreground">Texto OCR detectado</h2>
               <div className="mt-4 rounded-2xl border border-border bg-background p-4">
                 <pre className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {ticketImage.aiExtraction.rawText}
+                  {ticketImage.aiExtraction.rawText ?? "Texto OCR no disponible. Completa los campos manualmente."}
                 </pre>
               </div>
             </section>

@@ -72,7 +72,8 @@ export default function PrivacyPage() {
             que procesan información por cuenta de StakeControl: Vercel para hosting y despliegue; Turso/libSQL para la
             base de datos; Supabase Storage para archivos privados de tickets cuando está configurado; Google Cloud
             Vision para OCR cuando está configurado; OpenAI para extracción estructurada y análisis de IA cuando está
-            configurado; y PostHog para analítica opcional de producto cuando das tu consentimiento. PostHog recibe
+            configurado; un proveedor adicional de IA con procesamiento en China exclusivamente para estructurar
+            tickets OCR seudonimizados durante un despliegue gradual; y PostHog para analítica opcional de producto cuando das tu consentimiento. PostHog recibe
             únicamente nombres de eventos de uso y categorías técnicas acotadas. No enviamos apuestas, tickets,
             valores financieros ni identificadores directos de cuenta para analítica. Estos proveedores pueden procesar datos fuera de Chile, de acuerdo con sus regiones operativas
             y los acuerdos aplicables.
@@ -82,8 +83,13 @@ export default function PrivacyPage() {
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Uso de OCR e inteligencia artificial</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Cuando la función está habilitada, podemos enviar al proveedor de IA el texto extraído y los datos
-            necesarios del ticket o historial para la extracción o el análisis solicitado. La IA es una herramienta de
+            Cuando la función está habilitada, enviamos a los proveedores de IA sólo datos minimizados necesarios para
+            la finalidad solicitada. Para estructurar tickets retiramos nombres, emails, RUT, teléfonos, direcciones,
+            identificadores de cuenta o sesión, códigos de ticket, QR, barcodes y tokens; conservamos únicamente casa,
+            evento, mercado, selección, fecha, importe, moneda y cuotas cuando son necesarios. Si la seudonimización no
+            es inequívoca, el ticket se deriva a otro proveedor o a revisión humana. El procesador adicional puede
+            implicar una transferencia internacional a China y opera bajo sus términos públicos, que contemplan el uso
+            de inputs para mejorar su tecnología. StakeControl sigue siendo responsable frente al usuario. La IA es una herramienta de
             apoyo, no toma decisiones automáticas con efectos legales o equivalentes, no determina resultados de
             apuestas y no reemplaza tu criterio.
           </p>

@@ -41,11 +41,14 @@ Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON
 | `OCR_PROVIDER` | Proveedor OCR explícito. | Sí al usar OCR; en producción debe ser cloud. |
 | `GOOGLE_VISION_CREDENTIALS_JSON` | Credenciales del proveedor `google_vision`. | Sí cuando `OCR_PROVIDER=google_vision`. |
 | `TESSERACT_BIN`, `TESSERACT_LANG` | OCR local experimental. | Solo desarrollo; no permitido en producción. |
-| `AI_PROVIDER` | Proveedor de extracción IA. | Sí al usar IA; en producción debe ser `openai`. |
-| `OPENAI_API_KEY` | Credencial del proveedor OpenAI. | Sí cuando `AI_PROVIDER=openai`. |
+| `AI_PROVIDER` | Proveedor global y de análisis responsable; los reportes productivos permanecen en OpenAI. | Sí al usar IA; en producción debe disponer de OpenAI. |
+| `OPENAI_API_KEY` | Credencial OpenAI para reportes y fallback de tickets. | Sí en producción. |
+| `DEEPSEEK_API_KEY` | Credencial server-side para extracción alternativa de tickets. | Antes de habilitar el rollout dinámico. |
+| `AI_TICKET_PRIMARY_PROVIDER`, `AI_TICKET_FALLBACK_PROVIDER` | Candidatos por tarea; producción usa `deepseek` y `openai`. | Opcionales; DeepSeek nace apagado en base de datos. |
 | `AI_TICKET_PRIMARY_MODEL`, `AI_TICKET_FALLBACK_MODEL` | Modelos de extracción de tickets. | Opcionales. |
 | `AI_REPORT_PRIMARY_MODEL`, `AI_REPORT_FALLBACK_MODEL` | Modelos de análisis responsable. | Opcionales. |
-| `AI_TICKET_TIMEOUT_MS` | Límite de tiempo de extracción de tickets. | Opcional. |
+| `AI_TICKET_DEEPSEEK_TIMEOUT_MS`, `AI_TICKET_TIMEOUT_MS` | Límites por intento para DeepSeek y OpenAI. | Opcionales. |
+| `AI_TICKET_OPENAI_FALLBACK_LIMIT_PER_MINUTE` | Tope global de fallback para evitar cascadas de costo o 429. | Opcional. |
 | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Almacenamiento privado Supabase. | Sí en producción con almacenamiento Supabase. |
 | `SUPABASE_STORAGE_BUCKET` | Bucket privado de tickets. | Opcional; usa el bucket predeterminado si no se define. |
 | `TURSO_AUTH_TOKEN` | Token para una conexión Turso remota. | Opcional, según `DATABASE_URL`. |

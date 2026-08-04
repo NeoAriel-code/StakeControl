@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { createConfiguredAiProvider } from "../src/lib/ai/ai-provider-factory";
+import { createConfiguredAiProvider, createConfiguredBehaviorAiProvider } from "../src/lib/ai/ai-provider-factory";
+import { OpenAiProvider } from "../src/lib/ai/openai-provider";
 
 const require = createRequire(import.meta.url);
 const serverOnlyPath = require.resolve("server-only");
@@ -52,4 +53,13 @@ test("AI factory refuses mock configuration in production", () => {
     () => createConfiguredAiProvider({ NODE_ENV: "production", AI_PROVIDER: "mock" }),
     /AI_PROVIDER/
   );
+});
+
+test("responsible behavior analysis stays on OpenAI even if the ticket candidate is DeepSeek", () => {
+  const provider = createConfiguredBehaviorAiProvider({
+    NODE_ENV: "production",
+    AI_PROVIDER: "deepseek",
+    OPENAI_API_KEY: "openai-test-key",
+  } as NodeJS.ProcessEnv);
+  assert.ok(provider instanceof OpenAiProvider);
 });

@@ -1,0 +1,11 @@
+ALTER TABLE "AIExtraction" ADD COLUMN "workflowRunId" TEXT;
+ALTER TABLE "AIExtraction" ADD COLUMN "attemptCount" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "AIExtraction" ADD COLUMN "extractionVersion" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "AIExtraction" ADD COLUMN "inputTokens" INTEGER;
+ALTER TABLE "AIExtraction" ADD COLUMN "cachedInputTokens" INTEGER;
+ALTER TABLE "AIExtraction" ADD COLUMN "outputTokens" INTEGER;
+ALTER TABLE "AIExtraction" ADD COLUMN "latencyMs" INTEGER;
+ALTER TABLE "AIExtraction" ADD COLUMN "fallbackUsed" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "AIExtraction" ADD COLUMN "startedAt" DATETIME;
+ALTER TABLE "AIExtraction" ADD COLUMN "completedAt" DATETIME;
+ALTER TABLE "AIExtraction" ADD COLUMN "failedAt" DATETIME;

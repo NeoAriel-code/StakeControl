@@ -58,6 +58,35 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
       "ProductFeedback_reviewStatus_createdAt_idx",
     ],
   },
+  {
+    name: "20260803100000_extend_ai_extraction",
+    sqlPath: "prisma/migrations/20260803100000_extend_ai_extraction/migration.sql",
+    requiredTables: ["AIExtraction"],
+    requiredColumns: [
+      { table: "AIExtraction", column: "workflowRunId" },
+      { table: "AIExtraction", column: "attemptCount" },
+      { table: "AIExtraction", column: "extractionVersion" },
+      { table: "AIExtraction", column: "inputTokens" },
+      { table: "AIExtraction", column: "cachedInputTokens" },
+      { table: "AIExtraction", column: "outputTokens" },
+      { table: "AIExtraction", column: "latencyMs" },
+      { table: "AIExtraction", column: "fallbackUsed" },
+      { table: "AIExtraction", column: "startedAt" },
+      { table: "AIExtraction", column: "completedAt" },
+      { table: "AIExtraction", column: "failedAt" },
+    ],
+  },
+  {
+    name: "20260803100500_index_ai_extraction_status",
+    sqlPath: "prisma/migrations/20260803100500_index_ai_extraction_status/migration.sql",
+    requiredTables: ["AIExtraction"],
+    requiredIndexes: ["AIExtraction_status_createdAt_idx"],
+  },
+  {
+    name: "20260803101000_add_ai_provider_configuration",
+    sqlPath: "prisma/migrations/20260803101000_add_ai_provider_configuration/migration.sql",
+    requiredTables: ["AIProviderConfiguration"],
+  },
 ];
 
 export type SchemaMigrationPlan = {

@@ -217,18 +217,50 @@ model BetTicketImage {
 }
 
 model AIExtraction {
-  id               String                 @id @default(cuid())
-  betTicketImageId String                 @unique
-  provider         String?
-  model            String?
-  status           String                 @default("completed")
-  confidence       Decimal?
-  rawText          String?
-  extractedData    Json?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  betTicketImage   BetTicketImage         @relation(fields: [betTicketImageId], references: [id], onDelete: Cascade)
-  feedback         OcrExtractionFeedback?
+  id                String                 @id @default(cuid())
+  betTicketImageId  String                 @unique
+  provider          String?
+  model             String?
+  status            String                 @default("queued")
+  confidence        Decimal?
+  rawText           String?
+  extractedData     Json?
+  workflowRunId     String?
+  attemptCount      Int                    @default(0)
+  extractionVersion Int                    @default(1)
+  inputTokens       Int?
+  cachedInputTokens Int?
+  outputTokens      Int?
+  latencyMs         Int?
+  fallbackUsed      Boolean                @default(false)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  betTicketImage    BetTicketImage         @relation(fields: [betTicketImageId], references: [id], onDelete: Cascade)
+  feedback          OcrExtractionFeedback?
+
+  @@index([status, createdAt])
+}
+
+model AIProviderConfiguration {
+  id                     String    @id @default(cuid())
+  task                   String
+  provider               String
+  enabled                Boolean   @default(false)
+  rolloutPercentage      Int       @default(0)
+  circuitState           String    @default("closed")
+  failureWindowStartedAt DateTime?
+  transientFailureCount  Int       @default(0)
+  openUntil              DateTime?
+  halfOpenProbeCount     Int       @default(0)
+  halfOpenSuccessCount   Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@unique([task, provider])
+  @@index([task, enabled])
 }
 
 model ProductFeedback {

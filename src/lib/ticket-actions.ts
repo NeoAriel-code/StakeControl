@@ -6,18 +6,12 @@ import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
 import { getStorageService, sanitizeUploadedFileName } from "@/lib/storage";
-import {
-  createOcrService,
-  getConfiguredOcrProviderName,
-  OcrProcessingError,
-} from "@/lib/ocr-service";
+import { OcrProcessingError } from "@/lib/ocr-service";
 import {
   cleanupFailedTicketUpload,
-  saveTicketAndExtractText,
   validateFileSignature,
   validateTicketFile,
 } from "@/lib/ticket-upload-utils";
-import { createAiExtractionService } from "@/lib/ai-extraction-service";
 import { extractedBetTicketSchema, reviewedTicketBetSchema, ticketLegSchema } from "@/lib/ticket-extraction";
 import { Prisma } from "@prisma/client";
 import { evaluateResponsibleGamingAlerts } from "@/lib/responsible-gaming";
@@ -28,6 +22,7 @@ import { getHistoricalProfitLoss } from "@/lib/bet-outcomes";
 import { resolveFieldSourceAfterEdit } from "@/lib/field-provenance";
 import { parseDateTimeInUserTimezone } from "@/lib/user-time-periods";
 import { reportOperationalError } from "@/lib/observability/sentry";
+import { enqueueTicketExtraction } from "@/lib/ticket-workflow";
 
 const ocrRatings = ["COMPLETELY_CORRECT", "PARTIALLY_CORRECT", "INCORRECT"] as const;
 
@@ -99,18 +94,12 @@ export async function uploadTicketAction(
 
     const safeFileName = sanitizeUploadedFileName(fileEntry.name);
     storage = getStorageService();
-    const ocrProviderName = getConfiguredOcrProviderName();
-    const ocrService = createOcrService();
-    const aiExtractionService = createAiExtractionService();
-    const { storedObject, rawText } = await saveTicketAndExtractText({
-      storage,
-      ocrService,
-      input: {
-        userId: user.id,
-        fileName: safeFileName,
-        mimeType: fileEntry.type,
-        buffer,
-      },
+    const storedObject = await storage.savePrivateObject({
+      userId: user.id,
+      namespace: "tickets",
+      fileName: safeFileName,
+      mimeType: fileEntry.type,
+      buffer,
     });
     storedReference = storedObject.reference;
 
@@ -121,36 +110,28 @@ export async function uploadTicketAction(
         fileName: safeFileName,
         mimeType: fileEntry.type,
         fileSizeBytes: storedObject.byteLength,
+        aiExtraction: {
+          create: {
+            status: "queued",
+            extractionVersion: 1,
+          },
+        },
       },
+      include: { aiExtraction: { select: { id: true } } },
     });
     ticketImageId = ticketImage.id;
 
-    const aiResult = await aiExtractionService.structureBetTicket(rawText, {
-      preferredCurrency: user.currency,
-      timezone: user.timezone,
-    });
-    const structuredBet = aiResult.ticket;
-    const requiresReview = structuredBet.confidenceScore < 0.85;
-
-    await prisma.aIExtraction.create({
-      data: {
-        betTicketImageId: ticketImage.id,
-        provider: `${ocrProviderName}+${process.env.AI_PROVIDER?.trim().toLowerCase() || "mock"}`,
-        model: aiResult.model,
-        status: requiresReview ? "requires_review" : "ready_for_review",
-        confidence: new Prisma.Decimal(structuredBet.confidenceScore.toString()),
-        rawText,
-        extractedData: sanitizeJsonRecord({
-          ...structuredBet,
-          requiresReview,
-          aiMetadata: {
-            model: aiResult.model,
-            estimatedTokens: aiResult.estimatedTokens,
-            fallbackUsed: aiResult.fallbackUsed,
-          },
-        }),
-      },
-    });
+    if (ticketImage.aiExtraction) {
+      try {
+        await enqueueTicketExtraction(ticketImage.aiExtraction.id);
+      } catch {
+        await prisma.aIExtraction.updateMany({
+          where: { id: ticketImage.aiExtraction.id },
+          data: { status: "failed", failedAt: new Date() },
+        });
+        reportOperationalError("ai.failed");
+      }
+    }
 
   } catch (error) {
     reportOperationalError(error instanceof OcrProcessingError ? "ocr.failed" : "ai.failed", user.id);
@@ -311,9 +292,12 @@ export async function finalizeTicketReviewAction(
     );
 
     await prisma.$transaction(async (transaction) => {
-      const createdBet = await transaction.bet.create({
-        data: {
+      const creationKey = `ticket-ocr:${ticketImage.id}`;
+      const createdBet = await transaction.bet.upsert({
+        where: { userId_creationKey: { userId: user.id, creationKey } },
+        create: {
           userId: user.id,
+          creationKey,
           title: parsed.event,
           sportsbook: parsed.sportsbook,
           ticketCode: parsed.ticketCode,
@@ -354,6 +338,7 @@ export async function finalizeTicketReviewAction(
             })),
           },
         },
+        update: {},
       });
 
       await transaction.betTicketImage.update({

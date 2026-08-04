@@ -31,3 +31,10 @@ test("manual bet creation upserts against a user-scoped unique key", async () =>
   assert.match(action, /userId_creationKey/);
   assert.match(migration, /CREATE UNIQUE INDEX "Bet_userId_creationKey_key"/);
 });
+
+test("OCR ticket confirmation reuses a deterministic bet creation key", async () => {
+  const action = await readProjectFile("src/lib/ticket-actions.ts");
+  assert.match(action, /creationKey = `ticket-ocr:\$\{ticketImage\.id\}`/);
+  assert.match(action, /transaction\.bet\.upsert/);
+  assert.match(action, /userId_creationKey/);
+});

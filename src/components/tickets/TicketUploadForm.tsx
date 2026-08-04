@@ -24,11 +24,11 @@ function SubmitTicketButton() {
         className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-wait disabled:opacity-70"
       >
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}
-        {pending ? "Procesando ticket..." : "Subir ticket"}
+        {pending ? "Subiendo ticket..." : "Subir ticket"}
       </button>
       {pending && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          Extrayendo texto y preparando la revisión.
+          Guardando el archivo privado e iniciando el procesamiento.
         </p>
       )}
     </div>

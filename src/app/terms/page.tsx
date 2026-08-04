@@ -94,7 +94,9 @@ export default function TermsPage() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             El OCR y la IA son herramientas de apoyo. Pueden producir información incompleta o incorrecta y debes
             revisarla antes de usarla. No constituyen asesoría financiera, jurídica, médica ni de apuestas, y no toman
-            decisiones automáticas sobre ti ni tus apuestas.
+            decisiones automáticas sobre ti ni tus apuestas. Para estructurar tickets podemos utilizar procesadores
+            internacionales bajo sus términos públicos, enviando sólo contenido seudonimizado y minimizado. Cuando la
+            limpieza no sea segura o el resultado sea ambiguo, se utilizará otro proveedor o se exigirá revisión humana.
           </p>
         </section>
 

@@ -53,3 +53,4 @@ next-env.d.ts
 /output/
 /skills-lock.json
 /.worktrees/
+/.swc

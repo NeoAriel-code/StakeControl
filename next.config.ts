@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
@@ -14,11 +15,13 @@ const nextConfig: NextConfig = {
   },
 };
 
+const workflowConfig = withWorkflow(nextConfig);
+
 export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(nextConfig, {
+  ? withSentryConfig(workflowConfig, {
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       silent: true,
     })
-  : nextConfig;
+  : workflowConfig;

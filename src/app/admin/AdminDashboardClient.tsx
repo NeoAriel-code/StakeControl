@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminFeedbackPanels } from "@/components/admin/AdminFeedbackPanels";
+import { AiTicketProviderControls } from "@/components/admin/AiTicketProviderControls";
 import {
   Users,
   Crown,
@@ -387,6 +388,7 @@ export default function AdminDashboardClient({
           </div>
         )}
 
+        <AiTicketProviderControls />
         <AdminFeedbackPanels />
 
         {/* Search, Filter & Users Table Container */}

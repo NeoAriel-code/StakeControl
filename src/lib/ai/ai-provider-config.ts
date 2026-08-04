@@ -1,9 +1,10 @@
-export type AiProviderName = "mock" | "openai";
+export type AiProviderName = "mock" | "openai" | "deepseek";
 
 export function resolveAiProviderName(value?: string): AiProviderName {
   switch (value?.trim().toLowerCase()) {
     case "mock":
     case "openai":
+    case "deepseek":
       return value.trim().toLowerCase() as AiProviderName;
     default:
       throw new Error("AI_PROVIDER must be configured with a supported provider.");
@@ -15,7 +16,7 @@ export function assertAiProviderAllowed(
   nodeEnv = process.env.NODE_ENV
 ): AiProviderName {
   if (nodeEnv === "production" && name === "mock") {
-    throw new Error("AI_PROVIDER=openai must be configured in production.");
+    throw new Error("AI_PROVIDER must use a production provider.");
   }
 
   return name;
