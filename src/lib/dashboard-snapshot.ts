@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import {
   calculateROI,
   type DashboardMetrics,
@@ -276,7 +277,13 @@ export function getDashboardSnapshot(
   userId: string,
   timezone = "UTC",
   fallbackCurrency = "USD",
-  referenceDate = new Date(),
 ) {
-  return loadDashboardSnapshot(prisma, userId, timezone, fallbackCurrency, referenceDate);
+  // The dashboard and health views can request the same user snapshot at once.
+  // A very short user-scoped cache prevents those expensive aggregate queries
+  // from stampeding the database while preserving near-real-time updates.
+  return unstable_cache(
+    () => loadDashboardSnapshot(prisma, userId, timezone, fallbackCurrency),
+    ["dashboard-snapshot", userId, timezone, fallbackCurrency],
+    { revalidate: 5, tags: [`dashboard-snapshot:${userId}`] },
+  )();
 }
