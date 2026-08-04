@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { createConfiguredAiProvider, createConfiguredBehaviorAiProvider } from "../src/lib/ai/ai-provider-factory";
-import { OpenAiProvider } from "../src/lib/ai/openai-provider";
 
 const require = createRequire(import.meta.url);
 const serverOnlyPath = require.resolve("server-only");
@@ -61,5 +60,5 @@ test("responsible behavior analysis stays on OpenAI even if the ticket candidate
     AI_PROVIDER: "deepseek",
     OPENAI_API_KEY: "openai-test-key",
   } as NodeJS.ProcessEnv);
-  assert.ok(provider instanceof OpenAiProvider);
+  assert.equal(provider.constructor.name, "OpenAiProvider");
 });
