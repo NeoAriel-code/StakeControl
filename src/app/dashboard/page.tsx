@@ -132,7 +132,7 @@ export default async function DashboardPage() {
 
   const bestSport = metrics.sportExposure[0];
   const bestMarket = metrics.marketExposure[0];
-  const pauseIsActive = isPauseActive(limits?.pauseUntil);
+  const pauseIsActive = isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting);
   const isNearLimit = Boolean(
     limits?.monthlyStakeLimit &&
       Number(limits.monthlyStakeLimit) > 0 &&

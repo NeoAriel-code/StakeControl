@@ -7,7 +7,6 @@ import { getCountryName } from "@/lib/countries";
 import { parsePreferredSports } from "@/lib/sports";
 import { canUsePlanTestControls } from "@/lib/plan-testing";
 import { PlanTestingControls } from "@/components/profile/PlanTestingControls";
-import Link from "next/link";
 
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -132,18 +131,18 @@ export default async function ProfilePage() {
             Consulta los términos de uso y la política de privacidad de StakeControl.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/terms"
+            <a
+              href="https://www.getstakecontrol.com/terms"
               className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
             >
               Términos
-            </Link>
-            <Link
-              href="/privacy"
+            </a>
+            <a
+              href="https://www.getstakecontrol.com/privacy"
               className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-background"
             >
               Privacidad
-            </Link>
+            </a>
           </div>
         </div>
 

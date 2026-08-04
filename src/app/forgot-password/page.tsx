@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 
 export default function ForgotPasswordPage() {
@@ -14,7 +13,7 @@ export default function ForgotPasswordPage() {
           <p className="mt-2 text-sm text-muted-foreground">Ingresa tu email y te enviaremos instrucciones cuando el servicio de correo esté habilitado.</p>
           <div className="mt-8"><ForgotPasswordForm /></div>
         </div>
-        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><Link href="/terms" className="hover:text-primary">Términos</Link><Link href="/privacy" className="hover:text-primary">Privacidad</Link></footer>
+        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><a href="https://www.getstakecontrol.com/terms" className="hover:text-primary">Términos</a><a href="https://www.getstakecontrol.com/privacy" className="hover:text-primary">Privacidad</a></footer>
       </div>
     </div>
   );

@@ -132,7 +132,7 @@ export default async function HealthPage({ searchParams }: HealthPageProps) {
     dailyLimit: { current: totals.dailyStake, limit: dailyLimit },
     weeklyLimit: { current: totals.weeklyStake, limit: weeklyLimit },
     monthlyLimit: { current: totals.monthlyStake, limit: monthlyLimit },
-    pauseActive: isPauseActive(limits?.pauseUntil),
+    pauseActive: isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting),
     unreadAlertCount: unreadAlerts,
     highSeverityAlertCount: highSeverityAlerts,
   });

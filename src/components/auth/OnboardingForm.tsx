@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { CheckCircle2, Goal, ShieldCheck, Trophy } from "lucide-react";
 import { completeOnboardingAction, type AuthActionState } from "@/lib/auth-actions";
@@ -203,13 +202,13 @@ export function OnboardingForm({ email, currency, ageConfirmed, termsAccepted }:
           {!termsAccepted && (
             <OnboardingCheckbox id="termsAccepted" name="termsAccepted">
               Acepto los{" "}
-              <Link href="/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
+              <a href="https://www.getstakecontrol.com/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
                 términos
-              </Link>{" "}
+              </a>{" "}
               y la{" "}
-              <Link href="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
+              <a href="https://www.getstakecontrol.com/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
                 política de privacidad
-              </Link>
+              </a>
               .
             </OnboardingCheckbox>
           )}

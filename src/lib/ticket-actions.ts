@@ -59,9 +59,9 @@ export async function uploadTicketAction(
     where: { userId: user.id },
   });
 
-  if (isPauseActive(limits?.pauseUntil)) {
+  if (isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting)) {
     return {
-      error: formatPauseMessage(limits!.pauseUntil!),
+      error: formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting),
     };
   }
 
@@ -218,9 +218,9 @@ export async function finalizeTicketReviewAction(
     where: { userId: user.id },
   });
 
-  if (isPauseActive(limits?.pauseUntil)) {
+  if (isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting)) {
     return {
-      error: formatPauseMessage(limits!.pauseUntil!),
+      error: formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting),
     };
   }
 

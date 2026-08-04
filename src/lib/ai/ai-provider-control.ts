@@ -1,16 +1,13 @@
 import "server-only";
 
 import prisma from "@/lib/prisma";
-import { isInStableRollout } from "@/lib/ai/ai-rollout";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getOpenAiFallbackLimit } from "@/lib/ai/ai-config";
 import {
   AI_FAILURE_WINDOW_MS,
   AI_FAILURE_THRESHOLD,
   AI_HALF_OPEN_PROBES,
-  canReserveAiProbe,
   getAiCircuitOpenUntil,
-  isAiCircuitStillOpen,
   shouldCloseAiCircuit,
   shouldOpenAiCircuit,
 } from "@/lib/ai/ai-circuit";
@@ -24,16 +21,17 @@ export type DeepSeekCallDecision = {
 };
 
 export async function assertEnabledAiProviderKeys() {
-  const configuration = await prisma.aIProviderConfiguration.findUnique({
-    where: { task_provider: { task: TASK, provider: PROVIDER } },
-    select: { enabled: true, rolloutPercentage: true },
+  await prisma.aIProviderConfiguration.updateMany({
+    where: { task: TASK, provider: PROVIDER, OR: [{ enabled: true }, { rolloutPercentage: { gt: 0 } }] },
+    data: { enabled: false, rolloutPercentage: 0, circuitState: "closed", openUntil: null },
   });
-  if (configuration?.enabled && configuration.rolloutPercentage > 0 && !process.env.DEEPSEEK_API_KEY) {
-    throw new Error("DEEPSEEK_API_KEY is required for the enabled ticket route.");
-  }
 }
 
 export async function shouldCallDeepSeek(betTicketImageId: string, now = new Date()): Promise<DeepSeekCallDecision> {
+  void betTicketImageId;
+  void now;
+  return { allowed: false, reason: "disabled" };
+  /* istanbul ignore next -- retained state machine for a future policy-reviewed release.
   const configuration = await prisma.aIProviderConfiguration.findUnique({
     where: { task_provider: { task: TASK, provider: PROVIDER } },
   });
@@ -58,6 +56,7 @@ export async function shouldCallDeepSeek(betTicketImageId: string, now = new Dat
   return reserved.count === 1
     ? { allowed: true, reason: "enabled" }
     : { allowed: false, reason: "probes_exhausted" };
+  */
 }
 
 export async function recordDeepSeekSuccess() {

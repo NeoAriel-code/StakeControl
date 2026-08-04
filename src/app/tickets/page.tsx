@@ -33,7 +33,7 @@ export default async function TicketsPage() {
     getFeatureAccess(user.id, "manual_bet_registration").then((access) => access.plan),
   ]);
 
-  const pauseIsActive = isPauseActive(limits?.pauseUntil);
+  const pauseIsActive = isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting);
 
   return (
     <AppLayout
@@ -66,8 +66,10 @@ export default async function TicketsPage() {
             <div className="flex items-start gap-3">
               <PauseCircle size={18} className="mt-0.5 text-warning" />
               <div>
-                <h2 className="text-lg font-semibold text-warning-foreground">Carga bloqueada por pausa voluntaria</h2>
-                <p className="mt-2 text-sm text-warning-foreground">{formatPauseMessage(limits!.pauseUntil!)}</p>
+                <h2 className="text-lg font-semibold text-warning-foreground">
+                  {limits?.pauseAllBetting ? "Carga bloqueada por suspensión administrativa" : "Carga bloqueada por pausa voluntaria"}
+                </h2>
+                <p className="mt-2 text-sm text-warning-foreground">{formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting)}</p>
               </div>
             </div>
           </div>

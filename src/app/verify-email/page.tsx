@@ -21,7 +21,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
           <p className="mt-2 text-sm text-muted-foreground">{verified ? "Tu cuenta ya está activa. Ahora puedes iniciar sesión y completar la configuración inicial." : "El enlace venció o ya fue utilizado. Solicita uno nuevo para continuar."}</p>
           <div className="mt-8"><Link href={verified ? "/login" : "/verify-email/resend"} className="inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover">{verified ? "Iniciar sesión" : "Solicitar nuevo enlace"}</Link></div>
         </div>
-        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><Link href="/terms" className="hover:text-primary">Términos</Link><Link href="/privacy" className="hover:text-primary">Privacidad</Link></footer>
+        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><a href="https://www.getstakecontrol.com/terms" className="hover:text-primary">Términos</a><a href="https://www.getstakecontrol.com/privacy" className="hover:text-primary">Privacidad</a></footer>
       </div>
     </div>
   );

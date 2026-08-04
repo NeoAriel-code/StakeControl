@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronDown, Crown, LogOut, Menu, Search, Settings, User, UserCircle } from "lucide-react";
+import { Bell, ChevronDown, Crown, LogOut, Menu, Settings, User, UserCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -166,27 +166,6 @@ export function Navbar({ onMenuToggle, pageTitle, userName, planLabel, plan }: N
 
         {/* Divider */}
         <div className="hidden lg:block w-px h-5 bg-border" aria-hidden="true" />
-
-        {/* Search bar */}
-        <div className="relative flex-1 max-w-sm hidden md:flex items-center">
-          <Search
-            size={15}
-            className="absolute left-3 text-soft pointer-events-none"
-            aria-hidden="true"
-          />
-          <input
-            id="navbar-search"
-            type="search"
-            placeholder="Buscar apuestas, eventos…"
-            aria-label="Buscar en StakeControl"
-            className={cn(
-              "w-full pl-9 pr-4 py-2 text-sm rounded-xl",
-              "bg-muted border border-transparent text-foreground placeholder:text-soft",
-              "focus:outline-none focus:bg-card focus:border-primary/30 focus:ring-2 focus:ring-primary/10",
-              "transition-all duration-200"
-            )}
-          />
-        </div>
 
         {/* Mobile page title */}
         {pageTitle && (

@@ -13,7 +13,7 @@ export default async function NewBetPage() {
   const limits = await prisma.userLimits.findUnique({
     where: { userId: user.id },
   });
-  const pauseIsActive = isPauseActive(limits?.pauseUntil);
+  const pauseIsActive = isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting);
 
   return (
     <AppLayout
@@ -36,7 +36,7 @@ export default async function NewBetPage() {
         {pauseIsActive ? (
           <div className="rounded-3xl border border-warning/30 bg-warning-soft p-6 shadow-sm">
             <p className="text-sm font-medium text-warning-foreground">
-              {formatPauseMessage(limits!.pauseUntil!)}
+              {formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting)}
             </p>
           </div>
         ) : (

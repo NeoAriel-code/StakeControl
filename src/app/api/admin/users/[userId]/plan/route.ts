@@ -3,6 +3,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { isAdminUser } from "@/lib/admin";
 import prisma from "@/lib/prisma";
 import { PlanType } from "@prisma/client";
+import { z } from "zod";
+
+const planUpdateSchema = z.object({ planType: z.nativeEnum(PlanType) }).strict();
+const userIdSchema = z.string().trim().min(1).max(128);
 
 export async function PATCH(
   request: Request,
@@ -14,13 +18,13 @@ export async function PATCH(
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const { userId } = await params;
-    const body = await request.json();
-    const { planType } = body;
-
-    if (!["FREE", "PREMIUM_MONTHLY", "PREMIUM_ANNUAL"].includes(planType)) {
+    const parsedUserId = userIdSchema.safeParse((await params).userId);
+    const parsedBody = planUpdateSchema.safeParse(await request.json());
+    if (!parsedUserId.success || !parsedBody.success) {
       return NextResponse.json({ error: "Tipo de plan no válido" }, { status: 400 });
     }
+    const userId = parsedUserId.data;
+    const { planType } = parsedBody.data;
 
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -30,36 +34,29 @@ export async function PATCH(
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Cancel existing active subscriptions
-    await prisma.subscription.updateMany({
-      where: {
-        userId,
-        status: "active",
-      },
-      data: {
-        status: "canceled",
-        canceledAt: new Date(),
-      },
-    });
-
-    // Create new active subscription
     const now = new Date();
-    const periodEnd = new Date();
+    const periodEnd = new Date(now);
     if (planType === "PREMIUM_MONTHLY") {
       periodEnd.setMonth(periodEnd.getMonth() + 1);
     } else if (planType === "PREMIUM_ANNUAL") {
       periodEnd.setFullYear(periodEnd.getFullYear() + 1);
     }
 
-    const newSub = await prisma.subscription.create({
-      data: {
-        userId,
-        planType: planType as PlanType,
-        status: "active",
-        startedAt: now,
-        currentPeriodStart: now,
-        currentPeriodEnd: planType === "FREE" ? null : periodEnd,
-      },
+    const newSub = await prisma.$transaction(async (tx) => {
+      await tx.subscription.updateMany({
+        where: { userId, status: "active" },
+        data: { status: "canceled", canceledAt: now },
+      });
+      return tx.subscription.create({
+        data: {
+          userId,
+          planType,
+          status: "active",
+          startedAt: now,
+          currentPeriodStart: now,
+          currentPeriodEnd: planType === "FREE" ? null : periodEnd,
+        },
+      });
     });
 
     return NextResponse.json({

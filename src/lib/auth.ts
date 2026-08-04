@@ -9,12 +9,14 @@ import prisma from "@/lib/prisma";
 import { hasAcceptedCurrentBetaTerms } from "@/lib/beta-terms";
 export { getAuthSecret } from "./auth-secret-config";
 import { getAuthSecret } from "./auth-secret-config";
+import { isSessionVersionCurrent } from "@/lib/session-security";
 
 const SESSION_COOKIE_NAME = "stakecontrol_session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 30;
 
 type SessionPayload = {
   userId: string;
+  sessionVersion: number;
   exp: number;
 };
 
@@ -55,7 +57,7 @@ function decodeSession(token: string): SessionPayload | null {
   try {
     const payload = JSON.parse(base64UrlDecode(data)) as SessionPayload;
 
-    if (!payload.userId || typeof payload.exp !== "number") {
+    if (!payload.userId || typeof payload.sessionVersion !== "number" || typeof payload.exp !== "number") {
       return null;
     }
 
@@ -107,10 +109,19 @@ export function getPostAuthRedirect(user: Pick<User, "ageConfirmed" | "termsAcce
   return hasAcceptedCurrentBetaTerms(user) ? "/dashboard" : "/beta-terms";
 }
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, currentSessionVersion?: number) {
   const cookieStore = await cookies();
   const expires = Date.now() + SESSION_DURATION_MS;
-  const token = encodeSession({ userId, exp: expires });
+  const sessionVersion = currentSessionVersion ?? (await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sessionVersion: true },
+  }))?.sessionVersion;
+
+  if (sessionVersion === undefined) {
+    throw new Error("Cannot create a session for an unknown user.");
+  }
+
+  const token = encodeSession({ userId, sessionVersion, exp: expires });
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
@@ -135,19 +146,25 @@ export async function getSessionUserId() {
   }
 
   const payload = decodeSession(token);
-  return payload?.userId ?? null;
+  if (!payload) return null;
+  const stored = await prisma.user.findUnique({ where: { id: payload.userId }, select: { sessionVersion: true } });
+  return stored && isSessionVersionCurrent(payload.sessionVersion, stored.sessionVersion) ? payload.userId : null;
 }
 
 const getCurrentUserForRequest = cache(async () => {
-  const userId = await getSessionUserId();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const payload = token ? decodeSession(token) : null;
 
-  if (!userId) {
+  if (!payload) {
     return null;
   }
 
-  return prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
   });
+
+  return user && isSessionVersionCurrent(payload.sessionVersion, user.sessionVersion) ? user : null;
 });
 
 export async function getCurrentUser() {

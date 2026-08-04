@@ -67,18 +67,21 @@ export default async function LimitsPage() {
     currentValue: totals.dailyStake,
     limitValue: dailyLimit,
     pauseUntil: limits?.pauseUntil,
+    pauseAllBetting: limits?.pauseAllBetting,
   });
   const weeklyStatus = getLimitStatus({
     currentValue: totals.weeklyStake,
     limitValue: weeklyLimit,
     pauseUntil: limits?.pauseUntil,
+    pauseAllBetting: limits?.pauseAllBetting,
   });
   const monthlyStatus = getLimitStatus({
     currentValue: totals.monthlyStake,
     limitValue: monthlyLimit,
     pauseUntil: limits?.pauseUntil,
+    pauseAllBetting: limits?.pauseAllBetting,
   });
-  const overallStatus = isPauseActive(limits?.pauseUntil)
+  const overallStatus = isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting)
     ? "PAUSE_ACTIVE"
     : monthlyStatus === "LIMIT_EXCEEDED" || weeklyStatus === "LIMIT_EXCEEDED" || dailyStatus === "LIMIT_EXCEEDED"
       ? "LIMIT_EXCEEDED"
@@ -142,9 +145,9 @@ export default async function LimitsPage() {
           actions={<StatusBadge kind={statusKind(overallStatus)} />}
         />
 
-        {isPauseActive(limits?.pauseUntil) && (
+        {isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting) && (
           <div className="rounded-2xl border border-warning/30 bg-warning-soft px-5 py-4 text-sm text-warning-foreground">
-            {formatPauseMessage(limits!.pauseUntil!)}
+            {formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting)}
           </div>
         )}
 

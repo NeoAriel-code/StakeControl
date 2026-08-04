@@ -87,6 +87,17 @@ export const MANAGED_SCHEMA_MIGRATIONS: readonly ManagedSchemaMigration[] = [
     sqlPath: "prisma/migrations/20260803101000_add_ai_provider_configuration/migration.sql",
     requiredTables: ["AIProviderConfiguration"],
   },
+  {
+    name: "20260804090000_beta_security_hardening",
+    sqlPath: "prisma/migrations/20260804090000_beta_security_hardening/migration.sql",
+    requiredTables: ["User"],
+    requiredColumns: [{ table: "User", column: "sessionVersion" }],
+  },
+  {
+    name: "20260804090500_add_admin_access_audit",
+    sqlPath: "prisma/migrations/20260804090500_add_admin_access_audit/migration.sql",
+    requiredTables: ["AdminAccessAudit"],
+  },
 ];
 
 export type SchemaMigrationPlan = {

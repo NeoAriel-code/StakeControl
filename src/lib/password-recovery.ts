@@ -88,7 +88,7 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
 
     await tx.user.update({
       where: { id: record.userId },
-      data: { passwordHash },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
     });
 
     return record.userId;

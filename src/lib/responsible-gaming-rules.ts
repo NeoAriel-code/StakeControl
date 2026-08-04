@@ -2,23 +2,26 @@ export type LimitStatus = "WITHIN_LIMIT" | "NEAR_LIMIT" | "LIMIT_EXCEEDED" | "PA
 
 export function isPauseActiveAt(
   pauseUntil: Date | null | undefined,
-  referenceDate = new Date()
+  referenceDate = new Date(),
+  pauseAllBetting = false
 ) {
-  return Boolean(pauseUntil && pauseUntil > referenceDate);
+  return pauseAllBetting || Boolean(pauseUntil && pauseUntil > referenceDate);
 }
 
 export function evaluateLimits({
   currentValue,
   limitValue,
   pauseUntil,
+  pauseAllBetting,
   referenceDate,
 }: {
   currentValue: number;
   limitValue?: number | null;
   pauseUntil?: Date | null;
+  pauseAllBetting?: boolean;
   referenceDate?: Date;
 }): LimitStatus {
-  if (isPauseActiveAt(pauseUntil, referenceDate)) {
+  if (isPauseActiveAt(pauseUntil, referenceDate, pauseAllBetting)) {
     return "PAUSE_ACTIVE";
   }
 

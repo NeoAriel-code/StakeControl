@@ -94,9 +94,18 @@ export default function TermsPage() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             El OCR y la IA son herramientas de apoyo. Pueden producir información incompleta o incorrecta y debes
             revisarla antes de usarla. No constituyen asesoría financiera, jurídica, médica ni de apuestas, y no toman
-            decisiones automáticas sobre ti ni tus apuestas. Para estructurar tickets podemos utilizar procesadores
-            internacionales bajo sus términos públicos, enviando sólo contenido seudonimizado y minimizado. Cuando la
-            limpieza no sea segura o el resultado sea ambiguo, se utilizará otro proveedor o se exigirá revisión humana.
+            decisiones automáticas sobre ti ni tus apuestas. Para estructurar tickets podemos utilizar OpenAI,
+            enviando sólo el contenido minimizado necesario. Cuando la limpieza no sea segura o el resultado sea
+            ambiguo, se exigirá revisión humana.
+          </p>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold">Condiciones de soporte durante la beta</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Administradores autorizados pueden consultar apuestas, imágenes de tickets y texto OCR para soporte,
+            seguridad y diagnóstico. Este acceso permanece disponible durante la beta y cada consulta al contenido se
+            registra en una auditoría con administrador, usuario afectado, recurso, acción y fecha.
           </p>
         </section>
 
@@ -155,9 +164,9 @@ export default function TermsPage() {
           <Link href="/privacy" className="rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold">
             Ver privacidad
           </Link>
-          <Link href="/dashboard" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
+          <a href="https://app.getstakecontrol.com/dashboard" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
             Volver a StakeControl
-          </Link>
+          </a>
         </div>
       </section>
     </main>

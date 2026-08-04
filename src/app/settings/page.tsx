@@ -123,18 +123,18 @@ export default async function SettingsPage() {
             <FileText size={22} className="text-success" />
             <h2 className="mt-4 text-lg font-semibold text-foreground">Privacidad y términos</h2>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/privacy"
+              <a
+                href="https://www.getstakecontrol.com/privacy"
                 className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-background"
               >
                 Privacidad
-              </Link>
-              <Link
-                href="/terms"
+              </a>
+              <a
+                href="https://www.getstakecontrol.com/terms"
                 className="rounded-xl border border-border px-4 py-2 text-sm font-semibold transition hover:bg-background"
               >
                 Términos
-              </Link>
+              </a>
             </div>
           </div>
         </section>

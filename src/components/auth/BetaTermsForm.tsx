@@ -19,6 +19,7 @@ export function BetaTermsForm() {
       <div className="space-y-3 text-sm leading-6 text-muted-foreground">
         <p>El OCR puede equivocarse y los datos extraídos pueden requerir corrección. Revisa siempre cada ticket antes de confirmarlo.</p>
         <p>La IA no realiza diagnósticos ni recomienda apuestas. La disponibilidad del servicio no está garantizada durante la beta.</p>
+        <p>Administradores autorizados pueden consultar apuestas, imágenes de tickets y texto OCR para soporte, seguridad y diagnóstico. Cada acceso al contenido queda auditado.</p>
         <p>Puedes comunicar errores a <a className="font-semibold text-primary underline-offset-4 hover:underline" href="mailto:contact@getstakecontrol.com">contact@getstakecontrol.com</a> y solicitar la eliminación de tus datos.</p>
       </div>
       {state.error && <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">{state.error}</p>}

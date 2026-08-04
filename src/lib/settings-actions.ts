@@ -3,7 +3,7 @@
 import { OddsFormat } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { hashPassword, requireUser, verifyPassword } from "@/lib/auth";
+import { createSession, hashPassword, requireUser, verifyPassword } from "@/lib/auth";
 import { COUNTRY_CODES } from "@/lib/countries";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import prisma from "@/lib/prisma";
@@ -106,12 +106,17 @@ export async function changePasswordAction(
     return { error: "La contraseña actual no es correcta." };
   }
 
-  await prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: {
       passwordHash: hashPassword(parsed.data.newPassword),
+      sessionVersion: { increment: 1 },
     },
+    select: { sessionVersion: true },
   });
+
+  // Keep this legitimate session active while every other signed session is revoked.
+  await createSession(user.id, updatedUser.sessionVersion);
 
   const service = getEmailDeliveryService();
   if (service) {

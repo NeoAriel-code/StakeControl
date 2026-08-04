@@ -101,6 +101,7 @@ model User {
   country                     String?
   preferredSports             String?
   isAdmin                     Boolean                  @default(false)
+  sessionVersion              Int                      @default(0)
   ageConfirmed                Boolean                  @default(false)
   termsAcceptedAt             DateTime?
   responsibleGamingAcceptedAt DateTime?
@@ -126,6 +127,8 @@ model User {
   emailDeliveries             EmailDelivery[]
   accountSecurityAlerts       AccountSecurityAlert[]
   productFeedback             ProductFeedback[]
+  adminAccessesPerformed      AdminAccessAudit[]       @relation("AdminAccessActor")
+  adminAccessesReceived       AdminAccessAudit[]       @relation("AdminAccessSubject")
 
   @@index([createdAt])
 }
@@ -195,6 +198,22 @@ model RateLimitBucket {
   updatedAt DateTime @updatedAt
 
   @@index([resetAt])
+}
+
+model AdminAccessAudit {
+  id              String   @id @default(cuid())
+  administratorId String
+  affectedUserId  String
+  resource        String
+  resourceId      String?
+  action          String
+  createdAt       DateTime @default(now())
+  administrator   User     @relation("AdminAccessActor", fields: [administratorId], references: [id], onDelete: Restrict)
+  affectedUser    User     @relation("AdminAccessSubject", fields: [affectedUserId], references: [id], onDelete: Cascade)
+
+  @@index([administratorId, createdAt])
+  @@index([affectedUserId, createdAt])
+  @@index([resource, resourceId, createdAt])
 }
 
 model BetTicketImage {

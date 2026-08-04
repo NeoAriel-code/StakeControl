@@ -1,5 +1,4 @@
 import { LoginForm } from "@/components/auth/LoginForm";
-import Link from "next/link";
 import Image from "next/image";
 import { redirectAuthenticatedUser } from "@/lib/auth";
 
@@ -37,12 +36,12 @@ export default async function LoginPage() {
         <LoginForm />
       </div>
       <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground">
-        <Link href="/terms" className="hover:text-primary">
+        <a href="https://www.getstakecontrol.com/terms" className="hover:text-primary">
           Términos
-        </Link>
-        <Link href="/privacy" className="hover:text-primary">
+        </a>
+        <a href="https://www.getstakecontrol.com/privacy" className="hover:text-primary">
           Privacidad
-        </Link>
+        </a>
       </footer>
       </div>
     </div>

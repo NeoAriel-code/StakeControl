@@ -15,6 +15,7 @@ StakeControl es una aplicación web para registrar actividad de apuestas, revisa
 - Next.js 16 App Router
 - TypeScript, Tailwind CSS v4 y Zod
 - Prisma 7 con SQLite/libSQL en desarrollo
+- Node.js 24
 - Node test runner con `tsx`
 
 ## Setup local
@@ -36,6 +37,7 @@ Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON
 | --- | --- | --- |
 | `DATABASE_URL` | Conexión Prisma/libSQL. | Sí, todos los entornos. |
 | `AUTH_SECRET` | Firma de sesiones. | Sí, todos los entornos. |
+| `REGISTRATION_ENABLED` | Interruptor operativo para detener nuevas altas sin cerrar el login. | Opcional; por defecto habilitado. |
 | `NEXT_PUBLIC_APP_URL` | URL pública de la aplicación. | Sí al desplegar. |
 | `NODE_ENV` | Modo de ejecución; producción bloquea proveedores mock/local. | La plataforma normalmente la define. |
 | `OCR_PROVIDER` | Proveedor OCR explícito. | Sí al usar OCR; en producción debe ser cloud. |
@@ -43,11 +45,9 @@ Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON
 | `TESSERACT_BIN`, `TESSERACT_LANG` | OCR local experimental. | Solo desarrollo; no permitido en producción. |
 | `AI_PROVIDER` | Proveedor global y de análisis responsable; los reportes productivos permanecen en OpenAI. | Sí al usar IA; en producción debe disponer de OpenAI. |
 | `OPENAI_API_KEY` | Credencial OpenAI para reportes y fallback de tickets. | Sí en producción. |
-| `DEEPSEEK_API_KEY` | Credencial server-side para extracción alternativa de tickets. | Antes de habilitar el rollout dinámico. |
-| `AI_TICKET_PRIMARY_PROVIDER`, `AI_TICKET_FALLBACK_PROVIDER` | Candidatos por tarea; producción usa `deepseek` y `openai`. | Opcionales; DeepSeek nace apagado en base de datos. |
+| `AI_TICKET_PRIMARY_PROVIDER`, `AI_TICKET_FALLBACK_PROVIDER` | Proveedores de tickets; durante la beta aceptan OpenAI (o mock solo fuera de producción). | Opcionales. DeepSeek está bloqueado. |
 | `AI_TICKET_PRIMARY_MODEL`, `AI_TICKET_FALLBACK_MODEL` | Modelos de extracción de tickets. | Opcionales. |
 | `AI_REPORT_PRIMARY_MODEL`, `AI_REPORT_FALLBACK_MODEL` | Modelos de análisis responsable. | Opcionales. |
-| `AI_TICKET_DEEPSEEK_TIMEOUT_MS`, `AI_TICKET_TIMEOUT_MS` | Límites por intento para DeepSeek y OpenAI. | Opcionales. |
 | `AI_TICKET_OPENAI_FALLBACK_LIMIT_PER_MINUTE` | Tope global de fallback para evitar cascadas de costo o 429. | Opcional. |
 | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Almacenamiento privado Supabase. | Sí en producción con almacenamiento Supabase. |
 | `SUPABASE_STORAGE_BUCKET` | Bucket privado de tickets. | Opcional; usa el bucket predeterminado si no se define. |
@@ -56,6 +56,10 @@ Copie `.env.example` para desarrollo. Nunca agregue valores reales, tokens, JSON
 | `PLAN_TESTER_EMAILS`, `DEMO_DATA_EMAILS` | Controles privados de QA. | Opcionales; no documentar valores personales. |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Clave pública para analítica de producto opcional. | Opcional; sin ella no se inicializa analítica. |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Host de ingesta PostHog. | Opcional; usa PostHog Cloud de EE. UU. por defecto. |
+| `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN` | Ingesta de errores saneados. | Recomendadas en producción. |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Subida de source maps durante build. | Requeridas para source maps legibles. |
+| `CRON_SECRET` | Autoriza la limpieza diaria de rate limits. | Sí en Vercel. |
+| `TRUST_CLOUDFLARE_PROXY` | Permite usar `CF-Connecting-IP` solo cuando Cloudflare es proxy confiable. | Opcional; `false` por defecto. |
 
 ### Analítica de producto
 
@@ -82,9 +86,11 @@ npm run typecheck
 npm test
 npm run test:coverage
 npm run build
+npm run test:e2e
 ```
 
 GitHub Actions ejecuta lint, typecheck, pruebas y build en cada pull request y cambio a `main`.
+Los E2E críticos se ejecutan por separado contra preview con las variables descritas en `playwright.config.ts`.
 
 ## Seguridad
 

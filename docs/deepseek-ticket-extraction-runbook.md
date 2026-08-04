@@ -1,4 +1,6 @@
-# Operación de extracción alternativa de tickets
+# Operación de extracción alternativa de tickets (archivada)
+
+> DeepSeek está completamente deshabilitado durante la beta cerrada. La configuración rechaza su activación y la ruta de ejecución devuelve siempre `disabled`. El contenido siguiente se conserva únicamente como historial técnico y no autoriza su uso.
 
 ## Riesgo aceptado
 

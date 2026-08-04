@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminFeedbackPanels } from "@/components/admin/AdminFeedbackPanels";
-import { AiTicketProviderControls } from "@/components/admin/AiTicketProviderControls";
 import {
   Users,
   Crown,
@@ -56,32 +55,28 @@ interface AdminUserItem {
 
 interface UserTicketDetail {
   id: string;
-  imageUrl: string;
   uploadedAt: string;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
   aiExtraction: {
     status: string;
-    rawText?: string;
-    extractedData?: unknown;
   } | null;
   bet: {
     id: string;
-    title: string;
     result: string;
-    stake: number;
-    profitLoss: number;
   } | null;
 }
 
 interface UserBetDetail {
   id: string;
-  title: string;
-  stake: number;
-  odds: number;
   result: string;
-  profitLoss: number | null;
   createdAt: string;
-  sportsbook: string | null;
+  hasTicket: boolean;
 }
+
+type ContentDetail =
+  | { kind: "ticket"; data: { ticket: Record<string, unknown> & { fileUrl?: string } } }
+  | { kind: "bet"; data: { bet: Record<string, unknown> } };
 
 export default function AdminDashboardClient({
   adminName,
@@ -106,6 +101,8 @@ export default function AdminDashboardClient({
   const [userTickets, setUserTickets] = useState<UserTicketDetail[]>([]);
   const [userBets, setUserBets] = useState<UserBetDetail[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [contentDetail, setContentDetail] = useState<ContentDetail | null>(null);
+  const [loadingContentId, setLoadingContentId] = useState<string | null>(null);
   const [updatingPlanUserId, setUpdatingPlanUserId] = useState<string | null>(null);
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
@@ -217,6 +214,7 @@ export default function AdminDashboardClient({
     setLoadingTickets(true);
     setUserTickets([]);
     setUserBets([]);
+    setContentDetail(null);
 
     try {
       const res = await fetch(`/api/admin/users/${userItem.id}/tickets`);
@@ -233,8 +231,28 @@ export default function AdminDashboardClient({
     }
   };
 
+  const handleViewContent = async (kind: "ticket" | "bet", resourceId: string) => {
+    if (!selectedUser) return;
+    setLoadingContentId(resourceId);
+    try {
+      const resourcePath = kind === "ticket" ? `tickets/${resourceId}` : `bets/${resourceId}`;
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/${resourcePath}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "No se pudo abrir el contenido", "error");
+        return;
+      }
+      setContentDetail({ kind, data } as ContentDetail);
+    } catch (err) {
+      console.error("Error loading audited admin content:", err);
+      showToast("Error al cargar el contenido", "error");
+    } finally {
+      setLoadingContentId(null);
+    }
+  };
+
   return (
-    <AppLayout pageTitle="Panel de Administración" userName={adminName}>
+    <AppLayout pageTitle="Panel de Administración" userName={adminName} isAdmin>
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -388,7 +406,6 @@ export default function AdminDashboardClient({
           </div>
         )}
 
-        <AiTicketProviderControls />
         <AdminFeedbackPanels />
 
         {/* Search, Filter & Users Table Container */}
@@ -715,36 +732,31 @@ export default function AdminDashboardClient({
                           className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3"
                         >
                           <div className="h-16 w-16 bg-slate-800 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 flex items-center justify-center text-slate-500">
-                            {ticket.imageUrl ? (
-                              <Image
-                                src={ticket.imageUrl}
-                                alt="Ticket"
-                                width={64}
-                                height={64}
-                                unoptimized
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <FileText className="h-6 w-6" />
-                            )}
+                            <FileText className="h-6 w-6" />
                           </div>
                           <div className="flex-1 min-w-0 text-xs space-y-1">
                             <div className="text-slate-300 font-semibold truncate">
-                              {ticket.bet?.title || "Ticket procesado con IA"}
+                              Ticket {ticket.id.slice(0, 8)}
                             </div>
                             <div className="text-slate-400 text-[11px]">
                               Fecha: {new Date(ticket.uploadedAt).toLocaleDateString()}
                             </div>
-                            {ticket.bet && (
-                              <div className="text-emerald-400 text-[11px] font-mono">
-                                Monto: ${ticket.bet.stake}
-                              </div>
-                            )}
+                            <div className="text-slate-400 text-[11px]">
+                              {ticket.mimeType || "Tipo desconocido"} · {ticket.fileSizeBytes ?? 0} bytes
+                            </div>
                             {ticket.aiExtraction && (
                               <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                OCR Extraído
+                                OCR: {ticket.aiExtraction.status}
                               </span>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => handleViewContent("ticket", ticket.id)}
+                              disabled={loadingContentId === ticket.id}
+                              className="mt-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-300 disabled:opacity-50"
+                            >
+                              {loadingContentId === ticket.id ? "Abriendo…" : "Ver contenido auditado"}
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -768,13 +780,12 @@ export default function AdminDashboardClient({
                       {userBets.slice(0, 10).map((bet) => (
                         <div key={bet.id} className="p-3 flex items-center justify-between text-xs">
                           <div>
-                            <div className="text-white font-medium">{bet.title}</div>
+                            <div className="text-white font-medium">Apuesta {bet.id.slice(0, 8)}</div>
                             <div className="text-[11px] text-slate-400">
-                              {bet.sportsbook || "Casa no descrita"} • Cuota: {bet.odds}
+                              {new Date(bet.createdAt).toLocaleDateString()} · {bet.hasTicket ? "Con ticket" : "Registro manual"}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-slate-200 font-mono">${bet.stake}</div>
                             <span
                               className={`text-[10px] font-bold ${
                                 bet.result === "WON"
@@ -786,12 +797,45 @@ export default function AdminDashboardClient({
                             >
                               {bet.result}
                             </span>
+                            <button
+                              type="button"
+                              onClick={() => handleViewContent("bet", bet.id)}
+                              disabled={loadingContentId === bet.id}
+                              className="mt-1 block rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-300 disabled:opacity-50"
+                            >
+                              {loadingContentId === bet.id ? "Abriendo…" : "Ver detalle"}
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+
+                {contentDetail && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">Contenido sensible · acceso registrado</h4>
+                        <p className="mt-1 text-[11px] text-slate-400">La consulta quedó asociada al administrador, usuario, recurso y fecha.</p>
+                      </div>
+                      <button type="button" onClick={() => setContentDetail(null)} className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+                    </div>
+                    {contentDetail.kind === "ticket" && contentDetail.data.ticket.fileUrl && (
+                      <Image
+                        src={contentDetail.data.ticket.fileUrl}
+                        alt="Ticket consultado por soporte"
+                        width={960}
+                        height={640}
+                        unoptimized
+                        className="mb-3 max-h-80 w-full rounded-lg bg-slate-950 object-contain"
+                      />
+                    )}
+                    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-300">
+                      {JSON.stringify(contentDetail.kind === "ticket" ? contentDetail.data.ticket : contentDetail.data.bet, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
           </div>

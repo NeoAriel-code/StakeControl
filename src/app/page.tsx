@@ -151,19 +151,19 @@ export default async function RootPage() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle className="border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-transparent dark:bg-transparent dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white" />
-          <Link
-            href="/login"
+          <a
+            href="https://app.getstakecontrol.com/login"
             className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 sm:inline-flex dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
           >
             Iniciar sesión
-          </Link>
-          <Link
-            href="/register"
+          </a>
+          <a
+            href="https://app.getstakecontrol.com/register"
             className="inline-flex items-center gap-2 rounded-md bg-[#102c34] px-4 py-2 text-sm font-black text-white transition hover:bg-[#0b5968] dark:bg-[#77dadd] dark:text-[#073239] dark:hover:bg-[#a0e8e9]"
           >
             Crear cuenta
             <ArrowRight size={15} />
-          </Link>
+          </a>
         </div>
       </header>
 
@@ -188,19 +188,19 @@ export default async function RootPage() {
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/register"
+                <a
+                  href="https://app.getstakecontrol.com/register"
                   className="inline-flex items-center justify-center gap-2 rounded-md bg-[#102c34] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#0b5968]/10 transition hover:-translate-y-0.5 hover:bg-[#0b5968] dark:bg-[#77dadd] dark:text-[#073239] dark:shadow-[#77dadd]/20 dark:hover:bg-[#a0e8e9]"
                 >
                   Ordenar mi historial
                   <ArrowRight size={16} />
-                </Link>
-                <Link
-                  href="/login"
+                </a>
+                <a
+                  href="https://app.getstakecontrol.com/login"
                   className="inline-flex items-center justify-center rounded-md border border-[#a9c1c5] bg-white/80 px-5 py-4 text-sm font-bold text-[#10262d] shadow-lg shadow-[#10262d]/5 transition hover:bg-white dark:border-[#3d6269] dark:bg-white/10 dark:text-white dark:shadow-black/10 dark:hover:bg-white/15"
                 >
                   Ya tengo cuenta
-                </Link>
+                </a>
               </div>
 
               <p className="mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">
@@ -451,13 +451,13 @@ export default async function RootPage() {
                 </div>
               ))}
             </div>
-            <Link
-              href="/register"
+            <a
+              href="https://app.getstakecontrol.com/register"
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
             >
               Empezar con registro preventivo
               <ArrowRight size={16} />
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -472,9 +472,9 @@ export default async function RootPage() {
             <Link href="/privacy" className="hover:text-slate-950 dark:hover:text-white">
               Privacidad
             </Link>
-              <Link href="/login" className="hover:text-slate-950 dark:hover:text-white">
+              <a href="https://app.getstakecontrol.com/login" className="hover:text-slate-950 dark:hover:text-white">
                 Iniciar sesión
-              </Link>
+              </a>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
               <span className="font-semibold text-slate-800 dark:text-slate-100">Contacto:</span>

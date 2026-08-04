@@ -13,12 +13,13 @@ import {
 } from "@/lib/auth";
 import { PlanType, Prisma } from "@prisma/client";
 import { COUNTRY_CODES, getCountryRegistrationDefaults } from "@/lib/countries";
-import { formatRateLimitMessage, checkRateLimit } from "@/lib/rate-limit";
+import { formatRateLimitMessage, checkPublicRateLimit } from "@/lib/rate-limit";
 import { getStorageService, isPrivateStorageReference } from "@/lib/storage";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
 import { buildNotificationPreferences } from "@/lib/notification-preferences";
 import { sendEmailVerification } from "@/lib/email-verification-actions";
 import { BETA_TERMS_VERSION } from "@/lib/beta-terms";
+import { canRemoveAdministrator } from "@/lib/admin-rules";
 
 export type AuthActionState = {
   error?: string;
@@ -100,8 +101,9 @@ export async function loginAction(
   }
 
   const { email, password } = parsed.data;
-  const rateLimit = await checkRateLimit({
-    key: `login:${email}`,
+  const rateLimit = await checkPublicRateLimit({
+    scope: "login",
+    accountIdentifier: email,
     limit: 5,
     windowMs: 15 * 60 * 1000,
   });
@@ -122,7 +124,7 @@ export async function loginAction(
     return { error: "Confirma tu correo antes de iniciar sesión. Puedes solicitar un nuevo enlace si lo necesitas." };
   }
 
-  await createSession(user.id);
+  await createSession(user.id, user.sessionVersion);
   redirect(getPostAuthRedirect(user));
 }
 
@@ -145,8 +147,9 @@ export async function registerAction(
   }
 
   const { email, name, password } = parsed.data;
-  const rateLimit = await checkRateLimit({
-    key: `registration:${email}`,
+  const rateLimit = await checkPublicRateLimit({
+    scope: "registration",
+    accountIdentifier: email,
     limit: 3,
     windowMs: 60 * 60 * 1000,
   });
@@ -155,43 +158,56 @@ export async function registerAction(
     return { error: formatRateLimitMessage(rateLimit.resetAt) };
   }
 
+  if (process.env.REGISTRATION_ENABLED?.trim().toLowerCase() === "false") {
+    return { error: "El registro está temporalmente cerrado. Intenta nuevamente más tarde." };
+  }
+
   if (!(process.env.APP_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")) || !getEmailDeliveryService()) {
     return { error: "El registro por email no está disponible en este momento. Intenta nuevamente más tarde." };
   }
 
   const registrationDefaults = getCountryRegistrationDefaults(parsed.data.country);
+  // Perform the expensive password work before the existence check to reduce timing disclosure.
+  const passwordHash = hashPassword(password);
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
 
   if (existingUser) {
-    return { error: "Ese email ya está registrado." };
+    return { success: "Revisa tu correo para confirmar tu cuenta. Debes verificarlo antes de iniciar sesión." };
   }
 
-  const passwordHash = hashPassword(password);
   const now = new Date();
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name: name || null,
-      country: registrationDefaults.countryCode,
-      currency: registrationDefaults.currency,
-      timezone: registrationDefaults.timezone,
-      ageConfirmed: true,
-      termsAcceptedAt: now,
-      passwordHash,
-      subscriptions: {
-        create: {
-          planType: PlanType.FREE,
-          status: "active",
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email,
+        name: name || null,
+        country: registrationDefaults.countryCode,
+        currency: registrationDefaults.currency,
+        timezone: registrationDefaults.timezone,
+        ageConfirmed: true,
+        termsAcceptedAt: now,
+        passwordHash,
+        subscriptions: {
+          create: {
+            planType: PlanType.FREE,
+            status: "active",
+          },
+        },
+        limits: {
+          create: {},
         },
       },
-      limits: {
-        create: {},
-      },
-    },
-  });
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { success: "Revisa tu correo para confirmar tu cuenta. Debes verificarlo antes de iniciar sesión." };
+    }
+    throw error;
+  }
 
   await sendEmailVerification(user);
 
@@ -306,6 +322,10 @@ export async function deleteAccountAction(
     return { error: "Debes escribir ELIMINAR para confirmar la eliminación de cuenta." };
   }
 
+  if (!canRemoveAdministrator(user.isAdmin, await prisma.user.count({ where: { isAdmin: true } }))) {
+    return { error: "No puedes eliminar la cuenta del último administrador." };
+  }
+
   const ticketImages = await prisma.betTicketImage.findMany({
     where: { userId: user.id },
     select: { imageUrl: true },
@@ -321,9 +341,19 @@ export async function deleteAccountAction(
   const service = getEmailDeliveryService();
   if (service) await service.sendAccountDeleted({ userId: user.id, email: user.email, deletedAt: new Date() });
 
-  await prisma.user.delete({
-    where: { id: user.id },
+  const deleted = await prisma.$transaction(async (tx) => {
+    const current = await tx.user.findUnique({ where: { id: user.id }, select: { isAdmin: true } });
+    if (!current) return true;
+    if (!canRemoveAdministrator(current.isAdmin, await tx.user.count({ where: { isAdmin: true } }))) {
+      return false;
+    }
+    await tx.user.delete({ where: { id: user.id } });
+    return true;
   });
+
+  if (!deleted) {
+    return { error: "No puedes eliminar la cuenta del último administrador." };
+  }
 
   await clearSession();
   redirect("/login");

@@ -235,9 +235,9 @@ export async function createBetAction(
     where: { userId: user.id },
   });
 
-  if (isPauseActive(userLimits?.pauseUntil)) {
+  if (isPauseActive(userLimits?.pauseUntil, userLimits?.pauseAllBetting)) {
     return {
-      error: formatPauseMessage(userLimits!.pauseUntil!),
+      error: formatPauseMessage(userLimits?.pauseUntil, userLimits?.pauseAllBetting),
     };
   }
 
@@ -296,6 +296,10 @@ export async function updateBetAction(
       where: { userId: user.id },
     });
 
+    if (isPauseActive(userLimits?.pauseUntil, userLimits?.pauseAllBetting)) {
+      return { error: formatPauseMessage(userLimits?.pauseUntil, userLimits?.pauseAllBetting) };
+    }
+
     if (
       userLimits?.maxStakePerBet &&
       parsed.values.stake > Number(userLimits.maxStakePerBet) &&
@@ -329,6 +333,10 @@ export async function updateBetAction(
 
 export async function updateBetResultAction(formData: FormData) {
   const user = await requireUser();
+  const userLimits = await prisma.userLimits.findUnique({ where: { userId: user.id } });
+  if (isPauseActive(userLimits?.pauseUntil, userLimits?.pauseAllBetting)) {
+    throw new Error(formatPauseMessage(userLimits?.pauseUntil, userLimits?.pauseAllBetting));
+  }
   const parsed = quickBetResultSchema.safeParse({
     betId: formData.get("betId"),
     result: formData.get("result"),
@@ -369,6 +377,10 @@ export async function updateBetResultAction(formData: FormData) {
 
 export async function deleteBetAction(formData: FormData) {
   const user = await requireUser();
+  const userLimits = await prisma.userLimits.findUnique({ where: { userId: user.id } });
+  if (isPauseActive(userLimits?.pauseUntil, userLimits?.pauseAllBetting)) {
+    throw new Error(formatPauseMessage(userLimits?.pauseUntil, userLimits?.pauseAllBetting));
+  }
   const betId = formData.get("betId");
 
   if (typeof betId !== "string" || betId.length === 0) {

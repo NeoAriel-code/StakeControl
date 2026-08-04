@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -145,8 +146,19 @@ function isNavItemActive(pathname: string, item: NavItem) {
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
+  const [adminNavigationEnabled, setAdminNavigationEnabled] = useState(isAdmin);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    let active = true;
+    fetch("/api/account/navigation", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { isAdmin: false })
+      .then((data: { isAdmin?: boolean }) => { if (active) setAdminNavigationEnabled(data.isAdmin === true); })
+      .catch(() => { if (active) setAdminNavigationEnabled(false); });
+    return () => { active = false; };
+  }, [isAdmin]);
 
   return (
     <>
@@ -186,7 +198,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* ── Navigation groups ── */}
         <nav className="flex-1 py-4 overflow-y-auto" aria-label="Menú de navegación">
           {NAV_GROUPS.map((group) => {
-            const items = NAV_ITEMS.filter((item) => item.group === group.id);
+            const items = NAV_ITEMS.filter((item) => item.group === group.id && (item.id !== "admin" || adminNavigationEnabled));
             if (items.length === 0) return null;
 
             return (

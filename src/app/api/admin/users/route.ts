@@ -3,6 +3,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { isAdminUser } from "@/lib/admin";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
+
+const querySchema = z.object({
+  search: z.string().trim().max(100).default(""),
+  plan: z.enum(["ALL", "FREE", "PREMIUM"]).default("ALL"),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
 
 export async function GET(request: Request) {
   try {
@@ -12,10 +20,11 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search") || "";
-    const filterPlan = searchParams.get("plan") || "ALL"; // ALL, FREE, PREMIUM
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const parsedQuery = querySchema.safeParse(Object.fromEntries(searchParams));
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: "Consulta no válida" }, { status: 400 });
+    }
+    const { search, plan: filterPlan, page, limit } = parsedQuery.data;
     const skip = (page - 1) * limit;
 
     const whereCondition: Prisma.UserWhereInput = {};

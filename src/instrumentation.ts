@@ -8,10 +8,6 @@ export async function register() {
   assertProductionDatabaseConfiguration();
   assertProductionEmailConfiguration();
   assertProductionAiConfiguration();
-  if (process.env.VERCEL_ENV === "production") {
-    const { assertEnabledAiProviderKeys } = await import("@/lib/ai/ai-provider-control");
-    await assertEnabledAiProviderKeys();
-  }
   await registerSentry();
 }
 

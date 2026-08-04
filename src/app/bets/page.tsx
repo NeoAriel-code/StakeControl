@@ -159,7 +159,7 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const hasPreviousPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;
-  const pauseIsActive = isPauseActive(limits?.pauseUntil);
+  const pauseIsActive = isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting);
 
   return (
     <AppLayout

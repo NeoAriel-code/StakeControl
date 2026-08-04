@@ -1,0 +1,49 @@
+name: Preview E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed preview URL
+        required: true
+        type: string
+      registration_enabled:
+        description: Exercise open registration on this isolated preview
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  critical-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      E2E_BASE_URL: ${{ inputs.base_url }}
+      E2E_REGISTRATION_ENABLED: ${{ inputs.registration_enabled }}
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_ONBOARDING_USER_EMAIL: ${{ secrets.E2E_ONBOARDING_USER_EMAIL }}
+      E2E_ONBOARDING_USER_PASSWORD: ${{ secrets.E2E_ONBOARDING_USER_PASSWORD }}
+      E2E_VERIFICATION_TOKEN: ${{ secrets.E2E_VERIFICATION_TOKEN }}
+      E2E_DISPOSABLE_USER_EMAIL: ${{ secrets.E2E_DISPOSABLE_USER_EMAIL }}
+      E2E_DISPOSABLE_USER_PASSWORD: ${{ secrets.E2E_DISPOSABLE_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 14

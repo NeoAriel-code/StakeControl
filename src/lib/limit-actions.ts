@@ -105,7 +105,6 @@ export async function updateLimitsAction(
         monthlyStakeLimit,
         maxStakePerBet,
         pauseUntil,
-        pauseAllBetting: Boolean(pauseUntil),
       },
       update: {
         dailyStakeLimit,
@@ -113,7 +112,6 @@ export async function updateLimitsAction(
         monthlyStakeLimit,
         maxStakePerBet,
         pauseUntil,
-        pauseAllBetting: Boolean(pauseUntil),
       },
     });
     await evaluateResponsibleGamingAlerts(user.id, user.timezone);

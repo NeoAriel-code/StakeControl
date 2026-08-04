@@ -11,9 +11,9 @@ test("AI model config uses supported defaults when no model is configured", () =
   });
 });
 
-test("ticket provider route defaults to disabled-by-database DeepSeek and OpenAI fallback", () => {
+test("ticket provider route keeps DeepSeek disabled and defaults to OpenAI", () => {
   assert.deepEqual(getAiTicketProviderConfig({}), {
-    primary: "deepseek",
+    primary: "openai",
     fallback: "openai",
     deepSeekModel: "deepseek-v4-flash",
     openAiFallbackModel: "gpt-4.1-mini",
@@ -21,6 +21,10 @@ test("ticket provider route defaults to disabled-by-database DeepSeek and OpenAI
   assert.throws(
     () => getAiTicketProviderConfig({ AI_TICKET_FALLBACK_PROVIDER: "deepseek" }),
     /AI_TICKET_FALLBACK_PROVIDER/,
+  );
+  assert.throws(
+    () => getAiTicketProviderConfig({ AI_TICKET_PRIMARY_PROVIDER: "deepseek" }),
+    /cannot use DeepSeek/,
   );
 });
 

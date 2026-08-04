@@ -30,11 +30,18 @@ function decimalToNumber(value: Prisma.Decimal | null | undefined) {
   return value ? Number(value) : 0;
 }
 
-export function isPauseActive(pauseUntil: Date | null | undefined) {
-  return isPauseActiveAt(pauseUntil);
+export function isPauseActive(pauseUntil: Date | null | undefined, pauseAllBetting = false) {
+  return isPauseActiveAt(pauseUntil, new Date(), pauseAllBetting);
 }
 
-export function formatPauseMessage(pauseUntil: Date) {
+export function formatPauseMessage(pauseUntil?: Date | null, pauseAllBetting = false) {
+  if (pauseAllBetting) {
+    return "Tu cuenta tiene una suspensión administrativa activa. No podrás realizar acciones sobre apuestas o tickets hasta que un administrador autorizado la retire.";
+  }
+
+  if (!pauseUntil) {
+    return "Las acciones sobre apuestas y tickets están temporalmente bloqueadas.";
+  }
   const formattedDate = new Intl.DateTimeFormat("es-CL", {
     dateStyle: "long",
     timeStyle: "short",
@@ -51,12 +58,14 @@ export function getLimitStatus({
   currentValue,
   limitValue,
   pauseUntil,
+  pauseAllBetting,
 }: {
   currentValue: number;
   limitValue?: number | null;
   pauseUntil?: Date | null;
+  pauseAllBetting?: boolean;
 }): LimitStatus {
-  return evaluateLimits({ currentValue, limitValue, pauseUntil });
+  return evaluateLimits({ currentValue, limitValue, pauseUntil, pauseAllBetting });
 }
 
 export async function getCurrentStakeTotals(

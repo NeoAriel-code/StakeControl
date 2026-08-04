@@ -59,6 +59,16 @@ export default function PrivacyPage() {
         </section>
 
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold">Acceso administrativo autorizado</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Durante la beta, administradores autorizados de StakeControl mantienen acceso permanente y bajo necesidad
+            a tus apuestas, imágenes de tickets y resultados de OCR para atender soporte, investigar incidentes de
+            seguridad y diagnosticar fallos. No se usa este acceso para recomendar apuestas. Cada consulta al contenido
+            registra quién accedió, qué usuario fue afectado, el recurso, la acción y la fecha.
+          </p>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Feedback y evaluación de OCR</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Puedes enviar feedback dentro de la aplicación. Guardamos su categoría, descripción y pantalla actual; los datos técnicos mínimos (familia de navegador, sistema operativo y versión) y la posibilidad de contactarte son consentimientos independientes. Sin consentimiento de contacto, el feedback no conserva tu usuario ni email. La evaluación opcional de OCR se guarda sólo al confirmar una apuesta y se asocia a la extracción para medir calidad agregada; no incorpora ni muestra el ticket, texto OCR, apuestas, importes o selecciones.
@@ -72,8 +82,7 @@ export default function PrivacyPage() {
             que procesan información por cuenta de StakeControl: Vercel para hosting y despliegue; Turso/libSQL para la
             base de datos; Supabase Storage para archivos privados de tickets cuando está configurado; Google Cloud
             Vision para OCR cuando está configurado; OpenAI para extracción estructurada y análisis de IA cuando está
-            configurado; un proveedor adicional de IA con procesamiento en China exclusivamente para estructurar
-            tickets OCR seudonimizados durante un despliegue gradual; y PostHog para analítica opcional de producto cuando das tu consentimiento. PostHog recibe
+            configurado; y PostHog para analítica opcional de producto cuando das tu consentimiento. PostHog recibe
             únicamente nombres de eventos de uso y categorías técnicas acotadas. No enviamos apuestas, tickets,
             valores financieros ni identificadores directos de cuenta para analítica. Estos proveedores pueden procesar datos fuera de Chile, de acuerdo con sus regiones operativas
             y los acuerdos aplicables.
@@ -87,9 +96,7 @@ export default function PrivacyPage() {
             la finalidad solicitada. Para estructurar tickets retiramos nombres, emails, RUT, teléfonos, direcciones,
             identificadores de cuenta o sesión, códigos de ticket, QR, barcodes y tokens; conservamos únicamente casa,
             evento, mercado, selección, fecha, importe, moneda y cuotas cuando son necesarios. Si la seudonimización no
-            es inequívoca, el ticket se deriva a otro proveedor o a revisión humana. El procesador adicional puede
-            implicar una transferencia internacional a China y opera bajo sus términos públicos, que contemplan el uso
-            de inputs para mejorar su tecnología. StakeControl sigue siendo responsable frente al usuario. La IA es una herramienta de
+            es inequívoca, el ticket se deriva a revisión humana. StakeControl sigue siendo responsable frente al usuario. La IA es una herramienta de
             apoyo, no toma decisiones automáticas con efectos legales o equivalentes, no determina resultados de
             apuestas y no reemplaza tu criterio.
           </p>
@@ -136,9 +143,9 @@ export default function PrivacyPage() {
           <Link href="/terms" className="rounded-xl border border-border-strong px-4 py-3 text-sm font-semibold">
             Ver términos
           </Link>
-          <Link href="/dashboard" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
+          <a href="https://app.getstakecontrol.com/dashboard" className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
             Volver a StakeControl
-          </Link>
+          </a>
         </div>
       </section>
     </main>

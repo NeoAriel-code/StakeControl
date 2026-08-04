@@ -27,12 +27,14 @@ export async function GET() {
       updatedAt: true,
     },
   });
-  return NextResponse.json(configuration ?? {
+  return NextResponse.json({
+    ...(configuration ?? {
+      circuitState: "closed",
+      transientFailureCount: 0,
+      openUntil: null,
+    }),
     enabled: false,
     rolloutPercentage: 0,
-    circuitState: "closed",
-    transientFailureCount: 0,
-    openUntil: null,
   }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
@@ -40,8 +42,8 @@ export async function PATCH(request: Request) {
   if (!await authorize()) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Configuración inválida" }, { status: 400 });
-  if (parsed.data.enabled && !process.env.DEEPSEEK_API_KEY) {
-    return NextResponse.json({ error: "DEEPSEEK_API_KEY debe estar configurada antes de habilitar tráfico." }, { status: 409 });
+  if (parsed.data.enabled || parsed.data.rolloutPercentage > 0) {
+    return NextResponse.json({ error: "DeepSeek permanece deshabilitado durante esta beta." }, { status: 409 });
   }
 
   const configuration = await prisma.aIProviderConfiguration.upsert({
@@ -49,18 +51,18 @@ export async function PATCH(request: Request) {
     create: {
       task: "ticket_extraction",
       provider: "deepseek",
-      enabled: parsed.data.enabled,
-      rolloutPercentage: parsed.data.rolloutPercentage,
+      enabled: false,
+      rolloutPercentage: 0,
     },
     update: {
-      enabled: parsed.data.enabled,
-      rolloutPercentage: parsed.data.rolloutPercentage,
-      ...(!parsed.data.enabled ? {
+      enabled: false,
+      rolloutPercentage: 0,
+      ...({
         circuitState: "closed",
         openUntil: null,
         halfOpenProbeCount: 0,
         halfOpenSuccessCount: 0,
-      } : {}),
+      }),
     },
     select: { enabled: true, rolloutPercentage: true, circuitState: true, openUntil: true },
   });

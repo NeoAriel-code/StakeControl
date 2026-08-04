@@ -4,7 +4,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { createEmailVerificationToken } from "@/lib/email-verification";
 import { getEmailDeliveryService } from "@/lib/email/email-service";
-import { checkRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
+import { checkPublicRateLimit, formatRateLimitMessage } from "@/lib/rate-limit";
 
 export type EmailVerificationActionState = {
   error?: string;
@@ -46,8 +46,9 @@ export async function requestEmailVerificationAction(
     return { error: parsedEmail.error.issues[0]?.message ?? "Ingresa un email válido." };
   }
 
-  const rateLimit = await checkRateLimit({
-    key: `email-verification-resend:${parsedEmail.data}`,
+  const rateLimit = await checkPublicRateLimit({
+    scope: "email-verification-resend",
+    accountIdentifier: parsedEmail.data,
     limit: 3,
     windowMs: 60 * 60 * 1000,
   });

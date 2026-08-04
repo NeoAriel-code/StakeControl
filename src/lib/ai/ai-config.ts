@@ -17,15 +17,22 @@ function readTicketProvider(environment: AiEnvironment, key: string, fallback: T
   throw new Error(`${key} must be mock, openai or deepseek.`);
 }
 
-export function getAiTicketProviderConfig(environment: AiEnvironment = process.env) {
+export function getAiTicketProviderConfig(environment: AiEnvironment = process.env): {
+  primary: TicketProviderName;
+  fallback: Exclude<TicketProviderName, "deepseek">;
+  deepSeekModel: string;
+  openAiFallbackModel: string;
+} {
   const legacyProvider = environment.AI_PROVIDER?.trim().toLowerCase();
   const fallbackDefault = legacyProvider === "mock" || legacyProvider === "openai"
     ? legacyProvider
     : "openai";
   const fallback = readTicketProvider(environment, "AI_TICKET_FALLBACK_PROVIDER", fallbackDefault);
   if (fallback === "deepseek") throw new Error("AI_TICKET_FALLBACK_PROVIDER must be openai or mock.");
+  const primary = readTicketProvider(environment, "AI_TICKET_PRIMARY_PROVIDER", "openai");
+  if (primary === "deepseek") throw new Error("AI_TICKET_PRIMARY_PROVIDER cannot use DeepSeek during the closed beta.");
   return {
-    primary: readTicketProvider(environment, "AI_TICKET_PRIMARY_PROVIDER", "deepseek"),
+    primary,
     fallback,
     deepSeekModel: "deepseek-v4-flash",
     openAiFallbackModel: readModel(environment, "AI_TICKET_FALLBACK_MODEL", DEFAULT_TICKET_FALLBACK_MODEL),

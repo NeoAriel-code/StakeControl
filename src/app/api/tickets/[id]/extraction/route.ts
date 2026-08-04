@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enqueueTicketExtraction } from "@/lib/ticket-workflow";
+import { formatPauseMessage, isPauseActive } from "@/lib/responsible-gaming";
 
 const headers = { "Cache-Control": "private, no-store, max-age=0" };
 const completedStatuses = new Set(["ready_for_review", "requires_review", "reviewed_and_confirmed"]);
@@ -32,6 +33,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401, headers });
+  const limits = await prisma.userLimits.findUnique({ where: { userId: user.id } });
+  if (isPauseActive(limits?.pauseUntil, limits?.pauseAllBetting)) {
+    return NextResponse.json(
+      { error: formatPauseMessage(limits?.pauseUntil, limits?.pauseAllBetting) },
+      { status: 423, headers },
+    );
+  }
   const { id } = await context.params;
   const extraction = await findExtraction(id, user.id);
   if (!extraction) return NextResponse.json({ error: "No encontrado" }, { status: 404, headers });

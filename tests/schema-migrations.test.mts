@@ -146,3 +146,22 @@ test("plans application, baseline, repetition and partial-index rejection", () =
     { action: "inconsistent", name: migration.name },
   );
 });
+
+test("beta hardening migrations can apply independently to an existing User table", () => {
+  const sessionMigration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260804090000_beta_security_hardening",
+  );
+  const auditMigration = MANAGED_SCHEMA_MIGRATIONS.find(
+    (candidate) => candidate.name === "20260804090500_add_admin_access_audit",
+  );
+  assert.ok(sessionMigration);
+  assert.ok(auditMigration);
+  assert.deepEqual(
+    planSchemaMigration(sessionMigration, new Set(["User"]), new Set(), new Map([["User", new Set(["id", "email"])]])),
+    { action: "apply", name: sessionMigration.name },
+  );
+  assert.deepEqual(
+    planSchemaMigration(auditMigration, new Set(["User"]), new Set()),
+    { action: "apply", name: auditMigration.name },
+  );
+});

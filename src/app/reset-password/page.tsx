@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 type ResetPasswordPageProps = { searchParams: Promise<{ token?: string }> };
@@ -20,7 +19,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
             {token ? <ResetPasswordForm token={token} /> : <p className="rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger">El enlace de recuperación no es válido.</p>}
           </div>
         </div>
-        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><Link href="/terms" className="hover:text-primary">Términos</Link><Link href="/privacy" className="hover:text-primary">Privacidad</Link></footer>
+        <footer className="mt-5 flex justify-between gap-4 px-1 text-xs font-medium text-muted-foreground"><a href="https://www.getstakecontrol.com/terms" className="hover:text-primary">Términos</a><a href="https://www.getstakecontrol.com/privacy" className="hover:text-primary">Privacidad</a></footer>
       </div>
     </div>
   );

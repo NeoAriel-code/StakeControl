@@ -54,11 +54,10 @@ test("AI factory refuses mock configuration in production", () => {
   );
 });
 
-test("responsible behavior analysis stays on OpenAI even if the ticket candidate is DeepSeek", () => {
-  const provider = createConfiguredBehaviorAiProvider({
+test("configured AI rejects DeepSeek throughout the closed beta", () => {
+  assert.throws(() => createConfiguredBehaviorAiProvider({
     NODE_ENV: "production",
     AI_PROVIDER: "deepseek",
     OPENAI_API_KEY: "openai-test-key",
-  } as NodeJS.ProcessEnv);
-  assert.equal(provider.constructor.name, "OpenAiProvider");
+  } as NodeJS.ProcessEnv), /cannot use DeepSeek/);
 });

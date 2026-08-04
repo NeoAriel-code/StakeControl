@@ -129,13 +129,13 @@ export function RegisterForm() {
           />
           <span>
             Acepto los{" "}
-            <Link href="/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
+            <a href="https://www.getstakecontrol.com/terms" className="font-semibold text-primary underline-offset-4 hover:underline">
               términos
-            </Link>{" "}
+            </a>{" "}
             y la{" "}
-            <Link href="/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
+            <a href="https://www.getstakecontrol.com/privacy" className="font-semibold text-primary underline-offset-4 hover:underline">
               política de privacidad
-            </Link>
+            </a>
             .
           </span>
         </label>

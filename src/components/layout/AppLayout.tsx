@@ -14,6 +14,7 @@ interface AppLayoutProps {
   userName?: string;
   planLabel?: string;
   plan?: "FREE" | "PREMIUM";
+  isAdmin?: boolean;
   /** Extra class names for the main content area */
   contentClassName?: string;
 }
@@ -28,6 +29,7 @@ export function AppLayout({
   userName,
   planLabel,
   plan,
+  isAdmin = false,
   contentClassName,
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,7 +37,7 @@ export function AppLayout({
   return (
     <div className="app-shell min-h-screen bg-background text-foreground">
       {/* Sidebar (fixed, full height) */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
 
       {/* Top navbar (fixed, offset by sidebar on desktop) */}
       <Navbar

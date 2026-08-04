@@ -34,6 +34,8 @@ test("production rejects local and mock providers", () => {
   assert.throws(() => assertOcrProviderAllowed("mock", "production"), /OCR_PROVIDER/);
   assert.throws(() => assertOcrProviderAllowed("tesseract", "production"), /OCR_PROVIDER/);
   assert.throws(() => assertAiProviderAllowed("mock", "production"), /AI_PROVIDER/);
+  assert.throws(() => assertAiProviderAllowed("deepseek", "production"), /cannot use DeepSeek/);
+  assert.throws(() => assertAiProviderAllowed("deepseek", "development"), /cannot use DeepSeek/);
   assert.throws(() => assertStorageProviderAllowed("local", "production"), /storage/);
   assert.equal(assertOcrProviderAllowed("google_vision", "production"), "google_vision");
   assert.equal(assertAiProviderAllowed("openai", "production"), "openai");

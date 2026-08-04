@@ -1,4 +1,4 @@
-export const BETA_TERMS_VERSION = "beta-2026-07-23";
+export const BETA_TERMS_VERSION = "beta-2026-08-04-admin-access";
 
 type BetaTermsState = {
   betaTermsAcceptedAt: Date | null;
